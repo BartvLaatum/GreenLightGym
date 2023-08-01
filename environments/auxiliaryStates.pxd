@@ -1,6 +1,6 @@
 # Import the Parameters struct from defineParameters.pxd
 from defineParameters cimport Parameters
-from libc.math cimport cos, M_PI, exp, sqrt, fabs, fmax, fmin, log, M_E
+from libc.math cimport cos, M_PI, exp, sqrt, fabs, fmax, fmin, log, M_E, pi
 from utils cimport satVp, cond, co2dens2ppm
 
 cdef packed struct AuxiliaryStates:
@@ -545,7 +545,7 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
     a.tauShScrPerFir = 1-u[9]*(1-p.tauShScrPerFir)
 
     # FIR reflection coefficient of the shadow screen layer [-]
-    a.rhoShScrFir = 1-u[8]*(1-p.rhoShScrFir)
+    a.rhoShScrFir = u[8]*p.rhoShScrFir
     
     # FIR reflection coefficient of the semi-permanent shadow screen layer [-]
     a.rhoShScrPerFir = u[9]*p.rhoShScrPerFir
@@ -680,8 +680,11 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
     a.tauCovFir = tau12(a.tauShScrShScrPerFir, p.tauRfFir, a.rhoShScrShScrPerFirUp, a.rhoShScrShScrPerFirDn, p.rhoRfFir, p.rhoRfFir)
     
     # FIR reflection coefficient of the cover, excluding screens and lamps [-]
-    a.rhoCovFir = rhoUp(a.tauShScrShScrPerFir, p.tauRfFir, a.rhoShScrShScrPerFirUp, a.rhoShScrShScrPerFirDn, p.rhoRfFir, p.rhoRfFir) 
-    
+    # a.rhoCovFir = rhoUp(a.tauShScrShScrPerFir, p.tauRfFir, \
+    #     a.rhoShScrShScrPerFirUp, a.rhoShScrShScrPerFirDn, \
+    #     p.rhoRfFir, p.rhoRfFir) 
+    a.rhoCovFir = rhoUp(a.tauShScrShScrPerFir, p.tauRfFir, a.rhoShScrShScrPerFirUp, a.rhoShScrShScrPerFirDn, p.rhoRfFir, p.rhoRfFir)
+
     # PAR absorption coefficient of the cover [-]
     a.aCovPar = 1 - a.tauCovPar - a.rhoCovPar
     
@@ -689,7 +692,7 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
     a.aCovNir = 1 - a.tauCovNir - a.rhoCovNir
     
     # FIR absorption coefficient of the cover [-]
-    a.aCovFir = 1 - a.tauCovFir - a.rhoCovFir
+    a.aCovFir = 1 - a.tauCovFir - a.rhoCovFir    
 
     # FIR emission coefficient of the cover [-]
     # See comment before equation 18 [1]
@@ -799,7 +802,7 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
     # Equation 28 [1]
     # addAux(gl, 'rParSunFlrCanUp', mulNoBracks(gl.a.rParGhSun, exp(-p.k1Par*gl.a.lai)*p.rhoFlrPar* \
     #     (1-p.rhoCanPar).*(1-exp(-p.k2Par*gl.a.lai))))
-    a.rParSunFlrCanUp = a.rParSunFlrCanUp * exp(-p.k1Par * a.lai) * p.rhoFlrPar * (1 - p.rhoCanPar) * (1 - exp(-p.k2Par * a.lai))
+    a.rParSunFlrCanUp = a.rParGhSun * exp(-p.k1Par * a.lai) * p.rhoFlrPar * (1 - p.rhoCanPar) * (1 - exp(-p.k2Par * a.lai))
 
     # PAR from the lamps absorbed by the canopy after reflection from the floor [W m^{-2}]
     # Equation A18 [5]
@@ -1782,11 +1785,6 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
     # From main to top compartment 
     # addAux(gl, 'mcAirTop', airMc(gl.a.fScr, x.co2Air, x.co2Top))
     a.mcAirTop = airMc(a.fScr, x[0], x[1])
-    print("fThScr", a.fThScr)
-    print("fBlScr", a.fBlScr)
-    print(x[0])
-    print(x[1])
-    print("Co2 diff", x[0]-x[1])
 
     # From top compartment outside
     # addAux(gl, 'mcTopOut', airMc(gl.a.fVentRoof, x.co2Top, d.co2Out))

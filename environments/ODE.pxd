@@ -5,26 +5,22 @@ from libc.stdlib cimport malloc, free
 
 cdef inline double* ODE(AuxiliaryStates* a, Parameters* p, double &x[27], double &u[11], double &d[7]):
     # cdef double *x_new = (double*)malloc(27 * sizeof(double))
-    cdef double* ki = <double*>malloc(2 * sizeof(double))
+    cdef double* ki = <double*>malloc(27 * sizeof(double))
 
     # update auxiliary states
 
     # Carbon concentration of greenhouse air [mg m^{-3} s^{-1}]
     # setOde(gl, 'co2Air', 1/p.capCo2Air*(a.mcBlowAir+a.mcExtAir+a.mcPadAir ...
     #     -a.mcAirCan-a.mcAirTop-a.mcAirOut));
-    print("mcAirCan, mcAirTop, mcAirOut", a.mcAirCan, a.mcAirTop, a.mcAirOut)
-    
-    ki[0] = 1/p.capCo2Air * (a.mcBlowAir+a.mcExtAir+a.mcPadAir-a.mcAirCan-a.mcAirTop-a.mcAirOut)
-    print("kco2", ki[0])
 
-    # print("Should be 0:", a.mcBlowAir, a.mcExtAir, a.mcPadAir)
+    ki[0] = 1/p.capCo2Air * (a.mcBlowAir+a.mcExtAir+a.mcPadAir-a.mcAirCan-a.mcAirTop-a.mcAirOut)    
 
     # Carbon concentration of top compartment [mg m^{-3} s^{-1}]
     # setOde(gl, 'co2Top', 1/p.capCo2Top*(a.mcAirTop-a.mcTopOut));
     ki[1] = 1/p.capCo2Top * (a.mcAirTop-a.mcTopOut)
     # print("mcAirTop, mcTopOut", a.mcAirTop, a.mcTopOut)
     # print("k1 comp:", a.mcAirTop, a.mcTopOut)
-    print("kco2Top", ki[1])
+    # print("kco2Top", ki[1])
 
     # % Greenhouse air temperature [�C s^{-1}]
     # setOde(gl, 'tAir', 1/p.capAir*(a.hCanAir+a.hPadAir-a.hAirMech+a.hPipeAir ...

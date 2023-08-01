@@ -29,16 +29,17 @@ cdef class GreenLight:
     cdef float h
     cdef char timestep
 
-    def __cinit__(self, cnp.ndarray[cnp.double_t, ndim=2] weather, float h):
+    def __cinit__(self, cnp.ndarray[cnp.double_t, ndim=2] weather, float h, char noLamps, char ledLamps, char hpsLamps):
         self.p = <Parameters*>malloc(sizeof(Parameters))
         self.a = <AuxiliaryStates*>malloc(sizeof(AuxiliaryStates))
-        initParameters(self.p)
+        initParameters(self.p, noLamps, ledLamps, hpsLamps)
         self.initWeather(weather)
         self.initStates(self.d[0])
         self.h = h
         self.timestep = 0
 
     def __dealloc__(self):
+        free(self.a)
         free(self.p)
         free(self.d)
 
@@ -47,7 +48,6 @@ cdef class GreenLight:
         Simulate the next time step of the GreenLight model.
         """
         cdef double[11] u
-        cdef double *k1 # pointer to a double for our array k1
         cdef char i
         cdef char j
 
@@ -64,68 +64,63 @@ cdef class GreenLight:
         Difference function that computes the next state.
         """
         cdef double* k1
-        # cdef double* k2
-        # cdef double* k3
-        # cdef double* k4
-        # cdef char i
-        # cdef char j
-        # cdef char k
+        cdef double* k2
+        cdef double* k3
+        cdef double* k4
+        cdef char i
+        cdef char j
+        cdef char k
         cdef char l
+
+        cdef double[27] x2
+        cdef double[27] x3
+        cdef double[27] x4
+
 
         # update auxiliary states
         update(self.a, self.p, u, self.x, self.d[self.timestep])
         k1 = ODE(self.a, self.p, self.x, u, self.d[self.timestep])
-        for l in range(27):
-            print("k1", l, k1[l])
+        print("-----------")
+        # for l in range(27):
+        #     print(f"k{l}", k1[l])
 
-        print("------------------")
-        print(self.x[0])
+
+        for i in range(27):
+            x2[i] = self.x[i] + self.h/2*k1[i]
+    	
+        update(self.a, self.p, u, x2, self.d[self.timestep])
+        k2 = ODE(self.a, self.p, x2, u, self.d[self.timestep])
+
+        for j in range(27):
+            x3[j] = self.x[j] + self.h/2*k2[j]
+
+        update(self.a, self.p, u, x3, self.d[self.timestep])
+        k3 = ODE(self.a, self.p, x3, u, self.d[self.timestep])
+
+        for k in range(27):
+            x4[k] = self.x[k] + self.h*k3[k]
+
+        update(self.a, self.p, u, x4, self.d[self.timestep])
+        k4 = ODE(self.a, self.p, x4, u, self.d[self.timestep])
+
+        print("xi", self.x[testIndex], x2[testIndex], x3[testIndex], x4[testIndex])
+        print("deltaX0:", k1[testIndex], k2[testIndex], k3[testIndex], k4[testIndex])
+
+        # Runge-Kutta 4th order method
+        for l in range(27):
+            self.x[l] += self.h/6 * (k1[l] + 2*k2[l] + 2*k3[l] + k4[l])
+        self.x[testIndex] += self.h/6 * (k1[testIndex] + 2*k2[testIndex] + 2*k3[testIndex] + k4[testIndex])
 
         # Forward Euler
-        # cdef char testIndex = 0
-        # self.x[testIndex] += self.h * (k1[testIndex])
+        # for l in range(27):
+        #     self.x[l] += self.h * (k1[l])
 
-        # for l in range(1):
-            # self.x[l] += self.h * (k1[l])
+        print(self.x[0])
 
-        # cdef double[27] x2
-        # cdef double[27] x3
-        # cdef double[27] x4
-
-        # for i in range(27):
-        #     x2[i] = self.x[i] + self.h/2*k1[i]
-
-        # # # print("xd k2", x2[0])
-        # update(self.a, self.p, u, x2, self.d[0])
-        # k2 = ODE(self.a, self.p, x2, u, self.d[0])
-        # print("------------------")
-
-        # for j in range(27):
-        #     x3[j] = self.x[j] + self.h/2*k2[j]
-
-        # # print("xd k3", x3[0])
-        # update(self.a, self.p, u, x3, self.d[0])
-        # k3 = ODE(self.a, self.p, x3, u, self.d[0])
-        # print("------------------")
-
-        # for k in range(27):
-        #     x4[k] = self.x[k] + self.h*k3[k]
-
-        # # print("xd k4", x4[0])
-        # update(self.a, self.p, u, x4, self.d[0])
-        # k4 = ODE(self.a, self.p, x4, u, self.d[0])
-        # print("------------------")
-
-        # self.x[testIndex] += self.h/6 * (k1[testIndex] + 2*k2[testIndex] + 2*k3[testIndex] + k4[testIndex])
-
-        # for l in range(2):
-        #     self.x[l] += self.h/6 * (k1[l] + 2*k2[l] + 2*k3[l] + k4[l])
-
-        # print(self.x)
         free(k1)
-        # free(k2)
-        # free(k3)
-        # free(k4)
+        free(k2)
+        free(k3)
+        free(k4)
 
     cdef void initWeather(self, cnp.ndarray[cnp.double_t, ndim=2] weather):
         """
@@ -162,8 +157,8 @@ cdef class GreenLight:
         cdef cnp.ndarray[cnp.double_t, ndim=1] np_states = np.asarray(states, dtype=np.double)
         cdef int n = np_states.shape[0]
         for i in range(n):
-            if i != testIndex:
-                self.x[i] = np_states[i]
+            # if i != testIndex:
+            self.x[i] = np_states[i]
 
     cdef void initStates(self, double[7] d0):
         """
@@ -233,17 +228,17 @@ cdef class GreenLight:
         self.x[10] = self.x[2]
         
         # x.tSo2.val = 1/4*(3*x.tAir.val+d.tSoOut.val(1,2))
-        self.x[11] = 1/4*(3*self.x[2]*d0[6])
+        self.x[11] = 1/4*(3*self.x[2] + d0[6])
 
-        # # x.tSo3.val = 1/4*(2*x.tAir.val+2*d.tSoOut.val(1,2))
-        self.x[12] = 1/4*(2*self.x[2]+2*d0[6])
+        # # x.tSo3.val = 1/4*(2*x.tAir.val + 2*d.tSoOut.val(1,2))
+        self.x[12] = 1/4*(2*self.x[2] + 2*d0[6])
 
         # # x.tSo4.val = 1/4*(x.tAir.val+3*d.tSoOut.val(1,2))
-        self.x[13] = 1/4*(self.x[2]+3*d0[6])
+        self.x[13] = 1/4*(self.x[2] + 3*d0[6])
 
         # # x.tSo5.val = d.tSoOut.val(1,2)
         self.x[14] = d0[6]
-        
+
         # # x.vpAir.val = p.rhMax.val/100*satVp(x.tAir.val)
         self.x[15] = self.p.rhMax/100*satVp(self.x[2])
 
