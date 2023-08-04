@@ -13,7 +13,7 @@ def loadWeatherData():
         d[7]: radSum        Daily global radiation [J m^{-2} day^{-1}]
     """
     CO2_PPM = 400
-    mat = scipy.io.loadmat('data/seljaar.mat')
+    mat = scipy.io.loadmat('environments/data/seljaar.mat')
     rawWeather = mat['seljaarhires']
     # rawWeather data is a file with 9 columns
 

@@ -672,7 +672,7 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
 
     # NIR transmission coefficient of the cover [-]
     a.tauCovNir = tau12(a.tauCovBlScrNir, p.tauLampNir, a.rhoCovBlScrNirUp, a.rhoCovBlScrNirDn, p.rhoLampNir, p.rhoLampNir)
-    
+
     # NIR reflection coefficient of the cover [-]
     a.rhoCovNir = rhoUp(a.tauCovBlScrNir, p.tauLampNir, a.rhoCovBlScrNirUp, a.rhoCovBlScrNirDn, p.rhoLampNir, p.rhoLampNir)
 
@@ -842,7 +842,6 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
     # NIR reflection coefficient of the canopy [-]
     # Equation 31 [1]
     a.rhoHatCanNir = p.rhoCanNir * (1 - a.tauHatCanNir)
-
 
     # NIR transmission coefficient of the cover and canopy [-]
     # addAux(gl, 'tauCovCanNir', tau12(gl.a.tauHatCovNir, gl.a.tauHatCanNir, gl.a.rhoCovNir, gl.a.rhoCovNir, gl.a.rhoHatCanNir, gl.a.rhoHatCanNir))
@@ -1362,14 +1361,14 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
     # There is also a mistake in [4], whenever sqrt is taken, abs should be included
     # addAux(gl, 'fThScr', u.thScr*p.kThScr.*(abs((x.tAir-x.tTop)).^0.66) + \ 
     #     ((1-u.thScr)./gl.a.rhoAirMean).*sqrt(0.5*gl.a.rhoAirMean.*(1-u.thScr).*p.g.*abs(gl.a.rhoAir-gl.a.rhoTop)))
-    a.fThScr = u[2] * p.kThScr * (fabs((x[2] - x[3]))**0.66) + \
+    a.fThScr = u[2] * p.kThScr * (fabs(x[2] - x[3])**0.66) + \
         ((1 - u[2]) / a.rhoAirMean) * sqrt(0.5 * a.rhoAirMean * (1 - u[2]) * p.g * fabs(a.rhoAir - a.rhoTop))
     # Air flux through the blackout screen [m s^{-1}]
     # Equation A37 [5]
     # addAux(gl, 'fBlScr', u.blScr*p.kBlScr.*(abs((x.tAir-x.tTop)).^0.66) + \ 
     #     ((1-u.blScr)./gl.a.rhoAirMean).*sqrt(0.5*gl.a.rhoAirMean.*(1-u.blScr).*p.g.*abs(gl.a.rhoAir-gl.a.rhoTop)))
 
-    a.fBlScr = u[7] * p.kBlScr * (fabs((x[2] - x[3])**0.66)) + \
+    a.fBlScr = u[7] * p.kBlScr * (fabs(x[2] - x[3])**0.66) + \
         ((1 - u[7]) / a.rhoAirMean) * sqrt(0.5 * a.rhoAirMean * (1 - u[7]) * p.g * fabs(a.rhoAir - a.rhoTop))
 
     # Air flux through the screens [m s^{-1}]
@@ -1451,7 +1450,7 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
     #     1.99*pi*p.phiPipeE*p.lPipe*(abs(x.tPipe-x.tAir)).^0.32,\
     #     x.tPipe, x.tAir))
     a.hPipeAir = sensible(\
-        1.99 * M_PI * p.phiPipeE * p.lPipe * (fabs(x[9] - x[2]))**0.32,\
+        1.99 * M_PI * p.phiPipeE * p.lPipe * fabs(x[9] - x[2])**0.32,\
         x[9], x[2])
         
     # # Between floor and soil layer 1 [W m^{-2}]
@@ -1498,14 +1497,17 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
     # # Equation A29 [5]
     # addAux(gl, 'hLampAir', sensible(p.cHecLampAir, x.tLamp, x.tAir))
     a.hLampAir = sensible(p.cHecLampAir, x[17], x[2])
-
+    # print('cHecLampAir', p.cHecLampAir)
+    # print("tLamp", x[17])
+    # print("tAir", x[2])
+    
     # # Between grow pipes and air in main compartment [W m^{-2}]
     # # Equations A31, A33 [5]
     # addAux(gl, 'hGroPipeAir', sensible(\
         # 1.99*pi*p.phiGroPipeE*p.lGroPipe*(abs(x.tGroPipe-x.tAir)).^0.32, \
     #     x.tGroPipe, x.tAir))
     a.hGroPipeAir = sensible(\
-        1.99 * M_PI * p.phiGroPipeE * p.lGroPipe * fabs(x[17]-x[2])**0.32, \
+        1.99 * M_PI * p.phiGroPipeE * p.lGroPipe * fabs(x[19]-x[2])**0.32, \
         x[19], x[2])
         
     # # Between interlights and air in main compartment [W m^{-2}]
@@ -1641,6 +1643,7 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
     # Equation 21 [2]
     # addAux(gl, 'co2Stom', p.etaCo2AirStom*gl.a.co2InPpm)
     a.co2Stom = p.etaCo2AirStom * a.co2InPpm
+
     # # Potential rate of electron transport [umol{e-} m^{-2} s^{-1}]
     # # Equation 15 [2]
     # # Note that R in [2] is 8.314 and R in [1] is 8314

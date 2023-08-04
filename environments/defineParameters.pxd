@@ -130,23 +130,23 @@ cdef packed struct Parameters:
     char epsFlr              # FIR emission coefficient of the floor
     short rhoFlr            # Density of the floor
     float rhoFlrNir         # NIR reflection coefficient of the floor
-    double rhoFlrPar         # PAR reflection coefficient of the floor
-    double lambdaFlr         # Thermal heat conductivity of the floor
+    double rhoFlrPar        # PAR reflection coefficient of the floor
+    double lambdaFlr        # Thermal heat conductivity of the floor
     short cPFlr             # Specific heat capacity of the floor
-    double hFlr              # Thickness of floor
+    double hFlr             # Thickness of floor
 
-    int rhoCpSo           # Volumetric heat capacity of the soil
-    double lambdaSo          # Thermal heat conductivity of the soil layers
+    int rhoCpSo             # Volumetric heat capacity of the soil
+    double lambdaSo         # Thermal heat conductivity of the soil layers
 
-    double epsPipe           # FIR emission coefficient of the heating pipes
-    double phiPipeE          # External diameter of pipes
-    double phiPipeI          # Internal diameter of pipes
-    double lPipe             # Length of heating pipes per gh floor area
+    double epsPipe          # FIR emission coefficient of the heating pipes
+    double phiPipeE         # External diameter of pipes
+    double phiPipeI         # Internal diameter of pipes
+    double lPipe            # Length of heating pipes per gh floor area
     int pBoil               # Capacity of the heating system
 
     int phiExtCo2           # Capacity of external CO2 source
     double capPipe          # Heat capacity of heating pipes
-    double rhoAir        # Density of air
+    double rhoAir           # Density of air
 
     double capAir           # Heat capacity of air
     double capFlr           # Heat capacity of floor
@@ -166,18 +166,18 @@ cdef packed struct Parameters:
     double fCanFlr          # View factor from canopy to floor
     double pressure         # Absolute air pressure at given elevation
 
-    double globJtoUmol       # Conversion factor from global radiation to PAR
-    unsigned char j25LeafMax # Maximal rate of electron transport at 25�C of the leaf
-    double cGamma            # Effect of canopy temperature on CO2 compensation point
-    double etaCo2AirStom     # Conversion from greenhouse air co2 concentration and stomatal co2 concentration
-    unsigned short eJ       # Activation energy for Jpot calcualtion
-    double t25k              # Reference temperature for Jpot calculation
-    short S                 # Enthropy term for Jpot calculation
-    unsigned short H        # Deactivation energy for Jpot calculation
-    double theta             # Degree of curvature of the electron transport rate
-    double alpha             # Conversion factor from photons to electrons including efficiency term
-    double mCh2o             # Molar mass of CH2O
-    double mCo2              # Molar mass of CO2
+    double globJtoUmol          # Conversion factor from global radiation to PAR
+    unsigned char j25LeafMax    # Maximal rate of electron transport at 25�C of the leaf
+    double cGamma               # Effect of canopy temperature on CO2 compensation point
+    double etaCo2AirStom        # Conversion from greenhouse air co2 concentration and stomatal co2 concentration
+    unsigned short eJ           # Activation energy for Jpot calcualtion
+    double t25k                 # Reference temperature for Jpot calculation
+    short S                     # Enthropy term for Jpot calculation
+    int H                       # Deactivation energy for Jpot calculation
+    double theta                # Degree of curvature of the electron transport rate
+    double alpha                # Conversion factor from photons to electrons including efficiency term
+    double mCh2o                # Molar mass of CH2O
+    double mCo2                 # Molar mass of CO2
 
     double parJtoUmolSun     # Conversion factor of sun's PAR from J to umol{photons} J^{-1}
     char laiMax             # Max leaf area index
@@ -490,7 +490,7 @@ cdef inline void initParameters(Parameters* p, char noLamps, char ledLamps, char
     p.eJ = 37000
     p.t25k = 298.15
     p.S = 710
-    p.H = 22000
+    p.H = 220000
     p.theta = 0.7
     p.alpha = 0.385
     p.mCh2o = 30e-3
