@@ -390,12 +390,12 @@ cdef inline double radToDegrees(double degrees):
     return degrees*M_PI / 180.0
 
 cdef inline double fir(double a1, double eps1, double eps2, double f12, double t1, double t2, double sigma):
-# Net far infrared flux from 1 to 2 [W m^{-2}]
-# Equation 37 [1]
+    # Net far infrared flux from 1 to 2 [W m^{-2}]
+    # Equation 37 [1]
     
     # sigma = 5.67e-8 we have this one in the defineParameters.pxd file
     # kelvin = 273.15
-    
+
     return a1 * eps1 * eps2 * f12 * sigma * ((t1+273.15)**4 - (t2+273.15)**4)
 
 cdef inline double sensible(double hec, double t1, double t2):
@@ -568,11 +568,10 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
     a.tauThScrPar = 1-u[2]*(1-p.tauThScrPar)
 
     # PAR reflection coefficient of the thermal screen [-]
-    a.rhoThScrPar = 1-u[2]*(1-p.tauThScrPar)
-    
+    a.rhoThScrPar = u[2]*(p.rhoThScrPar)
     # PAR transmission coefficient of the thermal screen and roof [-]
     a.tauCovThScrPar = tau12(p.tauRfPar, a.tauThScrPar, p.rhoRfPar, p.rhoRfPar, a.rhoThScrPar, a.rhoThScrPar)
-    
+
     # PAR reflection coefficient of the thermal screen and roof towards the top [-]
     a.rhoCovThScrParUp = rhoUp(p.tauRfPar, a.tauThScrPar, p.rhoRfPar, p.rhoRfPar, a.rhoThScrPar, a.rhoThScrPar)
 
@@ -741,7 +740,7 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
     # PAR above the canopy from the sun [W m^{-2}]
     # Equation 27 [1], Equation A14 [5]
     a.rParGhSun = (1 - p.etaGlobAir) * a.tauCovPar * p.etaGlobPar * d[0]
-    
+
     # PAR above the canopy from the lamps [W m^{-2}] 
     # Equation A15 [5]
     a.rParGhLamp = p.etaLampPar * a.qLampIn
@@ -912,8 +911,8 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
     # PAR from the sun absorbed by the floor [W m^{-2}]
     # Equation 34 [1]
     # addAux(gl, 'rParSunFlr', (1-p.rhoFlrPar).*exp(-p.k1Par*gl.a.lai).*gl.a.rParGhSun)
-    a.rParSunFlr = (1-p.etaGlobAir) * exp(-p.k1Par * a.lai) * a.rParGhSun
-    
+    a.rParSunFlr = (1-p.rhoFlrPar) * exp(-p.k1Par * a.lai) * a.rParGhSun
+
     # PAR from the lamps absorbed by the floor [W m^{-2}]
     # Equation A21 [5]
     # addAux(gl, 'rParLampFlr', (1-p.rhoFlrPar).*exp(-p.k1Par*gl.a.lai).*gl.a.rParGhLamp)
@@ -994,7 +993,13 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
     # addAux(gl, 'rCanFlr', fir(gl.a.aCan, p.epsCan, p.epsFlr, \
     #     p.fCanFlr, x.tCan, x.tFlr))
     a.rCanFlr = fir(a.aCan, p.epsCan, p.epsFlr, p.fCanFlr, x[4], x[8], p.sigma)
-
+    # print("aCan", a.aCan)
+    # print("epsCan", p.epsCan)
+    # print("epsFlr", p.epsFlr)
+    # print("fCanFlr", p.fCanFlr)
+    # print("tCan", x[4])
+    # print("tFlr", x[8])
+    # print("sigma", p.sigma)
     # FIR between pipes and cover [W m^{-2}]
     # addAux(gl, 'rPipeCovIn', fir(p.aPipe, p.epsPipe, gl.a.epsCovFir, \
     #     p.tauIntLampFir*p.tauLampFir*gl.a.tauThScrFirU.*gl.a.tauBlScrFirU*0.49.*\
@@ -1030,12 +1035,23 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
         0.49*(1-exp(-p.kFir*a.lai)), x[9], x[4], p.sigma)
 
     # FIR between floor and cover [W m^{-2}]
-    # addAux(gl, 'rFlrCovIn', fir(1, p.epsFlr, gl.a.epsCovFir, \
+    # fir(1, p.epsFlr, gl.a.epsCovFir, \
     #     p.tauIntLampFir*p.tauLampFir*gl.a.tauThScrFirU.*gl.a.tauBlScrFirU*\
-    #     (1-0.49*pi*p.lPipe*p.phiPipeE).*exp(-p.kFir*gl.a.lai), x.tFlr, x.tCovIn))
+    #     (1-0.49*pi*p.lPipe*p.phiPipeE).*exp(-p.kFir*gl.a.lai), x.tFlr, x.tCovIn)
     a.rFlrCovIn = fir(1, p.epsFlr, a.epsCovFir, \
         p.tauIntLampFir*p.tauLampFir*a.tauThScrFirU*a.tauBlScrFirU* \
         (1 - 0.49*M_PI*p.lPipe*p.phiPipeE) * exp(-p.kFir*a.lai), x[8], x[5], p.sigma)
+    # print("epsFlr", p.epsFlr)
+    # print("epsCovFir", a.epsCovFir)
+    # print("tauIntLampFir", p.tauIntLampFir)
+    # print("tauLampFir", p.tauLampFir)
+    # print("tauThScrFirU", a.tauThScrFirU)
+    # print("tauBlScrFirU", a.tauBlScrFirU)
+    # print("lPipe", p.lPipe)
+    # print("phiPipeE", p.phiPipeE)
+    # print("kFir", p.kFir)
+    # print("lai", a.lai)
+    # print("tCovIn", x[5])
 
     # FIR between floor and sky [W m^{-2}]
     # addAux(gl, 'rFlrSky', fir(1, p.epsFlr, p.epsSky, \
@@ -1388,9 +1404,8 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
     a.hCanAir = sensible(2*p.alfaLeafAir*a.lai, x[4], x[2])
 
     # # Between air in main compartment and floor [W m^{-2}]
-    # addAux(gl, 'hAirFlr', sensible(\
-    #     ifElse('x.tFlr>x.tAir',1.7*nthroot(abs(x.tFlr-x.tAir),3),1.3*nthroot(abs(x.tAir-x.tFlr),4)),\
-    #     x.tAir,x.tFlr))
+    # addAux(gl, 'hAirFlr', 
+    # sensible(ifElse('x.tFlr>x.tAir',1.7*nthroot(abs(x.tFlr-x.tAir),3),1.3*nthroot(abs(x.tAir-x.tFlr),4)), x.tAir,x.tFlr)
     if x[8] > x[2]:
         a.hAirFlr = sensible(1.7 * fabs(x[8] - x[2])**(1/3), x[2], x[8])
     else:
@@ -1497,9 +1512,6 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
     # # Equation A29 [5]
     # addAux(gl, 'hLampAir', sensible(p.cHecLampAir, x.tLamp, x.tAir))
     a.hLampAir = sensible(p.cHecLampAir, x[17], x[2])
-    # print('cHecLampAir', p.cHecLampAir)
-    # print("tLamp", x[17])
-    # print("tAir", x[2])
     
     # # Between grow pipes and air in main compartment [W m^{-2}]
     # # Equations A31, A33 [5]

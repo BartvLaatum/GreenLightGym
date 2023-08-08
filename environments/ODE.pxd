@@ -79,6 +79,25 @@ cdef inline double* ODE(AuxiliaryStates* a, Parameters* p, double* x, double* u,
         +a.rParLampFlr+a.rNirLampFlr+a.rFirLampFlr-a.rFlrBlScr \
         +a.rParIntLampFlr+a.rNirIntLampFlr+a.rFirIntLampFlr)
 
+    # print("KtFlr", ki[8])
+    # print("capFlr", p.capFlr)
+    # print("hAirFlr", a.hAirFlr)
+    # print("rParSunFlr", a.rParSunFlr)
+    # print("rNirSunFlr", a.rNirSunFlr)
+    # print("rCanFlr", a.rCanFlr)
+    # print("rPipeFlr", a.rPipeFlr)
+    # print("hFlrSo1", a.hFlrSo1)
+    # print("rFlrCovIn", a.rFlrCovIn)
+    # print("rFlrSky", a.rFlrSky)
+    # print("rFlrThScr", a.rFlrThScr)
+    # print("rParLampFlr", a.rParLampFlr)
+    # print("rNirLampFlr", a.rNirLampFlr)
+    # print("rFirLampFlr", a.rFirLampFlr)
+    # print("rFlrBlScr", a.rFlrBlScr)
+    # print("rParIntLampFlr", a.rParIntLampFlr)
+    # print("rNirIntLampFlr", a.rNirIntLampFlr)
+    # print("rFirIntLampFlr", a.rFirIntLampFlr)
+
     # Pipe temperature [�C s^{-1}]
     # % Equation 9 [1], Equation A1 [5], Equation 7.1 [6]
     # setOde(gl, 'tPipe', 1/p.capPipe*(a.hBoilPipe+a.hIndPipe+a.hGeoPipe-a.rPipeSky ...

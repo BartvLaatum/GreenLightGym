@@ -104,30 +104,30 @@ cdef packed struct Parameters:
     char etaShScrCw          # Effect of shadow screen on wind pressure coefficient
     char kShScr              # Shadow screen flux coefficient
 
-    double epsThScrFir        # FIR emission coefficient of the thermal screen
+    double epsThScrFir       # FIR emission coefficient of the thermal screen
     unsigned char rhoThScr   # Density of thermal screen
-    double rhoThScrNir        # NIR reflection coefficient of thermal screen
-    double rhoThScrPar        # PAR reflection coefficient of thermal screen
-    double rhoThScrFir        # FIR reflection coefficient of thermal screen
-    double tauThScrNir        # NIR transmission coefficient of thermal screen
-    double tauThScrPar        # PAR transmission coefficient of thermal screen
-    double tauThScrFir        # FIR transmission coefficient of thermal screen
+    double rhoThScrNir       # NIR reflection coefficient of thermal screen
+    double rhoThScrPar       # PAR reflection coefficient of thermal screen
+    double rhoThScrFir       # FIR reflection coefficient of thermal screen
+    double tauThScrNir       # NIR transmission coefficient of thermal screen
+    double tauThScrPar       # PAR transmission coefficient of thermal screen
+    double tauThScrFir       # FIR transmission coefficient of thermal screen
     short cPThScr            # Specific heat capacity of thermal screen
     double hThScr            # Thickness of thermal screen
     double kThScr            # Thermal screen flux coefficient
 
-    double epsBlScrFir        # FIR emission coefficient of the blackout screen
+    double epsBlScrFir       # FIR emission coefficient of the blackout screen
     unsigned char rhoBlScr   # Density of blackout screen
-    double rhoBlScrNir        # NIR reflection coefficient of blackout screen
-    double rhoBlScrPar        # PAR reflection coefficient of blackout screen
-    double tauBlScrNir        # NIR transmission coefficient of blackout screen
-    double tauBlScrPar        # PAR transmission coefficient of blackout screen
-    double tauBlScrFir        # FIR transmission coefficient of blackout screen
+    double rhoBlScrNir       # NIR reflection coefficient of blackout screen
+    double rhoBlScrPar       # PAR reflection coefficient of blackout screen
+    double tauBlScrNir       # NIR transmission coefficient of blackout screen
+    double tauBlScrPar       # PAR transmission coefficient of blackout screen
+    double tauBlScrFir       # FIR transmission coefficient of blackout screen
     short cPBlScr            # Specific heat capacity of blackout screen
     double hBlScr            # Thickness of blackout screen
     double kBlScr            # Blackout screen flux coefficient
 
-    char epsFlr              # FIR emission coefficient of the floor
+    char epsFlr             # FIR emission coefficient of the floor
     short rhoFlr            # Density of the floor
     float rhoFlrNir         # NIR reflection coefficient of the floor
     double rhoFlrPar        # PAR reflection coefficient of the floor
@@ -179,25 +179,25 @@ cdef packed struct Parameters:
     double mCh2o                # Molar mass of CH2O
     double mCo2                 # Molar mass of CO2
 
-    double parJtoUmolSun     # Conversion factor of sun's PAR from J to umol{photons} J^{-1}
-    char laiMax             # Max leaf area index
-    double sla               # Specific leaf area
-    double rgr               # Relative growth rate
-    double cLeafMax          # Maximum leaf size
+    double parJtoUmolSun        # Conversion factor of sun's PAR from J to umol{photons} J^{-1}
+    char laiMax                 # Max leaf area index
+    double sla                  # Specific leaf area
+    double rgr                  # Relative growth rate
+    double cLeafMax             # Maximum leaf size
 
-    int cFruitMax           # Maximum fruit size
-    double cFruitG           # Fruit growth respiration coefficient
-    double cLeafG            # Leaf growth respiration coefficient
-    double cStemG            # Stem growth respiration coefficient
-    int cRgr              # Regression coefficient in maintenance respiration function
-    char q10m               # Q10 value of temperature effect on maintenance respiration
-    double cFruitM           # Fruit maintenance respiration coefficient
-    double cLeafM            # Leaf maintenance respiration coefficient
-    double cStemM            # Stem maintenance respiration coefficient
+    int cFruitMax               # Maximum fruit size
+    double cFruitG              # Fruit growth respiration coefficient
+    double cLeafG               # Leaf growth respiration coefficient
+    double cStemG               # Stem growth respiration coefficient
+    int cRgr                    # Regression coefficient in maintenance respiration function
+    char q10m                   # Q10 value of temperature effect on maintenance respiration
+    double cFruitM              # Fruit maintenance respiration coefficient
+    double cLeafM               # Leaf maintenance respiration coefficient
+    double cStemM               # Stem maintenance respiration coefficient
     
-    double rgFruit           # Potential fruit growth coefficient
-    double rgLeaf            # Potential leaf growth coefficient
-    double rgStem            # Potential stem growth coefficient
+    double rgFruit              # Potential fruit growth coefficient
+    double rgLeaf               # Potential leaf growth coefficient
+    double rgStem               # Potential stem growth coefficient
 
     short cBufMax           # Maximum capacity of carbohydrate buffer
     short cBufMin           # Minimum capacity of carbohydrate buffer

@@ -10,117 +10,67 @@
 # Import the necessary structs and functions from auxiliaryState.pxd
 from auxiliaryStates cimport AuxiliaryStates, update
 from defineParameters cimport Parameters, initParameters
+from differenceFunction cimport fRK4, fEuler
 from ODE cimport ODE
 from utils cimport satVp
 from libc.stdlib cimport malloc, free
+import cython
 
 import numpy as np
 cimport numpy as cnp
 
 cnp.import_array()
 
-
 cdef class GreenLight:
     cdef Parameters* p
     cdef AuxiliaryStates* a
     cdef double (*d)[7]
-    # cdef double* u[11]
-    cdef double x[27]
+    cdef double* x
     cdef float h
-    cdef char timestep
+    cdef int timestep
+    cdef char nx
+    cdef char nu
+    cdef char nd
 
-    def __cinit__(self, cnp.ndarray[cnp.double_t, ndim=2] weather, float h, char noLamps, char ledLamps, char hpsLamps):
+    def __cinit__(self, cnp.ndarray[cnp.double_t, ndim=2] weather, float h, char nx, char nu, char nd, char noLamps, char ledLamps, char hpsLamps):
         self.p = <Parameters*>malloc(sizeof(Parameters))
         self.a = <AuxiliaryStates*>malloc(sizeof(AuxiliaryStates))
         initParameters(self.p, noLamps, ledLamps, hpsLamps)
+        self.h = h
+        self.nx = nx
+        self.nu = nu
+        self.nd = nd
         self.initWeather(weather)
         self.initStates(self.d[0])
-        self.h = h
         self.timestep = 0
 
     def __dealloc__(self):
         free(self.a)
         free(self.p)
         free(self.d)
+        free(self.x)
 
-    cpdef step(self, char testIndex):
+    def setTimestep(self, int timestep):
+        self.timestep = timestep
+
+    @cython.boundscheck(False) # turn off bounds-checking for entire function
+    @cython.wraparound(False)  # turn off negative index wrapping for entire function
+    cpdef step(self, cnp.ndarray[cnp.double_t, ndim=1] matlabControls):
         """
         Simulate the next time step of the GreenLight model.
         """
-        cdef double[11] u
+        cdef double* u = <double*>malloc(self.nu * sizeof(double))
         cdef char i
         cdef char j
 
         # Compute the control signals from setpoints
-        for i in range(11):
-            u[i] = 0.0
+        for i in range(self.nu):
+            u[i] = matlabControls[i]
 
-        # update auxiliary states
-        self.f(u, testIndex)
-        self.timestep +=1
-
-    cdef f(self, double[11] u, char testIndex):
-        """
-        Difference function that computes the next state.
-        """
-        cdef double* k1
-        cdef double* k2
-        cdef double* k3
-        cdef double* k4
-        cdef char i
-        cdef char j
-        cdef char k
-        cdef char l
-
-        cdef double[27] x2
-        cdef double[27] x3
-        cdef double[27] x4
-
-
-        # update auxiliary states
-        update(self.a, self.p, u, self.x, self.d[self.timestep])
-        k1 = ODE(self.a, self.p, self.x, u, self.d[self.timestep])
-        print("-----------")
-        # for l in range(27):
-        #     print(f"k{l}", k1[l])
-
-
-        for i in range(27):
-            x2[i] = self.x[i] + self.h/2*k1[i]
-    	
-        update(self.a, self.p, u, x2, self.d[self.timestep])
-        k2 = ODE(self.a, self.p, x2, u, self.d[self.timestep])
-
-        for j in range(27):
-            x3[j] = self.x[j] + self.h/2*k2[j]
-
-        update(self.a, self.p, u, x3, self.d[self.timestep])
-        k3 = ODE(self.a, self.p, x3, u, self.d[self.timestep])
-
-        for k in range(27):
-            x4[k] = self.x[k] + self.h*k3[k]
-
-        update(self.a, self.p, u, x4, self.d[self.timestep])
-        k4 = ODE(self.a, self.p, x4, u, self.d[self.timestep])
-
-        print("xi", self.x[testIndex], x2[testIndex], x3[testIndex], x4[testIndex])
-        print("deltaX0:", k1[testIndex], k2[testIndex], k3[testIndex], k4[testIndex])
-
-        # Runge-Kutta 4th order method
-        for l in range(27):
-            self.x[l] += self.h/6 * (k1[l] + 2*k2[l] + 2*k3[l] + k4[l])
-        self.x[testIndex] += self.h/6 * (k1[testIndex] + 2*k2[testIndex] + 2*k3[testIndex] + k4[testIndex])
-
-        # Forward Euler
-        # for l in range(27):
-        #     self.x[l] += self.h * (k1[l])
-
-        print(self.x[0])
-
-        free(k1)
-        free(k2)
-        free(k3)
-        free(k4)
+        # update auxiliary states multiple times.
+        self.x = fRK4(self.a, self.p, u, self.x, self.d[self.timestep], self.h, self.nx)
+        self.timestep += 1
+        free(u)
 
     cdef void initWeather(self, cnp.ndarray[cnp.double_t, ndim=2] weather):
         """
@@ -133,10 +83,11 @@ cdef class GreenLight:
         cdef int i, j
         cdef cnp.ndarray[cnp.double_t, ndim=2] np_weather = np.asarray(weather, dtype=np.double)
         cdef int n = np_weather.shape[0]
+        cdef char l = self.nd
         self.d = <double(*)[7]>malloc(n * sizeof(double[7]))
 
         for i in range(n):
-            for j in range(7):
+            for j in range(l):
                 self.d[i][j] = np_weather[i, j]
 
         # for i in range(105121):
@@ -160,7 +111,7 @@ cdef class GreenLight:
             # if i != testIndex:
             self.x[i] = np_states[i]
 
-    cdef void initStates(self, double[7] d0):
+    cdef void initStates(self, double* d0):
         """
         CO2 concentration is equal to outdoor CO2	
         x[0]: co2Air CO2 concentration in main air compartment [mg m^{-3}]
@@ -195,6 +146,7 @@ cdef class GreenLight:
         # self.x = <double(*)[26]>malloc(sizeof(double))
         # Air and vapor pressure are assumed to start at the night setpoints
         # x.co2Air.val = d.co2Out.val(1,2)
+        self.x = <double*>malloc(self.nx * sizeof(double))
         self.x[0] = d0[3] # co2Air
         
         # x.co2Top.val = x.co2Air.val
@@ -273,18 +225,8 @@ cdef class GreenLight:
         self.x[24] = 0.25*6240
         self.x[25] = 0.05*6240
 
-        # # x.tCanSum.val = 0
+        # x.tCanSum.val = 0
         self.x[26] = 0
-
-
-        # the time variable is taken from m.t
-        # x.time.val = datenum(getDefStr(gl.t))      
-        # Time - start with the datenum of when the simulation starts
-        # x.time.val = datenum(gl.t.label)
-        
-        ##    
-        # gl.x = x
-
 
     def getWeatherArray(self):
         """
