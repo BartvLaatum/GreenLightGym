@@ -1,11 +1,11 @@
-# """
-# TODO: We will create a cython class that contains the GreenLight model data structure and functions.
-# This class will be used to create a cython module of GreenLight that can be imported into python environment.
+"""
+TODO: We will create a cython class that contains the GreenLight model data structure and functions.
+This class will be used to create a cython module of GreenLight that can be imported into python environment.
 
-# The python environment will send setpoints as actions to the cython module.
-# Next, cython will compute the control signals, and simulate the new state of the greenhouse.
-# Finally, the new state/measurement/disturbances will be returned to the python environment.
-# """
+The python environment will send setpoints as actions to the cython module.
+Next, cython will compute the control signals, and simulate the new state of the greenhouse.
+Finally, the new state/measurement/disturbances will be returned to the python environment.
+"""
 
 # Import the necessary structs and functions from auxiliaryState.pxd
 from auxiliaryStates cimport AuxiliaryStates, update
@@ -22,20 +22,23 @@ cimport numpy as cnp
 cnp.import_array()
 
 cdef class GreenLight:
-    cdef Parameters* p
-    cdef AuxiliaryStates* a
-    cdef double (*d)[7]
-    cdef double* x
-    cdef float h
-    cdef int timestep
-    cdef char nx
-    cdef char nu
-    cdef char nd
+    cdef Parameters* p      # pointer to Parameters struct
+    cdef AuxiliaryStates* a # pointer to AuxiliaryStates struct
+    cdef double (*d)[7]     # pointer to weather data
+    cdef double* x          # pointer to states
+    cdef char Np            # number of future weather prediction to use
+    cdef float h            # step size
+    cdef int timestep       # current timestep
+    cdef char nx            # number of states
+    cdef char nu            # number of control signals
+    cdef char nd            # number of disturbances
+    cdef int solverSteps    # number of steps to take by solver between time interval for observing the env
 
-    def __cinit__(self, cnp.ndarray[cnp.double_t, ndim=2] weather, float h, char nx, char nu, char nd, char noLamps, char ledLamps, char hpsLamps):
+    def __cinit__(self, cnp.ndarray[cnp.double_t, ndim=2] weather, char Np, float h, char nx, char nu, char nd, char noLamps, char ledLamps, char hpsLamps, int solverSteps):
         self.p = <Parameters*>malloc(sizeof(Parameters))
         self.a = <AuxiliaryStates*>malloc(sizeof(AuxiliaryStates))
         initParameters(self.p, noLamps, ledLamps, hpsLamps)
+        self.Np = Np
         self.h = h
         self.nx = nx
         self.nu = nu
@@ -43,6 +46,7 @@ cdef class GreenLight:
         self.initWeather(weather)
         self.initStates(self.d[0])
         self.timestep = 0
+        self.solverSteps = solverSteps
 
     def __dealloc__(self):
         free(self.a)
@@ -52,6 +56,11 @@ cdef class GreenLight:
 
     def setTimestep(self, int timestep):
         self.timestep = timestep
+
+
+    def reset(self):
+        self.timestep = 0
+        self.initStates(self.d[0])
 
     @cython.boundscheck(False) # turn off bounds-checking for entire function
     @cython.wraparound(False)  # turn off negative index wrapping for entire function
@@ -63,12 +72,13 @@ cdef class GreenLight:
         cdef char i
         cdef char j
 
-        # Compute the control signals from setpoints
+        # convert control numpy array control inputs into c-type array
         for i in range(self.nu):
             u[i] = matlabControls[i]
 
         # update auxiliary states multiple times.
-        self.x = fRK4(self.a, self.p, u, self.x, self.d[self.timestep], self.h, self.nx)
+        for j in range(self.solverSteps):
+            self.x = fRK4(self.a, self.p, u, self.x, self.d[self.timestep * self.solverSteps + j], self.h, self.nx)
         self.timestep += 1
         free(u)
 
@@ -89,10 +99,6 @@ cdef class GreenLight:
         for i in range(n):
             for j in range(l):
                 self.d[i][j] = np_weather[i, j]
-
-        # for i in range(105121):
-        #     for j in range(9):
-        #         self.d[i][j] = weather[i][j]
 
     cpdef void setStates(self, cnp.ndarray[cnp.double_t, ndim=1] states, char testIndex):
         """
@@ -148,13 +154,13 @@ cdef class GreenLight:
         # x.co2Air.val = d.co2Out.val(1,2)
         self.x = <double*>malloc(self.nx * sizeof(double))
         self.x[0] = d0[3] # co2Air
-        
+
         # x.co2Top.val = x.co2Air.val
         self.x[1] = self.x[0] # co2Top
-        
+
         # x.tAir.val = p.tSpNight.val
         self.x[2] = self.p.tSpNight # tAir
-        
+
         # x.tTop.val = x.tAir.val
         self.x[3] = self.x[2] # tTop
 
@@ -175,10 +181,10 @@ cdef class GreenLight:
 
         # x.tPipe.val = x.tAir.val
         self.x[9] = self.x[2]
-        
+
         # x.tSo1.val = x.tAir.val
         self.x[10] = self.x[2]
-        
+
         # x.tSo2.val = 1/4*(3*x.tAir.val+d.tSoOut.val(1,2))
         self.x[11] = 1/4*(3*self.x[2] + d0[6])
 
@@ -217,18 +223,14 @@ cdef class GreenLight:
         self.x[22] = 0
 
         # # start with 3.12 plants/m2, assume they are each 2 g = 6240 mg/m2.
-        # x.cLeaf.val = 0.7*6240; # 70# in leafs
-        # x.cStem.val = 0.25*6240; # 25# in stems
-        # x.cFruit.val = 0.05*6240; # 5# in fruits we only harvest if this is > 300K so lets start with fully grown plants instead.
-
-        self.x[23] = 0.7*6240
-        self.x[24] = 0.25*6240
-        self.x[25] = 0.05*6240
+        self.x[23] = 0.7*6240   # 70% in leafs
+        self.x[24] = 0.25*6240  # 25% in stems
+        self.x[25] = 0.05*62400 # 5% in fruits we only harvest if this is > 300K
 
         # x.tCanSum.val = 0
         self.x[26] = 0
 
-    def getWeatherArray(self):
+    cpdef getWeatherArray(self):
         """
         Function that copies weather data from the cython module to a numpy array.
         Such that we can acces the weather data in the python environment.
@@ -237,13 +239,13 @@ cdef class GreenLight:
         """
         cdef int n = 105121
         cdef int m = 7
-        cdef  cnp.ndarray[cnp.double_t, ndim=2] np_d = np.zeros((n, m), dtype=np.double)
+        cdef  cnp.ndarray[cnp.double_t, ndim=1] np_d = np.zeros((m), dtype=np.double)
         for i in range(n):
             for j in range(m):
                 np_d[i, j] = self.d[i][j]
         return np_d
 
-    def getStatesArray(self):
+    cpdef getStatesArray(self):
         """
         Function that copies the states from the cython module to a numpy array.
         Such that we can acces the states in the python environment.
@@ -254,45 +256,17 @@ cdef class GreenLight:
             np_x[i] = self.x[i]
         return np_x
 
-
-    property alfaLeafAir:
+    property rParGhSun:
+        # function to get the amount of PAR radiation above the canopy from the sun
         def __get__(self):
-            return self.p.alfaLeafAir
+            return self.a.rParGhSun
+    
+    property rParGhLamp:
+        # function to get the amount of PAR radiation above the canopy from the lamps
+        def __get__(self):
+            return self.a.rParGhLamp
 
-# cpdef compute_auxiliary_state():
-    # GL = GreenLight()
-    # return GL
-
-    # # Create an instance of the AuxiliaryState struct
-    # cdef Parameters p
-    # cdef AuxiliaryStates a
-
-    # cdef char nu = 11
-    # cdef char nx = 27
-    # cdef char nd = 8
-    # cdef char i
-    # cdef char j
-    # cdef char k
-
-    # cdef float u[6] # cannot use nu here because that is not a constant, could use dynamic memory allocation
-    # # cdef float* u = <float*>malloc(nu*sizeof(float)) # later on this would be freed via free(u)
-    # cdef float x[27] # cannot use nx due to similar reason as above
-    # cdef float d[8] # cannot use nd due to similar reason as above
-
-    # for i in range(nu):
-    #     u[i] = 1.0
-
-    # for j in range(nx):
-    #     x[j] = 1.0
-
-    # for k in range(nd):
-    #     d[k] = weather[k]
-
-    # # Initialize the Parameters struct
-    # initParameters(&p)
-
-    # print("begin")
-    # # Compute the auxiliary states
-    # update(&a, &p, u, x, d)
-    # print(a.tauShScrPar)
-    # print("heat capacity cover:", a.capCov)
+    property timestep:
+        # function to get the current timestep
+        def __get__(self):
+            return self.timestep

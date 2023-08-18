@@ -792,7 +792,7 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
     # Analogous to Equation 7.13 [7]
     a.fIntLampCanNir = 1 - p.fIntLampDown * exp(-p.kIntNir * p.vIntLampPos * a.lai) + \
         (p.fIntLampDown - 1) * exp(-p.kIntNir * (1 - p.vIntLampPos) * a.lai)
-    
+
     # PAR from the interlights directly absorbed by the canopy [W m^{-2}]
     # Equation 7.16 [7]
     a.rParIntLampCanDown = a.rParGhIntLamp * a.fIntLampCanPar * (1 - p.rhoCanPar)
@@ -1350,12 +1350,13 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
     #######################
     #### Control Rules ####
     #######################
+    # a.timeOfDay =  24*(x.time - floor(x.time)) # hours since midnight time of day [h]
+    # a.dayOfYear = mod(x.time, 365.2425)
+
     # CO2 concentration in main compartment [ppm]
     # addAux(gl, 'co2InPpm', co2dens2ppm(x.tAir,1e-6*x.co2Air)) 
     a.co2InPpm = co2dens2ppm(x[2], 1e-6*x[0])
 
-    # a.timeOfDay =  24*(x.time - floor(x.time)) # hours since midnight time of day [h]
-    # a.dayOfYear = mod(x.time, 365.2425)
 
     ###################################
     #### Convection and conduction ####
