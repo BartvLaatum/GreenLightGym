@@ -120,5 +120,8 @@ cdef inline double* ODE(AuxiliaryStates* a, Parameters* p, double* x, double* u,
     # Crop development stage [�C day s^{-1}]
     ki[26] = 1/86400*x[4]
 
+    # time in days since 00-00-0000
+    ki[27] = 1/86400
+
     return ki
 

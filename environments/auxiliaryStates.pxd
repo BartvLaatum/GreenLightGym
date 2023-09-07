@@ -217,6 +217,7 @@ cdef packed struct AuxiliaryStates:
     #### Control rules ####
     #######################
     double co2InPpm
+    double rhIn
 
     ###################################
     #### Convection and Conduction ####
@@ -329,6 +330,7 @@ cdef packed struct AuxiliaryStates:
     double mcOrgAir
     double mcLeafHar
     double mcFruitHar
+    double mcFruitHarSum
 
     ####################
     #### Co2 Fluxes ####
@@ -1350,12 +1352,11 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
     #######################
     #### Control Rules ####
     #######################
-    # a.timeOfDay =  24*(x.time - floor(x.time)) # hours since midnight time of day [h]
-    # a.dayOfYear = mod(x.time, 365.2425)
-
     # CO2 concentration in main compartment [ppm]
-    # addAux(gl, 'co2InPpm', co2dens2ppm(x.tAir,1e-6*x.co2Air)) 
     a.co2InPpm = co2dens2ppm(x[2], 1e-6*x[0])
+
+    # Relative humidity [%]
+    a.rhIn = 100*x[15]/satVp(x[2])
 
 
     ###################################
@@ -1789,6 +1790,10 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
     # Equation A45 [5], Equation 7.45 [7]
     # addAux(gl, 'mcFruitHar', smoothHar(x.cFruit, p.cFruitMax, 1e4, 5e4))
     a.mcFruitHar = smoothHar(x[25], p.cFruitMax, 1e4, 5e4)
+    # print("", mcFruitHar)
+
+    # comptures sum of the harvest fruit over the past timestep
+    a.mcFruitHarSum += a.mcFruitHar
 
     # Net crop assimilation [mg{CO2} m^{-2} s^{-1}]
     # It is assumed that for every mol of CH2O in net assimilation, a mol

@@ -1,7 +1,9 @@
 from defineParameters cimport Parameters
 from auxiliaryStates cimport AuxiliaryStates, update
+from computeControls cimport controlSignal
 from ODE cimport ODE
 from libc.stdlib cimport malloc, free
+from libc.math cimport isnan
 
 cdef inline double* fRK4(AuxiliaryStates* a, Parameters* p, double* u, double* x, double* d, float h, char nx):
     """
@@ -15,13 +17,12 @@ cdef inline double* fRK4(AuxiliaryStates* a, Parameters* p, double* u, double* x
     cdef double* x3 = <double*>malloc(nx * sizeof(double))
     cdef double* x4 = <double*>malloc(nx * sizeof(double))
 
+    cdef double xtemp
+    cdef float newh
     cdef char i
     cdef char j
     cdef char k
     cdef char l
-    # cdef double[27] x2
-    # cdef double[27] x3
-    # cdef double[27] x4
 
     # update auxiliary states
     update(a, p, u, x, d)
