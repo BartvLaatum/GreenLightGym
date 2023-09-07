@@ -495,13 +495,16 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
     #### Shading Screen and Permanent shading screen ####
     ##################################################### 
 
-    # PAR transmission coefficient of the shadow screen layer [-] == 1
+    # PAR transmission coefficient of the shadow screen layer [-]
+    #  == 1
     a.tauShScrPar = 1-u[8]*(1-p.tauShScrPar)
 
-    # PAR transmission coefficient of the semi-permanent shadow screen layer [-] == 1
+    # PAR transmission coefficient of the semi-permanent shadow screen layer [-] 
+    # == 1
     a.tauShScrPerPar =   1-u[9]*(1-p.tauShScrPerPar)
 
-    # PAR reflection coefficient of the shadow screen layer [-] == 0 
+    # PAR reflection coefficient of the shadow screen layer [-]
+    #  == 0 
     a.rhoShScrPar = u[8] * p.rhoShScrPar
 
     # PAR reflection coefficient of the semi-permanent shadow screen layer [-]
@@ -509,70 +512,74 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
     a.rhoShScrPerPar = u[9] * p.rhoShScrPerPar
 
     # PAR transmission coefficient of the shadow screen and semi permanent shadow screen layer [-]
-<<<<<<< HEAD
-    # Equation 16 [1] == 1
-    a.tauShScrShScrPerPar = tau12(a.tauShScrPar, a.tauShScrPar, a.rhoShScrPar, a.rhoShScrPar, a.rhoShScrPar, a.rhoShScrPar)
-
-    # PAR reflection coefficient of the shadow screen and semi permanent shadow screen layer towards the top [-]
-    # Equation 17 [1] ==0
-    a.rhoShScrShScrPerParUp = rhoUp(a.tauShScrPar, a.tauShScrPar, a.rhoShScrPar, a.rhoShScrPar, a.rhoShScrPar, a.rhoShScrPar)
-
-    # PAR reflection coefficient of the shadow screen and semi permanent shadow screen layer towards the bottom [-]
-    # Equation 17 [1] ==0
-    a.rhoShScrShScrPerParDn = rhoDn(a.tauShScrPar, a.tauShScrPar, a.rhoShScrPar, a.rhoShScrPar, a.rhoShScrPar, a.rhoShScrPar)
-=======
     # Equation 16 [1]
+    # == 1
     a.tauShScrShScrPerPar = tau12(a.tauShScrPar, a.tauShScrPar, a.rhoShScrPar, a.rhoShScrPar)
 
     # PAR reflection coefficient of the shadow screen and semi permanent shadow screen layer towards the top [-]
     # Equation 17 [1]
+    # == 0
     a.rhoShScrShScrPerParUp = rhoUp(a.tauShScrPar, a.rhoShScrPar, a.rhoShScrPar, a.rhoShScrPar)
 
     # PAR reflection coefficient of the shadow screen and semi permanent shadow screen layer towards the bottom [-]
     # Equation 17 [1]
+    # == 0
     a.rhoShScrShScrPerParDn = rhoDn(a.tauShScrPar, a.rhoShScrPar, a.rhoShScrPar, a.rhoShScrPar)
->>>>>>> ea577b362fb23bbae8b13f16e371b2d2785224ba
 
     # NIR transmission coefficient of the shadow screen layer [-]
+    # == 1
     a.tauShScrNir = 1-u[8]*(1-p.tauShScrNir)
 
     # NIR transmission coefficient of the semi-permanent shadow screen layer [-]
+    # == 1
     a.tauShScrPerNir = 1-u[9]*(1-p.tauShScrPerNir)
 
     # NIR reflection coefficient of the shadow screen layer [-]
+    # == 0
     a.rhoShScrNir = u[8]*p.rhoShScrNir
 
     # NIR reflection coefficient of the semi-permanent shadow screen layer [-]
+    # == 0
     a.rhoShScrPerNir = u[9]*p.rhoShScrPerNir
 
     # NIR transmission coefficient of the shadow screen and semi permanent shadow screen layer [-]
+    # == 1
     a.tauShScrShScrPerNir = tau12(a.tauShScrNir, a.tauShScrPerNir, a.rhoShScrNir, a.rhoShScrPerNir)
 
     # NIR reflection coefficient of the shadow screen and semi permanent shadow screen layer towards the top [-]
+    # == 0
     a.rhoShScrShScrPerNirUp = rhoUp(a.tauShScrNir, a.rhoShScrNir, a.rhoShScrNir, a.rhoShScrPerNir)
 
     # NIR reflection coefficient of the shadow screen and semi permanent shadow screen layer towards the bottom [-]
+    # == 0
     a.rhoShScrShScrPerNirDn = rhoDn(a.tauShScrPerNir, a.rhoShScrNir, a.rhoShScrPerNir, a.rhoShScrPerNir)
 
     # FIR  transmission coefficient of the shadow screen layer [-]
+    # == 1
     a.tauShScrFir = 1-u[8]*(1-p.tauShScrFir)
 
     # FIR transmission coefficient of the semi-permanent shadow screen layer [-]
+    # == 1
     a.tauShScrPerFir = 1-u[9]*(1-p.tauShScrPerFir)
 
     # FIR reflection coefficient of the shadow screen layer [-]
+    # == 0
     a.rhoShScrFir = u[8]*p.rhoShScrFir
     
     # FIR reflection coefficient of the semi-permanent shadow screen layer [-]
+    # == 0
     a.rhoShScrPerFir = u[9]*p.rhoShScrPerFir
         
     # FIR transmission coefficient of the shadow screen and semi permanent shadow screen layer [-]
+    # == 1
     a.tauShScrShScrPerFir = tau12(a.tauShScrFir, a.tauShScrPerFir, a.rhoShScrFir, a.rhoShScrPerFir)
     
     # FIR reflection coefficient of the shadow screen and semi permanent shadow screen layer towards the top [-]
+    # == 0
     a.rhoShScrShScrPerFirUp = rhoUp(a.tauShScrFir, a.rhoShScrFir, a.rhoShScrFir, a.rhoShScrPerFir)
     
     # FIR reflection coefficient of the shadow screen and semi permanent shadow screen layer towards the bottom [-]
+    # == 0
     a.rhoShScrShScrPerFirDn = rhoDn(a.tauShScrPerFir, a.rhoShScrFir, a.rhoShScrPerFir, a.rhoShScrPerFir)
 
     #################################
