@@ -495,28 +495,29 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
     #### Shading Screen and Permanent shading screen ####
     ##################################################### 
 
-    # PAR transmission coefficient of the shadow screen layer [-]
+    # PAR transmission coefficient of the shadow screen layer [-] == 1
     a.tauShScrPar = 1-u[8]*(1-p.tauShScrPar)
 
-    # PAR transmission coefficient of the semi-permanent shadow screen layer [-]
+    # PAR transmission coefficient of the semi-permanent shadow screen layer [-] == 1
     a.tauShScrPerPar =   1-u[9]*(1-p.tauShScrPerPar)
 
-    # PAR reflection coefficient of the shadow screen layer [-]
+    # PAR reflection coefficient of the shadow screen layer [-] == 0 
     a.rhoShScrPar = u[8] * p.rhoShScrPar
 
     # PAR reflection coefficient of the semi-permanent shadow screen layer [-]
+    # ==0
     a.rhoShScrPerPar = u[9] * p.rhoShScrPerPar
 
     # PAR transmission coefficient of the shadow screen and semi permanent shadow screen layer [-]
-    # Equation 16 [1]
+    # Equation 16 [1] == 1
     a.tauShScrShScrPerPar = tau12(a.tauShScrPar, a.tauShScrPar, a.rhoShScrPar, a.rhoShScrPar, a.rhoShScrPar, a.rhoShScrPar)
 
     # PAR reflection coefficient of the shadow screen and semi permanent shadow screen layer towards the top [-]
-    # Equation 17 [1]
+    # Equation 17 [1] ==0
     a.rhoShScrShScrPerParUp = rhoUp(a.tauShScrPar, a.tauShScrPar, a.rhoShScrPar, a.rhoShScrPar, a.rhoShScrPar, a.rhoShScrPar)
 
     # PAR reflection coefficient of the shadow screen and semi permanent shadow screen layer towards the bottom [-]
-    # Equation 17 [1]
+    # Equation 17 [1] ==0
     a.rhoShScrShScrPerParDn = rhoDn(a.tauShScrPar, a.tauShScrPar, a.rhoShScrPar, a.rhoShScrPar, a.rhoShScrPar, a.rhoShScrPar)
 
     # NIR transmission coefficient of the shadow screen layer [-]
@@ -1830,21 +1831,9 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
 
     # CO2 injection [mg m^{-2} s^{-1}]
     # Equation 76 [1]
-    # addAux(gl, 'mcExtAir', u.extCo2*p.phiExtCo2/p.aFlr)
     a.mcExtAir = u[1] * p.phiExtCo2 / p.aFlr
 
     ## Objects not currently included in the model
-    # addAux(gl, 'mcBlowAir', DynamicElement('0',0))
-    # addAux(gl, 'mcPadAir', DynamicElement('0',0))
-    # addAux(gl, 'hPadAir', DynamicElement('0',0))
-    # addAux(gl, 'hPasAir', DynamicElement('0',0))
-    # addAux(gl, 'hBlowAir', DynamicElement('0',0))
-    # addAux(gl, 'hAirPadOut', DynamicElement('0',0))
-    # addAux(gl, 'hAirOutPad', DynamicElement('0',0))
-    # addAux(gl, 'lAirFog', DynamicElement('0',0))
-    # addAux(gl, 'hIndPipe', DynamicElement('0',0))
-    # addAux(gl, 'hGeoPipe', DynamicElement('0',0))
-
     a.mcBlowAir = 0
     a.mcPadAir = 0
     a.hPadAir = 0
