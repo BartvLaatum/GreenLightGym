@@ -16,10 +16,11 @@ if __name__ == "__main__":
     # argparse stepsize and euler
     parser = argparse.ArgumentParser(description='Run GreenLight in cython.')
     parser.add_argument('--stepsize', type=str, default="60s", help='Stepsize of the simulation')
+    parser.add_argument('--date', type=str, default="1Januari", help='Stepsize of the simulation')
     parser.add_argument('--euler', action="store_true", help='Euler integration, if not passed than RK4 is used.')
     args = parser.parse_args()
 
-    datapath = f"data/matlab/{args.stepsize}StepSize"
+    datapath = f"data/matlab/{args.date}/{args.stepsize}StepSize"
 
     # load weather csv file
     weatherDataMat = pd.read_csv(datapath + "Weather.csv", sep=',', names=['iGlob', 'tOut', 'vpOut', 'co2Out', 'wind', 'tSky', 'tSoOut', 'radSum'])
@@ -54,7 +55,7 @@ if __name__ == "__main__":
     cythonStates[0, :] = GL.getStatesArray()
     tstart = t()
 
-    for i in range(start, int(N/100)):
+    for i in range(start, N):
 
         # var time interval:
         controls = controlDataMat.iloc[i, :].values
@@ -62,14 +63,7 @@ if __name__ == "__main__":
         GL.step(controls)
         cythonStates[i+1, :] += GL.getStatesArray()
 
-    cythonStates = pd.DataFrame(data= cythonStates, columns=stateNames[1:])
+    cythonStates = pd.DataFrame(data=cythonStates, columns=stateNames[1:])
     cythonStates["Time"] = time
     times += [t()-tstart]
     print(f"Average time elapsed: {np.mean(times)}, std: {np.std(times)}")
-
-    # if args.euler:
-    #     print("Euler")
-    #     cythonStates.to_csv(f"data/cython/{args.stepsize}StepSizeStatesEuler.csv", index=False)
-    # else:
-    #     print("RK4"	)
-    #     cythonStates.to_csv(f"data/cython/{args.stepsize}StepSizeStatesRK4.csv", index=False)
