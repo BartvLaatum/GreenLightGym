@@ -17,12 +17,10 @@ cdef inline double* fRK4(AuxiliaryStates* a, Parameters* p, double* u, double* x
     cdef double* x3 = <double*>malloc(nx * sizeof(double))
     cdef double* x4 = <double*>malloc(nx * sizeof(double))
 
-    cdef double xtemp
-    cdef float newh
-    cdef char i
-    cdef char j
-    cdef char k
-    cdef char l
+    cdef unsigned char i
+    cdef unsigned char j
+    cdef unsigned char k
+    cdef unsigned char l
 
     # update auxiliary states
     update(a, p, u, x, d)
@@ -68,6 +66,7 @@ cdef inline double* fEuler(AuxiliaryStates* a, Parameters* p, double* u, double*
     Difference function that computes the next state.
     """
     cdef double* k1
+    cdef unsigned char l
 
     # update auxiliary states
     update(a, p, u, x, d)

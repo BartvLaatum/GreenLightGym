@@ -367,7 +367,7 @@ cdef packed struct AuxiliaryStates:
     char lAirMech
     char hBufHotPipe
 
-cdef inline double tau12(double tau1, double tau2, double rho1Up, double rho1Dn, double rho2Up, double rho2Dn):
+cdef inline double tau12(double tau1, double tau2, double rho1Dn, double rho2Up):
     """
     Transmission coefficient of a double layer [-]
     Equation 14 [1], Equation A4 [5]
@@ -509,7 +509,7 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
 
     # PAR transmission coefficient of the shadow screen and semi permanent shadow screen layer [-]
     # Equation 16 [1]
-    a.tauShScrShScrPerPar = tau12(a.tauShScrPar, a.tauShScrPar, a.rhoShScrPar, a.rhoShScrPar, a.rhoShScrPar, a.rhoShScrPar)
+    a.tauShScrShScrPerPar = tau12(a.tauShScrPar, a.tauShScrPar, a.rhoShScrPar, a.rhoShScrPar)
 
     # PAR reflection coefficient of the shadow screen and semi permanent shadow screen layer towards the top [-]
     # Equation 17 [1]
@@ -532,7 +532,7 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
     a.rhoShScrPerNir = u[9]*p.rhoShScrPerNir
 
     # NIR transmission coefficient of the shadow screen and semi permanent shadow screen layer [-]
-    a.tauShScrShScrPerNir = tau12(a.tauShScrNir, a.tauShScrPerNir, a.rhoShScrNir, a.rhoShScrNir, a.rhoShScrPerNir, a.rhoShScrPerNir)
+    a.tauShScrShScrPerNir = tau12(a.tauShScrNir, a.tauShScrPerNir, a.rhoShScrNir, a.rhoShScrPerNir)
 
     # NIR reflection coefficient of the shadow screen and semi permanent shadow screen layer towards the top [-]
     a.rhoShScrShScrPerNirUp = rhoUp(a.tauShScrNir, a.tauShScrPerNir, a.rhoShScrNir, a.rhoShScrNir, a.rhoShScrPerNir, a.rhoShScrPerNir)
@@ -553,7 +553,7 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
     a.rhoShScrPerFir = u[9]*p.rhoShScrPerFir
         
     # FIR transmission coefficient of the shadow screen and semi permanent shadow screen layer [-]
-    a.tauShScrShScrPerFir = tau12(a.tauShScrFir, a.tauShScrPerFir, a.rhoShScrFir, a.rhoShScrFir, a.rhoShScrPerFir, a.rhoShScrPerFir)
+    a.tauShScrShScrPerFir = tau12(a.tauShScrFir, a.tauShScrPerFir, a.rhoShScrFir, a.rhoShScrPerFir)
     
     # FIR reflection coefficient of the shadow screen and semi permanent shadow screen layer towards the top [-]
     a.rhoShScrShScrPerFirUp = rhoUp(a.tauShScrFir, a.tauShScrPerFir, a.rhoShScrFir, a.rhoShScrFir, a.rhoShScrPerFir, a.rhoShScrPerFir)
@@ -572,7 +572,7 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
     # PAR reflection coefficient of the thermal screen [-]
     a.rhoThScrPar = u[2]*(p.rhoThScrPar)
     # PAR transmission coefficient of the thermal screen and roof [-]
-    a.tauCovThScrPar = tau12(p.tauRfPar, a.tauThScrPar, p.rhoRfPar, p.rhoRfPar, a.rhoThScrPar, a.rhoThScrPar)
+    a.tauCovThScrPar = tau12(p.tauRfPar, a.tauThScrPar, p.rhoRfPar, a.rhoThScrPar)
 
     # PAR reflection coefficient of the thermal screen and roof towards the top [-]
     a.rhoCovThScrParUp = rhoUp(p.tauRfPar, a.tauThScrPar, p.rhoRfPar, p.rhoRfPar, a.rhoThScrPar, a.rhoThScrPar)
@@ -592,7 +592,7 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
     a.rhoThScrNir = u[2]*p.rhoThScrNir
 
     # NIR transmission coefficient of the thermal screen and roof [-]
-    a.tauCovThScrNir = tau12(p.tauRfNir, a.tauThScrNir, p.rhoRfNir, p.rhoRfNir, a.rhoThScrNir, a.rhoThScrNir)
+    a.tauCovThScrNir = tau12(p.tauRfNir, a.tauThScrNir, p.rhoRfNir, a.rhoThScrNir)
 
     # NIR reflection coefficient of the thermal screen and roof towards the top [-]
     a.rhoCovThScrNirUp = rhoUp(p.tauRfNir, a.tauThScrNir, p.rhoRfNir, p.rhoRfNir, a.rhoThScrNir, a.rhoThScrNir)
@@ -605,7 +605,7 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
     #############################################
 
     # Vanthoor PAR transmission coefficient of the cover [-]
-    a.tauCovParOld = tau12(a.tauShScrShScrPerPar, a.tauCovThScrPar, a.rhoShScrShScrPerParUp, a.rhoShScrShScrPerParDn, a.rhoCovThScrParUp, a.rhoCovThScrParDn)
+    a.tauCovParOld = tau12(a.tauShScrShScrPerPar, a.tauCovThScrPar, a.rhoShScrShScrPerParDn, a.rhoCovThScrParUp)
 
     # Vanthoor PAR reflection coefficient of the cover towards the top [-]
     a.rhoCovParOldUp = rhoUp(a.tauShScrShScrPerPar, a.tauCovThScrPar, a.rhoShScrShScrPerParUp, a.rhoShScrShScrPerParDn, a.rhoCovThScrParUp, a.rhoCovThScrParDn)
@@ -614,7 +614,7 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
     a.rhoCovParOldDn = rhoDn(a.tauShScrShScrPerPar, a.tauCovThScrPar, a.rhoShScrShScrPerParUp, a.rhoShScrShScrPerParDn, a.rhoCovThScrParUp, a.rhoCovThScrParDn)
 
     # Vanthoor NIR transmission coefficient of the cover [-]
-    a.tauCovNirOld = tau12(a.tauShScrShScrPerNir, a.tauCovThScrNir, a.rhoShScrShScrPerNirUp, a.rhoShScrShScrPerNirDn, a.rhoCovThScrNirUp, a.rhoCovThScrNirDn)
+    a.tauCovNirOld = tau12(a.tauShScrShScrPerNir, a.tauCovThScrNir, a.rhoShScrShScrPerNirDn, a.rhoCovThScrNirUp)
 
     # Vanthoor NIR reflection coefficient of the cover towards the top [-]
     a.rhoCovNirOldUp = rhoUp(a.tauShScrShScrPerNir, a.tauCovThScrNir, a.rhoShScrShScrPerNirUp, a.rhoShScrShScrPerNirDn, a.rhoCovThScrNirUp, a.rhoCovThScrNirDn)
@@ -634,7 +634,7 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
 
     # PAR transmission coefficient of the old cover and blackout screen [-]
 	# Equation A9 [5]
-    a.tauCovBlScrPar = tau12(a.tauCovParOld, a.tauBlScrPar, a.rhoCovParOldUp, a.rhoCovParOldDn, a.rhoBlScrPar, a.rhoBlScrPar)
+    a.tauCovBlScrPar = tau12(a.tauCovParOld, a.tauBlScrPar, a.rhoCovParOldDn, a.rhoBlScrPar)
 
     # PAR up reflection coefficient of the old cover and blackout screen [-]
 	# Equation A10 [5]
@@ -651,7 +651,7 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
     a.rhoBlScrNir = u[7]*p.rhoBlScrNir
     
     # NIR transmission coefficient of the old cover and blackout screen [-]
-    a.tauCovBlScrNir = tau12(a.tauCovNirOld, a.tauBlScrNir, a.rhoCovNirOldUp, a.rhoCovNirOldDn, a.rhoBlScrNir, a.rhoBlScrNir)
+    a.tauCovBlScrNir = tau12(a.tauCovNirOld, a.tauBlScrNir, a.rhoCovNirOldDn, a.rhoBlScrNir)
 
     # NIR up reflection coefficient of the old cover and blackout screen [-]
     a.rhoCovBlScrNirUp = rhoUp(a.tauCovNirOld, a.tauBlScrNir, a.rhoCovNirOldUp, a.rhoCovNirOldDn, a.rhoBlScrNir, a.rhoBlScrNir)
@@ -665,20 +665,20 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
 
     # PAR transmission coefficient of the cover [-]
     # Equation A12 [5]
-    a.tauCovPar = tau12(a.tauCovBlScrPar, p.tauLampPar, a.rhoCovBlScrParUp, a.rhoCovBlScrParDn, p.rhoLampPar, p.rhoLampPar)
+    a.tauCovPar = tau12(a.tauCovBlScrPar, p.tauLampPar, a.rhoCovBlScrParDn, p.rhoLampPar)
 
     # PAR reflection coefficient of the cover [-]
 	# Equation A13 [5]
     a.rhoCovPar = rhoUp(a.tauCovBlScrPar, p.tauLampPar, a.rhoCovBlScrParUp, a.rhoCovBlScrParDn, p.rhoLampPar, p.rhoLampPar)
 
     # NIR transmission coefficient of the cover [-]
-    a.tauCovNir = tau12(a.tauCovBlScrNir, p.tauLampNir, a.rhoCovBlScrNirUp, a.rhoCovBlScrNirDn, p.rhoLampNir, p.rhoLampNir)
+    a.tauCovNir = tau12(a.tauCovBlScrNir, p.tauLampNir, a.rhoCovBlScrNirDn, p.rhoLampNir)
 
     # NIR reflection coefficient of the cover [-]
     a.rhoCovNir = rhoUp(a.tauCovBlScrNir, p.tauLampNir, a.rhoCovBlScrNirUp, a.rhoCovBlScrNirDn, p.rhoLampNir, p.rhoLampNir)
 
     # FIR transmission coefficient of the cover, excluding screens and lamps [-]
-    a.tauCovFir = tau12(a.tauShScrShScrPerFir, p.tauRfFir, a.rhoShScrShScrPerFirUp, a.rhoShScrShScrPerFirDn, p.rhoRfFir, p.rhoRfFir)
+    a.tauCovFir = tau12(a.tauShScrShScrPerFir, p.tauRfFir, a.rhoShScrShScrPerFirDn, p.rhoRfFir)
     
     # FIR reflection coefficient of the cover, excluding screens and lamps [-]
     # a.rhoCovFir = rhoUp(a.tauShScrShScrPerFir, p.tauRfFir, \
@@ -846,7 +846,7 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
 
     # NIR transmission coefficient of the cover and canopy [-]
     # addAux(gl, 'tauCovCanNir', tau12(gl.a.tauHatCovNir, gl.a.tauHatCanNir, gl.a.rhoCovNir, gl.a.rhoCovNir, gl.a.rhoHatCanNir, gl.a.rhoHatCanNir))
-    a.tauCovCanNir = tau12(a.tauHatCovNir, a.tauHatCanNir, a.rhoCovNir, a.rhoCovNir, a.rhoHatCanNir, a.rhoHatCanNir)
+    a.tauCovCanNir = tau12(a.tauHatCovNir, a.tauHatCanNir, a.rhoCovNir, a.rhoHatCanNir)
 
     # NIR reflection coefficient of the cover and canopy towards the top [-]
     # addAux(gl, 'rhoCovCanNirUp', rhoUp(gl.a.tauHatCovNir, gl.a.tauHatCanNir, gl.a.rhoCovNir, gl.a.rhoCovNir, gl.a.rhoHatCanNir, gl.a.rhoHatCanNir))
@@ -858,7 +858,7 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
 
     # NIR transmission coefficient of the cover, canopy and floor [-]
     # addAux(gl, 'tauCovCanFlrNir', tau12(gl.a.tauCovCanNir, gl.a.tauHatFlrNir, gl.a.rhoCovCanNirUp, gl.a.rhoCovCanNirDn, p.rhoFlrNir, p.rhoFlrNir))
-    a.tauCovCanFlrNir = tau12(a.tauCovCanNir, a.tauHatFlrNir, a.rhoCovCanNirUp, a.rhoCovCanNirDn, p.rhoFlrNir, p.rhoFlrNir)
+    a.tauCovCanFlrNir = tau12(a.tauCovCanNir, a.tauHatFlrNir, a.rhoCovCanNirDn, p.rhoFlrNir)
 
     # NIR reflection coefficient of the cover, canopy and floor [-]
     # addAux(gl, 'rhoCovCanFlrNir', rhoUp(gl.a.tauCovCanNir, gl.a.tauHatFlrNir, gl.a.rhoCovCanNirUp, gl.a.rhoCovCanNirDn, p.rhoFlrNir, p.rhoFlrNir))

@@ -85,7 +85,7 @@ cdef class GreenLight:
             controls (np.ndarray)           - Array with control signals.
             learnedControlIdx (np.ndarray)  - Array with indices of control signals that are learned.
         """
-        cdef char i
+        cdef unsigned char i
         cdef unsigned short j
 
         # convert control numpy array control inputs into c-type array
@@ -101,8 +101,6 @@ cdef class GreenLight:
         for j in range(self.solverSteps):
             self.x = fRK4(self.a, self.p, self.u, self.x, self.d[self.timestep * self.solverSteps + j], self.h, self.nx)
         self.timestep += 1
-
-        return controls
 
     cdef void initWeather(self, cnp.ndarray[cnp.double_t, ndim=2] weather):
         """
@@ -122,7 +120,7 @@ cdef class GreenLight:
             for j in range(l):
                 self.d[i][j] = np_weather[i, j]
 
-    cpdef void setStates(self, cnp.ndarray[cnp.double_t, ndim=1] states, char testIndex):
+    cpdef void setStates(self, cnp.ndarray[cnp.double_t, ndim=1] states):
         """
         Function to set the states of the GreenLight model.
         Except for the state that we compute using the model.
@@ -132,10 +130,10 @@ cdef class GreenLight:
         Args:
             states (np.ndarray): Array with states.
         """
-        cdef int i
+        cdef unsigned char i
         cdef cnp.ndarray[cnp.double_t, ndim=1] np_states = np.asarray(states, dtype=np.double)
-        cdef int n = np_states.shape[0]
-        for i in range(n):
+        # cdef int n = np_states.shape[0]
+        for i in range(self.nx):
             # if i != testIndex:
             self.x[i] = np_states[i]
 
@@ -265,7 +263,7 @@ cdef class GreenLight:
         For example, a future weather prediction.
         """
         cdef int n = 105121
-        cdef int m = self.nd
+        cdef unsigned char m = self.nd
         cdef  cnp.ndarray[cnp.double_t, ndim=1] np_d = np.zeros((m), dtype=np.double)
         for i in range(n):
             for j in range(m):
@@ -277,6 +275,7 @@ cdef class GreenLight:
         Function that copies the control signals from the cython module to a numpy array.
         Such that we can acces the control signals in the python environment.
         """
+        cdef unsigned char i
         cdef  cnp.ndarray[cnp.double_t, ndim=1] np_u = np.zeros(self.nu, dtype=np.double)
         for i in range(self.nu):
             np_u[i] = self.u[i]
@@ -287,6 +286,7 @@ cdef class GreenLight:
         Function that copies the states from the cython module to a numpy array.
         Such that we can acces the states in the python environment.
         """
+        cdef unsigned char i
         cdef  cnp.ndarray[cnp.double_t, ndim=1] np_x = np.zeros(self.nx, dtype=np.double)
         for i in range(self.nx):
             np_x[i] = self.x[i]
@@ -306,48 +306,48 @@ cdef class GreenLight:
         np_obs[5] = self.a.rParGhSun + self.a.rParGhLamp    # PAR radiation above the canopy [W m^{-2}]
         return np_obs
 
-    property nx:
-        # returns the number of states
-        def __get__(self):
-            return self.nx
+    # returns the number of states
+    @property
+    def nx(self):
+        return self.nx
 
-    property nu:
-        # returns the number of control signals
-        def __get__(self):
-            return self.nu
+    @property
+    # returns the number of control signals
+    def nu(self):
+        return self.nu
 
-    property nd:
-        # returns the number of disturbances
-        def __get__(self):
+    @property
+    # returns the number of disturbances
+    def nd(self):
             return self.nd
 
-    property rParGhSun:
-        # returns amount of PAR radiation above the canopy from the sun
-        def __get__(self):
-            return self.a.rParGhSun
+    @property
+    # returns amount of PAR radiation above the canopy from the sun
+    def rParGhSun(self):
+        return self.a.rParGhSun
     
-    property rParGhLamp:
-        # returns the amount of PAR radiation above the canopy from the lamps
-        def __get__(self):
-            return self.a.rParGhLamp
+    @property
+    # returns the amount of PAR radiation above the canopy from the lamps
+    def rParGhLamp(self):
+        return self.a.rParGhLamp
 
-    property timestep:
-        # returns the current timestep
-        def __get__(self):
-            return self.timestep
+    @property
+    # returns the current timestep
+    def timestep(self):
+        return self.timestep
 
-    property co2Air:
-        # returns the co2 concentration in the air in [ppm]
-        def __get__(self):
-            return self.a.co2InPpm
+    @property
+    # returns the co2 concentration in the air in [ppm]
+    def co2InPpm(self):
+        return self.a.co2InPpm
 
-    property rhIn:
-        def __get__(self):
-            return self.a.rhIn
+    @property
+    def rhIn(self):
+        return self.a.rhIn
 
-    property time:
-        def __get__(self):
-            return self.x[27]
+    @property
+    def time(self):
+        return self.x[27]
 
     # property lampTimeOfDay:
     #     def __get__(self):
