@@ -445,7 +445,7 @@ cdef inline void initParameters(Parameters* p, char noLamps, char ledLamps, char
     p.pBoil = 130*p.aFlr
 
     ## Active climate control [1]
-    p.phiExtCo2 = 72000
+    p.phiExtCo2 = 72000             # Capacity of external CO2 source [mg s^{-1}]
 
     ## Heat capacity of heating pipes [J K^{-1} m^{-2}]
     p.capPipe = 0.25*pi * p.lPipe*(( p.phiPipeE**2- p.phiPipeI**2)* p.rhoSteel*\
