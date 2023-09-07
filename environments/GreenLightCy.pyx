@@ -102,6 +102,7 @@ cdef class GreenLight:
             self.x = fRK4(self.a, self.p, self.u, self.x, self.d[self.timestep * self.solverSteps + j], self.h, self.nx)
         self.timestep += 1
 
+
     cdef void initWeather(self, cnp.ndarray[cnp.double_t, ndim=2] weather):
         """
         Function to initialize the weather data in the cython module of GreenLight.
