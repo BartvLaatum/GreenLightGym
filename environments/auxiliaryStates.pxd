@@ -390,7 +390,7 @@ cdef inline double rhoDn(double tau2, double rho1Dn, double rho2Up, double rho2D
     """
     return rho2Dn + (tau2**2*rho1Dn)/(1-rho1Dn*rho2Up)
 
-cdef inline double radToDegrees(double degrees):
+cdef inline double rad2degrees(double degrees):
     return degrees*M_PI / 180.0
 
 cdef inline double fir(double a1, double eps1, double eps2, double f12, double t1, double t2, double sigma):
@@ -709,7 +709,9 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
 
     # Heat capacity of the lumped cover [J K^{-1} m^{-2}]
     # Equation 18 [1]
-    a.capCov = cos(radToDegrees(p.psi)) * (u[9] * p.hShScrPer * p.rhoShScrPer * p.cPShScrPer + p.hRf * p.rhoRf * p.cPRf)
+    ## SINCE U[9] IS ALWAYS ZERO IF WE DONT USE PERMANENT SHADING SCREEN WE CAN EASILY CHANGE THIS TO
+    # a.capCov = cos(rad2degrees(p.psi)) * (u[9] * p.hShScrPer * p.rhoShScrPer * p.cPShScrPer + p.hRf * p.rhoRf * p.cPRf)
+    a.capCov = cos(rad2degrees(p.psi)) * p.hRf * p.rhoRf * p.cPRf
 
     ####################################
     #### Capacities - Section 4 [1] ####
@@ -1275,23 +1277,23 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
 
     # Ratio between side vent area and total ventilation area [-]
     # (not very clear in the reference [1], but always 0 if m.a.aSideU == 0)    
-    # addAux(gl, 'etaSide', '0')
     a.etaSide = 0
 
     # Discharge coefficient [-]
     # Equation 73 [1]
-    # addAux(gl, 'cD', p.cDgh*(1-p.etaShScrCd*u.shScr))
-    a.cD = p.cDgh * (1 - p.etaShScrCd*u[8])
+    ## SINCE SHADING SCREEN IS ALWAYS = 0 WE CAN CHANGE cD = p.cDgh
+    # a.cD = p.cDgh * (1 - p.etaShScrCd*u[8])
+    a.cD  = p.cDgh
 
     # Discharge coefficient [-]
     # Equation 74 [-]
     # addAux(gl, 'cW', p.cWgh*(1-p.etaShScrCw*u.shScr))
-    a.cW = p.cWgh * (1 - p.etaShScrCw*u[8])
+    ## SINCE SHADING SCREEN IS ALWAYS = 0 WE CAN CHANGE cW = p.cWgh
+    # a.cW = p.cWgh * (1 - p.etaShScrCw*u[8])
+    a.cW = p.cWgh
 
     # Natural ventilation rate due to roof ventilation [m^{3} m^{-2} s^{-1}]
     # Equation 64 [1]
-    # addAux(gl, 'fVentRoof2', u.roof*p.aRoof.*gl.a.cD/(2.*p.aFlr).*\
-    #     sqrt(abs(p.g*p.hVent*(x.tAir-d.tOut)./(2*(0.5*x.tAir+0.5*d.tOut+273.15))+gl.a.cW.*d.wind.^2)))
     a.fVentRoof2 = u[3] * p.aRoof * a.cD/(2*p.aFlr) * \
         sqrt(fabs(p.g*p.hVent * (x[2] - d[1]) / (2*(0.5*x[2] + 0.5*d[1] + 273.15)) + a.cW * d[4]**2))
 
@@ -1341,10 +1343,6 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
 
     # # Total ventilation through side vents [m^{3} m^{-2} s^{-1}]
     # # Equation 72 [1], Equation A43 [5]
-    # addAux(gl, 'fVentSide', ifElse([getDefStr(gl.a.etaRoof) '>=p.etaRoofThr'],p.etaInsScr*gl.a.fVentSide2+(1-p.cLeakTop)*gl.a.fLeakage,\
-    #     p.etaInsScr*(max(u.thScr,u.blScr).*gl.a.fVentSide2+(1-max(u.thScr,u.blScr)).*gl.a.fVentRoofSide2.*gl.a.etaSide)\
-    #     +(1-p.cLeakTop)*gl.a.fLeakage))
-
     if a.etaRoof >= p.etaRoofThr:
         a.fVentSide = p.etaInsScr * a.fVentSide2 + (1 - p.cLeakTop) * a.fLeakage
     else:
@@ -1505,11 +1503,12 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
 
     # # Conductive heat flux through the lumped cover [W K^{-1} m^{-2}]
     # # See comment after Equation 18 [1]
-    # addAux(gl, 'hCovInCovE', sensible(\
-    #     1./(p.hRf/p.lambdaRf+u.shScrPer*p.hShScrPer/p.lambdaShScrPer),\
-    #     x.tCovIn, x.tCovE))
+    ## SINCE U[8] IS ALWAYS 0 WE CAN CHANGE THIS TO THE FOLLOWING:
+    # a.hCovInCovE = sensible(\
+    #     1/(p.hRf/p.lambdaRf + u[8]*p.hShScrPer/p.lambdaShScrPer),\
+    #     x[5], x[6])
     a.hCovInCovE = sensible(\
-        1/(p.hRf/p.lambdaRf + u[8]*p.hShScrPer/p.lambdaShScrPer),\
+        1/(p.hRf/p.lambdaRf),\
         x[5], x[6])
 
     # # Between lamps and air in main compartment [W m^{-2}]

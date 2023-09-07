@@ -82,27 +82,27 @@ cdef packed struct Parameters:
     short cPRf              # Specific heat capacity of roof layer
     double hRf               # Thickness of roof layer
 
-    char epsShScrPerFir      # FIR emission coefficient of the whitewash
-    char rhoShScrPer         # Density of the whitewash
-    char rhoShScrPerNir      # NIR reflection coefficient of whitewash
-    char rhoShScrPerPar      # PAR reflection coefficient of whitewash
-    char rhoShScrPerFir      # FIR reflection coefficient of whitewash
-    char tauShScrPerNir      # NIR transmission coefficient of whitewash
-    char tauShScrPerPar      # PAR transmission coefficient of whitewash
-    char tauShScrPerFir      # FIR transmission coefficient of whitewash
-    double lambdaShScrPer    # Thermal heat conductivity of the whitewash
-    char cPShScrPer          # Specific heat capacity of the whitewash
-    char hShScrPer           # Thickness of the whitewash
+    # char epsPerFir      # FIR emission coefficient of the whitewash
+    # char rhoShScrPer         # Density of the whitewash
+    # char rhoShScrPerNir      # NIR reflection coefficient of whitewash
+    # char rhoShScrPerPar      # PAR reflection coefficient of whitewash
+    # char rhoShScrPerFir      # FIR reflection coefficient of whitewash
+    # char tauShScrPerNir      # NIR transmission coefficient of whitewash
+    # char tauShScrPerPar      # PAR transmission coefficient of whitewash
+    # char tauShScrPerFir      # FIR transmission coefficient of whitewash
+    # double lambdaShScrPer    # Thermal heat conductivity of the whitewash
+    # char cPShScrPer          # Specific heat capacity of the whitewash
+    # char hShScrPer           # Thickness of the whitewash
 
-    char rhoShScrNir         # NIR reflection coefficient of shadow screen
-    char rhoShScrPar         # PAR reflection coefficient of shadow screen
-    char rhoShScrFir         # FIR reflection coefficient of shadow screen
-    char tauShScrNir         # NIR transmission coefficient of shadow screen
-    char tauShScrPar         # PAR transmission coefficient of shadow screen
-    char tauShScrFir         # FIR transmission coefficient of shadow screen
-    char etaShScrCd          # Effect of shadow screen on discharge coefficient
-    char etaShScrCw          # Effect of shadow screen on wind pressure coefficient
-    char kShScr              # Shadow screen flux coefficient
+    # char rhoShScrShScrNir         # NIR reflection coefficient of shadow screen
+    # char rhoShScrPar         # PAR reflection coefficient of shadow screen
+    # char rhoShScrFir         # FIR reflection coefficient of shadow screen
+    # char tauShScrNir         # NIR transmission coefficient of shadow screen
+    # char tauShScrPar         # PAR transmission coefficient of shadow screen
+    # char tauShScrFir         # FIR transmission coefficient of shadow screen
+    # char etaShScrCd          # Effect of shadow screen on discharge coefficient
+    # char etaShScrCw          # Effect of shadow screen on wind pressure coefficient
+    # char kShScr              # Shadow screen flux coefficient
 
     double epsThScrFir       # FIR emission coefficient of the thermal screen
     unsigned char rhoThScr   # Density of thermal screen
@@ -376,28 +376,28 @@ cdef inline void initParameters(Parameters* p, char noLamps, char ledLamps, char
     p.hRf = 4e-3
 
     ## Whitewash
-    p.epsShScrPerFir = 0
-    p.rhoShScrPer = 0
-    p.rhoShScrPerNir = 0
-    p.rhoShScrPerPar = 0
-    p.rhoShScrPerFir = 0
-    p.tauShScrPerNir = 1
-    p.tauShScrPerPar = 1
-    p.tauShScrPerFir = 1
-    p.lambdaShScrPer = INFINITY
-    p.cPShScrPer = 0
-    p.hShScrPer = 0
+    # p.epsShScrPerFir = 0
+    # p.rhoShScrPer = 0
+    # p.rhoShScrPerNir = 0
+    # p.rhoShScrPerPar = 0
+    # p.rhoShScrPerFir = 0
+    # p.tauShScrPerNir = 1
+    # p.tauShScrPerPar = 1
+    # p.tauShScrPerFir = 1
+    # p.lambdaShScrPer = INFINITY
+    # p.cPShScrPer = 0
+    # p.hShScrPer = 0
 
     ## Shadow screen 
-    p.rhoShScrNir = 0
-    p.rhoShScrPar = 0
-    p.rhoShScrFir = 0
-    p.tauShScrNir = 1
-    p.tauShScrPar = 1
-    p.tauShScrFir = 1
-    p.etaShScrCd = 0
-    p.etaShScrCw = 0
-    p.kShScr = 0
+    # p.rhoShScrNir = 0
+    # p.rhoShScrPar = 0
+    # p.rhoShScrFir = 0
+    # p.tauShScrNir = 1
+    # p.tauShScrPar = 1
+    # p.tauShScrFir = 1
+    # p.etaShScrCd = 0
+    # p.etaShScrCw = 0
+    # p.kShScr = 0
 
     ## Thermal Screen
     p.epsThScrFir = 0.67
