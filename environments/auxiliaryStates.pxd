@@ -1,6 +1,6 @@
 # Import the Parameters struct from defineParameters.pxd
 from defineParameters cimport Parameters
-from libc.math cimport cos, M_PI, exp, sqrt, fabs, fmax, fmin, log, M_E, pi
+from libc.math cimport cos, M_PI, exp, sqrt, fabs, fmax, fmin, log
 from utils cimport satVp, cond, co2dens2ppm
 
 cdef packed struct AuxiliaryStates:
@@ -11,27 +11,28 @@ cdef packed struct AuxiliaryStates:
     #####################################################
     #### Shading Screen and Permanent shading screen ####
     ##################################################### 
-    double tauShScrPar
-    double tauShScrPerPar
-    double rhoShScrPar
-    double rhoShScrPerPar
-    double tauShScrShScrPerPar
-    double rhoShScrShScrPerParUp
-    double rhoShScrShScrPerParDn
-    double tauShScrNir
-    double tauShScrPerNir
-    double rhoShScrNir
-    double rhoShScrPerNir
-    double tauShScrShScrPerNir
-    double rhoShScrShScrPerNirUp
-    double rhoShScrShScrPerNirDn
-    double tauShScrFir
-    double tauShScrPerFir
-    double rhoShScrFir
-    double rhoShScrPerFir
-    double tauShScrShScrPerFir
-    double rhoShScrShScrPerFirUp
-    double rhoShScrShScrPerFirDn
+    # double tauShScrPar
+    # double tauShScrPerPar
+    # double rhoShScrPar
+    # double rhoShScrPerPar
+    # double tauShScrShScrPerPar
+    # double rhoShScrShScrPerParUp
+    # double rhoShScrShScrPerParDn
+    # double tauShScrNir
+    # double tauShScrPerNir
+    # double rhoShScrNir
+    # double rhoShScrPerNir
+    # double tauShScrShScrPerNir
+    # double rhoShScrShScrPerNirUp
+    # double rhoShScrShScrPerNirDn
+
+    # double tauShScrFir
+    # double tauShScrPerFir
+    # double rhoShScrFir
+    # double rhoShScrPerFir
+    # double tauShScrShScrPerFir
+    # double rhoShScrShScrPerFirUp
+    # double rhoShScrShScrPerFirDn
 
     #################################
     #### Thermal Screen and Roof ####
@@ -50,12 +51,13 @@ cdef packed struct AuxiliaryStates:
     #############################################
     #### all 4 layers of the Vanthoor model #####
     #############################################
-    double tauCovParOld
-    double rhoCovParOldUp
-    double rhoCovParOldDn
-    double tauCovNirOld
-    double rhoCovNirOldUp
-    double rhoCovNirOldDn
+    # double tauCovParOld
+    # double rhoCovParOldUp
+    # double rhoCovParOldDn
+    # double tauCovNirOld
+    # double rhoCovNirOldUp
+    # double rhoCovNirOldDn
+
     double tauBlScrPar
     double rhoBlScrPar
     double tauCovBlScrPar
@@ -496,91 +498,70 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
     ##################################################### 
 
     # PAR transmission coefficient of the shadow screen layer [-]
-    #  == 1
-    a.tauShScrPar = 1-u[8]*(1-p.tauShScrPar)
+    # a.tauShScrPar = 1#1-u[8]*(1-p.tauShScrPar)
 
-    # PAR transmission coefficient of the semi-permanent shadow screen layer [-] 
-    # == 1
-    a.tauShScrPerPar =   1-u[9]*(1-p.tauShScrPerPar)
+    # PAR transmission coefficient of the semi-permanent shadow screen layer [-]
+    # a.tauShScrPerPar = 1 #  1-u[9]*(1-p.tauShScrPerPar)
 
     # PAR reflection coefficient of the shadow screen layer [-]
-    #  == 0 
-    a.rhoShScrPar = u[8] * p.rhoShScrPar
+    # a.rhoShScrPar = 0# u[8] * p.rhoShScrPar
 
     # PAR reflection coefficient of the semi-permanent shadow screen layer [-]
-    # ==0
-    a.rhoShScrPerPar = u[9] * p.rhoShScrPerPar
+    # a.rhoShScrPerPar = 0# u[9] * p.rhoShScrPerPar
 
     # PAR transmission coefficient of the shadow screen and semi permanent shadow screen layer [-]
     # Equation 16 [1]
-    # == 1
-    a.tauShScrShScrPerPar = tau12(a.tauShScrPar, a.tauShScrPar, a.rhoShScrPar, a.rhoShScrPar)
+    # a.tauShScrShScrPerPar = 1# tau12(a.tauShScrPar, a.tauShScrPar, a.rhoShScrPar, a.rhoShScrPar)
 
     # PAR reflection coefficient of the shadow screen and semi permanent shadow screen layer towards the top [-]
     # Equation 17 [1]
-    # == 0
-    a.rhoShScrShScrPerParUp = rhoUp(a.tauShScrPar, a.rhoShScrPar, a.rhoShScrPar, a.rhoShScrPar)
+    # a.rhoShScrShScrPerParUp = 0#rhoUp(a.tauShScrPar, a.rhoShScrPar, a.rhoShScrPar, a.rhoShScrPar)
 
     # PAR reflection coefficient of the shadow screen and semi permanent shadow screen layer towards the bottom [-]
     # Equation 17 [1]
-    # == 0
-    a.rhoShScrShScrPerParDn = rhoDn(a.tauShScrPar, a.rhoShScrPar, a.rhoShScrPar, a.rhoShScrPar)
+    # a.rhoShScrShScrPerParDn = 0#rhoDn(a.tauShScrPar, a.rhoShScrPar, a.rhoShScrPar, a.rhoShScrPar)
 
     # NIR transmission coefficient of the shadow screen layer [-]
-    # == 1
-    a.tauShScrNir = 1-u[8]*(1-p.tauShScrNir)
+    # a.tauShScrNir = 1 #1-u[8]*(1-p.tauShScrNir)
 
     # NIR transmission coefficient of the semi-permanent shadow screen layer [-]
-    # == 1
-    a.tauShScrPerNir = 1-u[9]*(1-p.tauShScrPerNir)
+    # a.tauShScrPerNir = 1 # 1-u[9]*(1-p.tauShScrPerNir)
 
     # NIR reflection coefficient of the shadow screen layer [-]
-    # == 0
-    a.rhoShScrNir = u[8]*p.rhoShScrNir
+    # a.rhoShScrNir = 0 # u[8]*p.rhoShScrNir
 
     # NIR reflection coefficient of the semi-permanent shadow screen layer [-]
-    # == 0
-    a.rhoShScrPerNir = u[9]*p.rhoShScrPerNir
+    # a.rhoShScrPerNir = 0 # u[9]*p.rhoShScrPerNir
 
     # NIR transmission coefficient of the shadow screen and semi permanent shadow screen layer [-]
-    # == 1
-    a.tauShScrShScrPerNir = tau12(a.tauShScrNir, a.tauShScrPerNir, a.rhoShScrNir, a.rhoShScrPerNir)
+    # a.tauShScrShScrPerNir = 1 # tau12(a.tauShScrNir, a.tauShScrPerNir, a.rhoShScrNir, a.rhoShScrPerNir)
 
     # NIR reflection coefficient of the shadow screen and semi permanent shadow screen layer towards the top [-]
-    # == 0
-    a.rhoShScrShScrPerNirUp = rhoUp(a.tauShScrNir, a.rhoShScrNir, a.rhoShScrNir, a.rhoShScrPerNir)
+    # a.rhoShScrShScrPerNirUp = 0 # rhoUp(a.tauShScrNir, a.rhoShScrNir, a.rhoShScrNir, a.rhoShScrPerNir)
 
     # NIR reflection coefficient of the shadow screen and semi permanent shadow screen layer towards the bottom [-]
-    # == 0
-    a.rhoShScrShScrPerNirDn = rhoDn(a.tauShScrPerNir, a.rhoShScrNir, a.rhoShScrPerNir, a.rhoShScrPerNir)
+    # a.rhoShScrShScrPerNirDn = 0 # rhoDn(a.tauShScrPerNir, a.rhoShScrNir, a.rhoShScrPerNir, a.rhoShScrPerNir)
 
     # FIR  transmission coefficient of the shadow screen layer [-]
-    # == 1
-    a.tauShScrFir = 1-u[8]*(1-p.tauShScrFir)
+    # a.tauShScrFir = 1 # 1-u[8]*(1-p.tauShScrFir)
 
-    # FIR transmission coefficient of the semi-permanent shadow screen layer [-]
-    # == 1
-    a.tauShScrPerFir = 1-u[9]*(1-p.tauShScrPerFir)
+    # # FIR transmission coefficient of the semi-permanent shadow screen layer [-]
+    # a.tauShScrPerFir = 1 #1-u[9]*(1-p.tauShScrPerFir)
 
-    # FIR reflection coefficient of the shadow screen layer [-]
-    # == 0
-    a.rhoShScrFir = u[8]*p.rhoShScrFir
+    # # FIR reflection coefficient of the shadow screen layer [-]
+    # a.rhoShScrFir = 0 #u[8]*p.rhoShScrFir
     
-    # FIR reflection coefficient of the semi-permanent shadow screen layer [-]
-    # == 0
-    a.rhoShScrPerFir = u[9]*p.rhoShScrPerFir
+    # # FIR reflection coefficient of the semi-permanent shadow screen layer [-]
+    # a.rhoShScrPerFir = 0 # u[9]*p.rhoShScrPerFir
         
     # FIR transmission coefficient of the shadow screen and semi permanent shadow screen layer [-]
-    # == 1
-    a.tauShScrShScrPerFir = tau12(a.tauShScrFir, a.tauShScrPerFir, a.rhoShScrFir, a.rhoShScrPerFir)
+    # a.tauShScrShScrPerFir =  1 #tau12(a.tauShScrFir, a.tauShScrPerFir, a.rhoShScrFir, a.rhoShScrPerFir)
     
     # FIR reflection coefficient of the shadow screen and semi permanent shadow screen layer towards the top [-]
-    # == 0
-    a.rhoShScrShScrPerFirUp = rhoUp(a.tauShScrFir, a.rhoShScrFir, a.rhoShScrFir, a.rhoShScrPerFir)
+    # a.rhoShScrShScrPerFirUp = 0 # rhoUp(a.tauShScrFir, a.rhoShScrFir, a.rhoShScrFir, a.rhoShScrPerFir)
     
     # FIR reflection coefficient of the shadow screen and semi permanent shadow screen layer towards the bottom [-]
-    # == 0
-    a.rhoShScrShScrPerFirDn = rhoDn(a.tauShScrPerFir, a.rhoShScrFir, a.rhoShScrPerFir, a.rhoShScrPerFir)
+    # a.rhoShScrShScrPerFirDn = 0 # rhoDn(a.tauShScrPerFir, a.rhoShScrFir, a.rhoShScrPerFir, a.rhoShScrPerFir)
 
     #################################
     #### Thermal Screen and Roof ####
@@ -625,23 +606,26 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
     #### all 4 layers of the Vanthoor model #####
     #############################################
 
+    ## HERE THE REFLECTION AND TRANSMISSION OF THE THERMAL SCREEN AND THE SHADING SCREENS ARE COMBINED...
+    ## IN PRACTICE THE VARIABLES WITH OLD ARE EXACTLY THE SAME AS THE THERMAL SCREENS...
+
     # Vanthoor PAR transmission coefficient of the cover [-]
-    a.tauCovParOld = tau12(a.tauShScrShScrPerPar, a.tauCovThScrPar, a.rhoShScrShScrPerParDn, a.rhoCovThScrParUp)
+    # a.tauCovThScrPar =  a.tauCovThScrPar #tau12(a.tauShScrShScrPerPar, a.tauCovThScrPar, a.rhoShScrShScrPerParDn, a.rhoCovThScrParUp)
 
     # Vanthoor PAR reflection coefficient of the cover towards the top [-]
-    a.rhoCovParOldUp = rhoUp(a.tauShScrShScrPerPar, a.rhoShScrShScrPerParUp, a.rhoShScrShScrPerParDn, a.rhoCovThScrParUp)
+    # a.rhoCovThScrParUp = a.rhoCovThScrParUp #rhoUp(a.tauShScrShScrPerPar, a.rhoShScrShScrPerParUp, a.rhoShScrShScrPerParDn, a.rhoCovThScrParUp)
 
     # Vanthoor PAR reflection coefficient of the cover towards the bottom [-]
-    a.rhoCovParOldDn = rhoDn(a.tauCovThScrPar, a.rhoShScrShScrPerParDn, a.rhoCovThScrParUp, a.rhoCovThScrParDn)
+    # a.rhoCovThScrParDn = a.rhoCovThScrParDn # rhoDn(a.tauCovThScrPar, a.rhoShScrShScrPerParDn, a.rhoCovThScrParUp, a.rhoCovThScrParDn)
 
     # Vanthoor NIR transmission coefficient of the cover [-]
-    a.tauCovNirOld = tau12(a.tauShScrShScrPerNir, a.tauCovThScrNir, a.rhoShScrShScrPerNirDn, a.rhoCovThScrNirUp)
+    # a.tauCovNirOld = a.tauCovThScrNir #tau12(a.tauShScrShScrPerNir, a.tauCovThScrNir, a.rhoShScrShScrPerNirDn, a.rhoCovThScrNirUp)
 
     # Vanthoor NIR reflection coefficient of the cover towards the top [-]
-    a.rhoCovNirOldUp = rhoUp(a.tauShScrShScrPerNir, a.rhoShScrShScrPerNirUp, a.rhoShScrShScrPerNirDn, a.rhoCovThScrNirUp)
+    # a.rhoCovThScrNirUp = a.rhoCovThScrNirUp # rhoUp(a.tauShScrShScrPerNir, a.rhoShScrShScrPerNirUp, a.rhoShScrShScrPerNirDn, a.rhoCovThScrNirUp)
 
     # Vanthoor NIR reflection coefficient of the cover towards the bottom [-]
-    a.rhoCovNirOldDn = rhoDn(a.tauCovThScrNir, a.rhoShScrShScrPerNirDn, a.rhoCovThScrNirUp, a.rhoCovThScrNirDn)
+    # a.rhoCovThScrNirDn = a.rhoCovThScrNirDn #rhoDn(a.tauCovThScrNir, a.rhoShScrShScrPerNirDn, a.rhoCovThScrNirUp, a.rhoCovThScrNirDn)
 
     #############################################
     #### Vanthoor cover with blackout screen ####
@@ -655,15 +639,15 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
 
     # PAR transmission coefficient of the old cover and blackout screen [-]
 	# Equation A9 [5]
-    a.tauCovBlScrPar = tau12(a.tauCovParOld, a.tauBlScrPar, a.rhoCovParOldDn, a.rhoBlScrPar)
+    a.tauCovBlScrPar = tau12(a.tauCovThScrPar, a.tauBlScrPar, a.rhoCovThScrParDn, a.rhoBlScrPar)
 
     # PAR up reflection coefficient of the old cover and blackout screen [-]
 	# Equation A10 [5]
-    a.rhoCovBlScrParUp = rhoUp(a.tauCovParOld, a.rhoCovParOldUp, a.rhoCovParOldDn, a.rhoBlScrPar)
+    a.rhoCovBlScrParUp = rhoUp(a.tauCovThScrPar, a.rhoCovThScrParUp, a.rhoCovThScrParDn, a.rhoBlScrPar)
     
     # PAR down reflection coefficient of the old cover and blackout screen [-]
 	# Equation A11 [5]
-    a.rhoCovBlScrParDn = rhoDn(a.tauBlScrPar, a.rhoCovParOldDn, a.rhoBlScrPar, a.rhoBlScrPar	)
+    a.rhoCovBlScrParDn = rhoDn(a.tauBlScrPar, a.rhoCovThScrParDn, a.rhoBlScrPar, a.rhoBlScrPar	)
     
     # NIR transmission coefficient of the blackout screen [-]
     a.tauBlScrNir = 1-u[7]*(1-p.tauBlScrNir)
@@ -672,13 +656,13 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
     a.rhoBlScrNir = u[7]*p.rhoBlScrNir
     
     # NIR transmission coefficient of the old cover and blackout screen [-]
-    a.tauCovBlScrNir = tau12(a.tauCovNirOld, a.tauBlScrNir, a.rhoCovNirOldDn, a.rhoBlScrNir)
+    a.tauCovBlScrNir = tau12(a.tauCovThScrNir, a.tauBlScrNir, a.rhoCovThScrNirDn, a.rhoBlScrNir)
 
     # NIR up reflection coefficient of the old cover and blackout screen [-]
-    a.rhoCovBlScrNirUp = rhoUp(a.tauCovNirOld, a.rhoCovNirOldUp, a.rhoCovNirOldDn, a.rhoBlScrNir)
+    a.rhoCovBlScrNirUp = rhoUp(a.tauCovThScrNir, a.rhoCovThScrNirUp, a.rhoCovThScrNirDn, a.rhoBlScrNir)
     
     # NIR down reflection coefficient of the old cover and blackout screen [-]
-    a.rhoCovBlScrNirDn = rhoDn(a.tauBlScrNir, a.rhoCovNirOldDn, a.rhoBlScrNir, a.rhoBlScrNir)
+    a.rhoCovBlScrNirDn = rhoDn(a.tauBlScrNir, a.rhoCovThScrNirDn, a.rhoBlScrNir, a.rhoBlScrNir)
 
     ###################################
     #### All layers of GL model    ####
@@ -698,11 +682,17 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
     # NIR reflection coefficient of the cover [-]
     a.rhoCovNir = rhoUp(a.tauCovBlScrNir, a.rhoCovBlScrNirUp, a.rhoCovBlScrNirDn, p.rhoLampNir)
 
+
+    ## SINCE ONLY THE SHADING SCREEN AND THE ROOF HAVE AN EFFECT ON THE FIR TRANSMISSION AND REFLECTION
+    ## WE CAN SIMPLY SET THIS TO THE FIR TRANSMISSION OF THE ROOF
+
     # FIR transmission coefficient of the cover, excluding screens and lamps [-]
-    a.tauCovFir = tau12(a.tauShScrShScrPerFir, p.tauRfFir, a.rhoShScrShScrPerFirDn, p.rhoRfFir)
-    
+    # a.tauCovFir = tau12(a.tauShScrShScrPerFir, p.tauRfFir, a.rhoShScrShScrPerFirDn, p.rhoRfFir)
+    a.tauCovFir = p.tauRfFir
+
     # FIR reflection coefficient of the cover, excluding screens and lamps [-]
-    a.rhoCovFir = rhoUp(a.tauShScrShScrPerFir, a.rhoShScrShScrPerFirUp, a.rhoShScrShScrPerFirDn, p.rhoRfFir)
+    # a.rhoCovFir = rhoUp(a.tauShScrShScrPerFir, a.rhoShScrShScrPerFirUp, a.rhoShScrShScrPerFirDn, p.rhoRfFir)
+    a.rhoCovFir = p.rhoRfFir
 
     # PAR absorption coefficient of the cover [-]
     a.aCovPar = 1 - a.tauCovPar - a.rhoCovPar
@@ -1842,9 +1832,21 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
 
     # CO2 injection [mg m^{-2} s^{-1}]
     # Equation 76 [1]
+    # addAux(gl, 'mcExtAir', u.extCo2*p.phiExtCo2/p.aFlr)
     a.mcExtAir = u[1] * p.phiExtCo2 / p.aFlr
 
     ## Objects not currently included in the model
+    # addAux(gl, 'mcBlowAir', DynamicElement('0',0))
+    # addAux(gl, 'mcPadAir', DynamicElement('0',0))
+    # addAux(gl, 'hPadAir', DynamicElement('0',0))
+    # addAux(gl, 'hPasAir', DynamicElement('0',0))
+    # addAux(gl, 'hBlowAir', DynamicElement('0',0))
+    # addAux(gl, 'hAirPadOut', DynamicElement('0',0))
+    # addAux(gl, 'hAirOutPad', DynamicElement('0',0))
+    # addAux(gl, 'lAirFog', DynamicElement('0',0))
+    # addAux(gl, 'hIndPipe', DynamicElement('0',0))
+    # addAux(gl, 'hGeoPipe', DynamicElement('0',0))
+
     a.mcBlowAir = 0
     a.mcPadAir = 0
     a.hPadAir = 0
