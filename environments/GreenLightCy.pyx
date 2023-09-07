@@ -6,11 +6,10 @@ The python environment will send setpoints as actions to the cython module.
 Next, cython will compute the control signals, and simulate the new state of the greenhouse.
 Finally, the new state/measurement/disturbances will be returned to the python environment.
 """
-from auxiliaryStates cimport AuxiliaryStates, update
+from auxiliaryStates cimport AuxiliaryStates
 from defineParameters cimport Parameters, initParameters
-from differenceFunction cimport fRK4, fEuler
+from differenceFunction cimport fRK4
 from computeControls cimport controlSignal
-from ODE cimport ODE
 from utils cimport satVp, co2dens2ppm
 from libc.stdlib cimport malloc, free
 import cython
