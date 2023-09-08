@@ -94,7 +94,7 @@ class GreenLight(gym.Env):
         if self.terminalState(obs):
             self.terminated = True
 
-        reward = self.rewardFunction(obs, action)
+        reward = self.rewardGrowth(obs, action)
         self.prevYield = obs[3]
         info = {}
         info = {"controls": self.GLModel.getControlsArray(),
@@ -106,6 +106,12 @@ class GreenLight(gym.Env):
             False,
             info
             )
+
+    def rewardGrowth(self, obs: np.ndarray, action: np.ndarray) -> float:
+        deltaYield = obs[3] - self.prevYield
+        reward = np.dot([deltaYield, *-action], self.rewardCoefficients)
+        penalty = np.dot(self.computePenalty(obs), self.penaltyCoefficients)
+        return reward - penalty
 
     def rewardFunction(self, obs: np.ndarray, action: np.ndarray) -> float:
         """
@@ -121,6 +127,8 @@ class GreenLight(gym.Env):
         # print("current Yield", obs[3])
         # print(obs[3] - self.prevYield)
         reward = np.dot([obs[3], *-action], self.rewardCoefficients)
+
+
         penalty = np.dot(self.computePenalty(obs), self.penaltyCoefficients)
         return reward - penalty
 
@@ -129,11 +137,11 @@ class GreenLight(gym.Env):
         # penalty is the sum of the squared differences between the observation and the bounds
         # penalty is zero if the observation is within the bounds
         Npen = self.obsLow.shape[0]
-        lowerbound = (self.obsLow[:] - obs[:Npen])**2
+        lowerbound = self.obsLow[:] - obs[:Npen]
         lowerbound[lowerbound < 0] = 0
-        upperbound = (obs[:Npen] - self.obsHigh[:])**2
+        upperbound = obs[:Npen] - self.obsHigh[:]
         upperbound[upperbound < 0] = 0
-        return lowerbound + upperbound
+        return lowerbound**2 + upperbound**2
 
     def getObs(self) -> np.ndarray:
         # save co2 air, temperature air, humidity air, cFruit, par above the canpoy as effect from lamps and sun
