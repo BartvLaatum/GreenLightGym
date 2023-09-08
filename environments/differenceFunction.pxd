@@ -48,10 +48,6 @@ cdef inline double* fRK4(AuxiliaryStates* a, Parameters* p, double* u, double* x
     for l in range(nx):
         x[l] += h/6 * (k1[l] + 2*k2[l] + 2*k3[l] + k4[l])
 
-    # Forward Euler
-    # for l in range(27):
-    #     self.x[l] += self.h * (k1[l])
-
     free(k1)
     free(k2)
     free(k3)

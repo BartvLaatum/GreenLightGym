@@ -362,7 +362,7 @@ cdef inline void initParameters(Parameters* p, char noLamps, char ledLamps, char
     p.cWgh = 0.09
     p.hSideRoof = 0
 
-    ## Roof
+    ## Roof parameters
     p.epsRfFir = 0.85
     p.rhoRf = 2600
     p.rhoRfNir = 0.13

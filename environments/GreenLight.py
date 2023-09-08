@@ -129,9 +129,9 @@ class GreenLight(gym.Env):
         # penalty is the sum of the squared differences between the observation and the bounds
         # penalty is zero if the observation is within the bounds
         Npen = self.obsLow.shape[0]
-        lowerbound = self.obsLow[:] - obs[:Npen]
+        lowerbound = (self.obsLow[:] - obs[:Npen])**2
         lowerbound[lowerbound < 0] = 0
-        upperbound = obs[:Npen] - self.obsHigh[:]
+        upperbound = (obs[:Npen] - self.obsHigh[:])**2
         upperbound[upperbound < 0] = 0
         return lowerbound + upperbound
 
@@ -212,7 +212,7 @@ def runRuleBasedController(GL, options):
     # insert time vector into states array
     states = np.insert(states, 0, timevec, axis=1)
     states = pd.DataFrame(data=states[:], columns=["Time", "Air Temperature", "CO2 concentration", "Humidity", "Fruit weight", "Fruit harvest", "PAR"])
-    controlSignals = pd.DataFrame(data=controlSignals, columns=["uBoil", "uCO2", "uThScr", "uVent", "uLamp", "uIntLamp", "uGroPipe", "uBlScr", "shScr", "perShScr", "uSide"])
+    controlSignals = pd.DataFrame(data=controlSignals, columns=["uBoil", "uCO2", "uThScr", "uVent", "uLamp", "uIntLamp", "uGroPipe", "uBlScr"])
     weatherData = pd.DataFrame(data=GL.weatherData[[int(ts * GL.timeinterval/GL.h) for ts in range(0, GL.Np+1)], :GL.weatherObsVars], columns=["Temperature", "Humidity", "PAR", "CO2 concentration", "Wind"])
 
     return states, controlSignals, weatherData

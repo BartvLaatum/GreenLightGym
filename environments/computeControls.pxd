@@ -46,7 +46,6 @@ cdef inline double* controlSignal(Parameters* p, double* x, double* u, double* d
     lampTimeOfDay = ((p.lampsOn <= p.lampsOff) * (p.lampsOn < timeOfDay and timeOfDay < p.lampsOff) + \
                         (1-(p.lampsOn <= p.lampsOff)) * (p.lampsOn < timeOfDay or timeOfDay < p.lampsOff))
 
-
     # CURRENTLY UNUSED...
     # Control of the lamp according to the day of year [0/1]
     # if p.dayLampStart < p.dayLampStop, lamps are on from p.dayLampStart to p.dayLampStop
@@ -197,7 +196,7 @@ cdef inline double* controlSignal(Parameters* p, double* x, double* u, double* d
     u[7] = p.useBlScr * (1-d[9]) * fmax(lampOn, intLampOn)
 
     # UNUSED shading screen, permanent shading screen, side ventilation
-    u[8] = 0
-    u[9] = 0
-    u[10] = 0
+    # u[8] = 0
+    # u[9] = 0
+    # u[10] = 0
     return u
