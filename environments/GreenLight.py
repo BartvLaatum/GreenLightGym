@@ -146,6 +146,8 @@ class GreenLight(gym.Env):
         # print(obs[3] - self.prevYield)
 
         reward = np.dot([obs[3], *-action], self.rewardCoefficients)
+
+
         penalty = np.dot(self.computePenalty(obs), self.penaltyCoefficients)
         return reward - penalty
 
@@ -158,7 +160,7 @@ class GreenLight(gym.Env):
         lowerbound[lowerbound < 0] = 0
         upperbound = obs[:Npen] - self.obsHigh[:]
         upperbound[upperbound < 0] = 0
-        return lowerbound + upperbound
+        return lowerbound**2 + upperbound**2
 
     def getObs(self) -> np.ndarray:
         # save co2 air, temperature air, humidity air, cFruit, par above the canpoy as effect from lamps and sun

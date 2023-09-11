@@ -207,8 +207,10 @@ cdef packed struct AuxiliaryStates:
     double cD
     double cW
     double fVentRoof2
-    double fVentRoof2Max
-    double fVentRoof2Min
+
+    # double fVentRoof2Max
+    # double fVentRoof2Min
+
     double fVentRoofSide2
     double fVentSide2
     double fLeakage
@@ -1241,11 +1243,8 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
     #############################
 
     # Aperature of the roof
-        # Aperture of the roof [m^{2}]
+    # Aperture of the roof [m^{2}]
     # Equation 67 [1]
-    # addAux(gl, 'aRoofU', u.roof*p.aRoof)
-    # addAux(gl, 'aRoofUMax', p.aRoof)
-    # addAux(gl, 'aRoofMin', DynamicElement('0',0))
     a.aRoofU = u[3]*p.aRoof
     a.aRoofUMax = p.aRoof
     a.aRoofMin = 0
@@ -1253,14 +1252,12 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
     # Aperture of the sidewall [m^{2}]
     # Equation 68 [1] 
     # (this is 0 in the Dutch greenhouse)
-    # addAux(gl, 'aSideU', u.side*p.aSide)
-    a.aSideU = u[10]*p.aSide
+    ## SINCE WE DON'T USE GREENHOUSE 
+    # a.aSideU = u[10]*p.aSide
+    a.aSideU = 0
 
     # Ratio between roof vent area and total ventilation area [-]
     # (not very clear in the reference [1], but always 1 if m.a.aSideU == 0)
-    #     addAux(m, 'etaRoof', m.a.aRoofU./max(m.a.aRoofU+m.a.aSideU,0.01)) 
-    # addAux(gl, 'etaRoof', '1') 
-    # addAux(gl, 'etaRoofNoSide', '1')
     a.etaRoof = 1
     a.etaRoofNoSide = 1
 
@@ -1286,21 +1283,13 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
     a.fVentRoof2 = u[3] * p.aRoof * a.cD/(2*p.aFlr) * \
         sqrt(fabs(p.g*p.hVent * (x[2] - d[1]) / (2*(0.5*x[2] + 0.5*d[1] + 273.15)) + a.cW * d[4]**2))
 
-    # addAux(gl, 'fVentRoof2Max', p.aRoof.*gl.a.cD/(2.*p.aFlr).*\
-    #     sqrt(abs(p.g*p.hVent*(x.tAir-d.tOut)./(2*(0.5*x.tAir+0.5*d.tOut+273.15)) + gl.a.cW.*d.wind.^2)))
-    a.fVentRoof2Max = p.aRoof * a.cD/(2*p.aFlr) * \
-        sqrt(fabs(p.g*p.hVent * (x[2]-d[1]) / (2*(0.5*x[2] + 0.5*d[1] + 273.15)) + a.cW*d[4]**2))
-    
-    # addAux(gl, 'fVentRoof2Min', DynamicElement('0',0))
-    a.fVentRoof2Min = 0
+    ## BOTH UNUSED BY THE MODEL
+    # a.fVentRoof2Max = p.aRoof * a.cD/(2*p.aFlr) * \
+    #     sqrt(fabs(p.g*p.hVent * (x[2]-d[1]) / (2*(0.5*x[2] + 0.5*d[1] + 273.15)) + a.cW*d[4]**2))
+    # a.fVentRoof2Min = 0
 
     # Ventilation rate through roof and side vents [m^{3} m^{-2} s^{-1}]
     # Equation 65 [1]
-    # addAux(gl, 'fVentRoofSide2', gl.a.cD/p.aFlr.*sqrt(\
-    #     (gl.a.aRoofU.*gl.a.aSideU./sqrt(fmax(gl.a.aRoofU.^2+gl.a.aSideU.^2,0.01))).^2 .* \
-    #     (2*p.g*p.hSideRoof*(x.tAir-d.tOut)./(0.5*x.tAir+0.5*d.tOut+273.15))+\
-    #     ((gl.a.aRoofU+gl.a.aSideU)/2).^2.*gl.a.cW.*d.wind.^2))
-
     a.fVentRoofSide2 = a.cD / p.aFlr * sqrt(\
         (a.aRoofU*a.aSideU / sqrt(fmax(a.aRoofU**2 + a.aSideU**2, 0.01)))**2 *\
         (2*p.g*p.hSideRoof*(x[2]-d[1])/(0.5*x[2] + +0.5*d[1] +273.15)) + \
@@ -1308,8 +1297,9 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
 
     # Ventilation rate through sidewall only [m^{3} m^{-2} s^{-1}]
     # Equation 66 [1]
-    # addAux(gl, 'fVentSide2', gl.a.cD.*gl.a.aSideU.*d.wind/(2*p.aFlr).*sqrt(gl.a.cW))
-    a.fVentSide2 = a.cD * a.aSideU * d[4] / (2*p.aFlr) * sqrt(a.cW)
+    ## THIS COULD BE SET TO 0 SINCE a.aSideU = 0
+    # a.fVentSide2 = a.cD * a.aSideU * d[4] / (2*p.aFlr) * sqrt(a.cW)
+    a.fVentSide2 = 0
 
     # Leakage ventilation [m^{3} m^{-2} s^{-1}]
     # Equation 70 [1]
@@ -1332,6 +1322,7 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
 
     # # Total ventilation through side vents [m^{3} m^{-2} s^{-1}]
     # # Equation 72 [1], Equation A43 [5]
+    ## ALSO SETTING TO 0 SINCE a.aSideU = 0??
     if a.etaRoof >= p.etaRoofThr:
         a.fVentSide = p.etaInsScr * a.fVentSide2 + (1 - p.cLeakTop) * a.fLeakage
     else:
@@ -1824,17 +1815,6 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
     a.mcExtAir = u[1] * p.phiExtCo2 / p.aFlr
 
     ## Objects not currently included in the model
-    # addAux(gl, 'mcBlowAir', DynamicElement('0',0))
-    # addAux(gl, 'mcPadAir', DynamicElement('0',0))
-    # addAux(gl, 'hPadAir', DynamicElement('0',0))
-    # addAux(gl, 'hPasAir', DynamicElement('0',0))
-    # addAux(gl, 'hBlowAir', DynamicElement('0',0))
-    # addAux(gl, 'hAirPadOut', DynamicElement('0',0))
-    # addAux(gl, 'hAirOutPad', DynamicElement('0',0))
-    # addAux(gl, 'lAirFog', DynamicElement('0',0))
-    # addAux(gl, 'hIndPipe', DynamicElement('0',0))
-    # addAux(gl, 'hGeoPipe', DynamicElement('0',0))
-
     a.mcBlowAir = 0
     a.mcPadAir = 0
     a.hPadAir = 0
@@ -1847,19 +1827,12 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
     a.hGeoPipe = 0
 
     ## Lamp cooling
-	# Equation A34 [5], Equation 7.34 [7]
-    # addAux(gl, 'hLampCool', p.etaLampCool*gl.a.qLampIn)
+    # Equation A34 [5], Equation 7.34 [7]
     a.hLampCool = p.etaLampCool * a.qLampIn
-    
+
     ## Heat harvesting, mechanical cooling and dehumidification
     # By default there is no mechanical cooling or heat harvesting
     # see addHeatHarvesting.m for mechanical cooling and heat harvesting
-    # addAux(gl, 'hecMechAir', '0')
-    # addAux(gl, 'hAirMech', '0')
-    # addAux(gl, 'mvAirMech', '0')
-    # addAux(gl, 'lAirMech', '0')
-    # addAux(gl, 'hBufHotPipe', '0')
-
     a.hecMechAir = 0
     a.hAirMech = 0
     a.mvAirMech = 0
