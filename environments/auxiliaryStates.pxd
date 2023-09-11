@@ -1047,17 +1047,6 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
     a.rFlrCovIn = fir(1, p.epsFlr, a.epsCovFir, \
         p.tauIntLampFir*p.tauLampFir*a.tauThScrFirU*a.tauBlScrFirU* \
         (1 - 0.49*M_PI*p.lPipe*p.phiPipeE) * exp(-p.kFir*a.lai), x[8], x[5], p.sigma)
-    # print("epsFlr", p.epsFlr)
-    # print("epsCovFir", a.epsCovFir)
-    # print("tauIntLampFir", p.tauIntLampFir)
-    # print("tauLampFir", p.tauLampFir)
-    # print("tauThScrFirU", a.tauThScrFirU)
-    # print("tauBlScrFirU", a.tauBlScrFirU)
-    # print("lPipe", p.lPipe)
-    # print("phiPipeE", p.phiPipeE)
-    # print("kFir", p.kFir)
-    # print("lai", a.lai)
-    # print("tCovIn", x[5])
 
     # FIR between floor and sky [W m^{-2}]
     # addAux(gl, 'rFlrSky', fir(1, p.epsFlr, p.epsSky, \

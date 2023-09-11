@@ -94,7 +94,7 @@ class GreenLight(gym.Env):
         if self.terminalState(obs):
             self.terminated = True
 
-        reward = self.rewardFunction(obs, action)
+        reward = self.rewardGrowth(obs, action)
         self.prevYield = obs[3]
         info = {}
         info = {"controls": self.GLModel.getControlsArray(),
@@ -106,6 +106,30 @@ class GreenLight(gym.Env):
             False,
             info
             )
+
+    def rewardGrowth(self, obs: np.ndarray, action: np.ndarray) -> float:
+        """
+        Compute the reward for a given observation.
+        Reward consists of the harvest over the past time step minus the costs of the control inputs.
+        Reward reflect the profit of the greenhouse and constraint violations.
+        """
+        # make weighted sum from costs and harves
+        # costs are negative, harvest is positive
+        # harvest is in the obs[4] variable
+        # costs are result from actions
+        # print("previous Yield", self.prevYield)
+        # print("current Yield", obs[3])
+        # print(obs[3] - self.prevYield)
+        time = 24*(self.GLModel.time - np.floor(self.GLModel.time))
+        print(time)
+        if time == 0:
+
+            reward = np.dot([obs[3]-self.prevYield, *-action], self.rewardCoefficients)
+            self.prevYield = obs[3]
+        else:
+            reward = 0
+        penalty = np.dot(self.computePenalty(obs), self.penaltyCoefficients)
+        return reward - penalty
 
     def rewardFunction(self, obs: np.ndarray, action: np.ndarray) -> float:
         """
@@ -120,6 +144,7 @@ class GreenLight(gym.Env):
         # print("previous Yield", self.prevYield)
         # print("current Yield", obs[3])
         # print(obs[3] - self.prevYield)
+
         reward = np.dot([obs[3], *-action], self.rewardCoefficients)
         penalty = np.dot(self.computePenalty(obs), self.penaltyCoefficients)
         return reward - penalty
@@ -212,7 +237,7 @@ def runRuleBasedController(GL, options):
     # insert time vector into states array
     states = np.insert(states, 0, timevec, axis=1)
     states = pd.DataFrame(data=states[:], columns=["Time", "Air Temperature", "CO2 concentration", "Humidity", "Fruit weight", "Fruit harvest", "PAR"])
-    controlSignals = pd.DataFrame(data=controlSignals, columns=["uBoil", "uCO2", "uThScr", "uVent", "uLamp", "uIntLamp", "uGroPipe", "uBlScr", "shScr", "perShScr", "uSide"])
+    controlSignals = pd.DataFrame(data=controlSignals, columns=["uBoil", "uCO2", "uThScr", "uVent", "uLamp", "uIntLamp", "uGroPipe", "uBlScr"])
     weatherData = pd.DataFrame(data=GL.weatherData[[int(ts * GL.timeinterval/GL.h) for ts in range(0, GL.Np+1)], :GL.weatherObsVars], columns=["Temperature", "Humidity", "PAR", "CO2 concentration", "Wind"])
 
     return states, controlSignals, weatherData
