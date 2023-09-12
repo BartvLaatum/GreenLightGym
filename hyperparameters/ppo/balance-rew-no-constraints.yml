@@ -10,16 +10,39 @@ GreenLight:
     hpsLamps: 0             # whether hps lamps are used
     h: 1                    # stepsize for the RK4 solver
     seasonLength: 120       # number of growing days
-    predHorizon: 3          # prediction horizon in days.
+    predHorizon: 1          # prediction horizon in days.
     timeinterval: 900       # [s] time interval at what rate do we observe and control the environment
-    controlSignals: []      # list with all control signal we aim to learn, (empty for rule based controller)
+    controlSignals: [co2]      # list with all control inputs we aim to control/learn
     modelObsVars: 6         # number of variables we observe from the model
     weatherObsVars: 5       # number of weather variables we observe
     obsLow:  [15, 300, 60]   # lower bound for the observation space
     obsHigh: [35, 1200, 90]  # upper bound for the observation space
-    rewardCoefficients: [1]  # coefficients reward function
-    penaltyCoefficients: [.1, .01, .1] # coefficients for the penalty functio\n
+    rewardCoefficients: [.88, .12]  # coefficients for the costs function
+    penaltyCoefficients: [.0, .0, .0] # coefficients for the penalty functio\n
 
-options:
+options:                    # set if we want to evaluate our model
     startDay: 273           # day since 01-january for starting the episode
     growthYear: 2011        # year in which we start growing season
+
+PPO:
+  policy: MlpPolicy
+  learning_rate: !!float 3e-4
+  n_steps: 1024
+  batch_size: 128
+  n_epochs: 10
+  gamma: 0.99
+  gae_lambda: 0.95
+  clip_range: 0.2
+  normalize_advantage: True
+  ent_coef: 0.0
+  vf_coef: 0.5
+  max_grad_norm: 0.5
+  use_sde: False
+  sde_sample_freq: -1
+  target_kl: null
+
+  policy_kwargs: {net_arch: {pi: [64, 64], vf: [256, 256]},
+                  optimizer_class: ADAM,
+                  optimizer_kwargs: {amsgrad: True},
+                  activation_fn: SiLU
+          }
