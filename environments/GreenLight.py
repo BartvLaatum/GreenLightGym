@@ -108,24 +108,26 @@ class GreenLight(gym.Env):
             )
 
     def rewardGrowth(self, obs: np.ndarray, action: np.ndarray) -> float:
+        reward = np.dot([obs[3]-self.prevYield, *-action], self.rewardCoefficients)
+        self.prevYield = obs[3]
+        
+        penalty = np.dot(self.computePenalty(obs), self.penaltyCoefficients)
+        return reward - penalty
+
+    def rewardDailyGrowth(self, obs: np.ndarray, action: np.ndarray) -> float:
         """
         Compute the reward for a given observation.
         Reward consists of the harvest over the past time step minus the costs of the control inputs.
         Reward reflect the profit of the greenhouse and constraint violations.
-        """
-        # make weighted sum from costs and harves
-        # costs are negative, harvest is positive
-        # harvest is in the obs[4] variable
-        # costs are result from actions
-        # print("previous Yield", self.prevYield)
-        # print("current Yield", obs[3])
-        # print(obs[3] - self.prevYield)
-        time = 24*(self.GLModel.time - np.floor(self.GLModel.time))
-        print(time)
-        if time == 0:
+        """        
+        # compute the time of the day in seconds
+        timeOfDay = 24*3600*(self.GLModel.time - np.floor(self.GLModel.time))
+        self.prevAction += action
 
-            reward = np.dot([obs[3]-self.prevYield, *-action], self.rewardCoefficients)
+        if timeOfDay < 60:
+            reward = np.dot([obs[3]-self.prevYield, *-self.prevAction], self.rewardCoefficients)
             self.prevYield = obs[3]
+            self.prevAction = np.zeros((self.controlIdx.shape[0],))
         else:
             reward = 0
         penalty = np.dot(self.computePenalty(obs), self.penaltyCoefficients)
@@ -144,10 +146,7 @@ class GreenLight(gym.Env):
         # print("previous Yield", self.prevYield)
         # print("current Yield", obs[3])
         # print(obs[3] - self.prevYield)
-
         reward = np.dot([obs[3], *-action], self.rewardCoefficients)
-
-
         penalty = np.dot(self.computePenalty(obs), self.penaltyCoefficients)
         return reward - penalty
 
@@ -214,6 +213,7 @@ class GreenLight(gym.Env):
         self.terminated = False
         obs = self.getObs()
         self.prevYield = obs[3]
+        self.prevAction = np.zeros((self.controlIdx.shape[0],))
         obs[[4,5]] = 0
         return obs, {}
 
