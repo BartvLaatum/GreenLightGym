@@ -3,7 +3,7 @@ GreenLight:
     location: "Amsterdam"   # location of the weatherdata
     dataSource: "KNMI"      # which data source we use
     nx: 28                  # Number of states
-    nu: 11                  # number of control variables for GreenLight
+    nu: 8                  # number of control variables for GreenLight
     nd: 10                  # weather variables
     noLamps: 0              # whether lamps are used
     ledLamps: 1             # whether led lamps are used
