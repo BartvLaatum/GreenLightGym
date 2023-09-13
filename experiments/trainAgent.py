@@ -16,10 +16,9 @@ from multiprocessing import cpu_count
 ACTIVATION_FN = {"ReLU": ReLU, "SiLU": SiLU}
 OPTIMIZER = {"ADAM": Adam}
 
-
 if __name__ == "__main__":
     # print(make_vec_env(env_id="Pendulum-v1", n_envs=2, seed=666, start_index=0))    # hyperparameters
-    with open("hyperparameters/ppo/PiKwargsNpred-1.yml", "r") as f:
+    with open("hyperparameters/ppo/balance-rew-no-constraints.yml", "r") as f:
         params = yaml.load(f, Loader=yaml.FullLoader)
     
     envParams = params["GreenLight"]
@@ -34,13 +33,11 @@ if __name__ == "__main__":
         modelParams["policy_kwargs"]["activation_fn"] = ACTIVATION_FN[modelParams["policy_kwargs"]["activation_fn"]]
         modelParams["policy_kwargs"]["optimizer_class"] = OPTIMIZER[modelParams["policy_kwargs"]["optimizer_class"]]
 
-    print(modelParams["policy_kwargs"])
-
     numCpus = cpu_count() - 2
     SEED = 666
     config= {
         "policy": MlpPolicy,
-        "total_timesteps": 400_000,
+        "total_timesteps": 300_000,
         "env": GreenLight(**envParams),
         "eval_env": GreenLight(**envParams, options=options, training=False),
         "seed": SEED,
@@ -51,7 +48,7 @@ if __name__ == "__main__":
     run = wandb.init(
         project="RLGreenLight",
         config=config,
-        group="PPO-PredHorizon-1",
+        group="PPO-reward-balance",
         sync_tensorboard=True,
         job_type="train",
         save_code=True

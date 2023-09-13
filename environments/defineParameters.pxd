@@ -289,6 +289,8 @@ cdef packed struct Parameters:
     float cLeakTop          # Fraction of leakage ventilation going from the top 
     double minWind          #  wind speed where the effect of wind on leakage begins
 
+    # double dmfm             # Dry matter to fresh matter ratio
+
 # Initialize the values of a Parameters struct
 cdef inline void initParameters(Parameters* p, char noLamps, char ledLamps, char hpsLamps):
     p.alfaLeafAir = 5
@@ -664,3 +666,5 @@ cdef inline void initParameters(Parameters* p, char noLamps, char ledLamps, char
     ## Other parameters
     p.cLeakTop = 0.5
     p.minWind = 0.25
+
+    # p.dmfm = 0.0627

@@ -14,7 +14,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # hyperparameters
-    with open("hyperparameters/ppo/PiKwargsNpred-1.yml", "r") as f:
+    with open("hyperparameters/ppo/balance-rew-no-constraints.yml", "r") as f:
         params = yaml.load(f, Loader=yaml.FullLoader)
         envParams = params["GreenLight"]
         options = params["options"]
@@ -57,7 +57,7 @@ if __name__ == "__main__":
 
     states = np.insert(states, 0, timevec, axis=1)
     states = pd.DataFrame(data=states[:], columns=["Time", "Air Temperature", "CO2 concentration", "Humidity", "Fruit weight", "Fruit harvest", "PAR"])
-    controlSignals = pd.DataFrame(data=controlSignals, columns=["uBoil", "uCO2", "uThScr", "uVent", "uLamp", "uIntLamp", "uGroPipe", "uBlScr", "shScr", "perShScr", "uSide"])
+    controlSignals = pd.DataFrame(data=controlSignals, columns=["uBoil", "uCO2", "uThScr", "uVent", "uLamp", "uIntLamp", "uGroPipe", "uBlScr"])
 
     states["Time"] = np.asarray(days2date(states["Time"].values, "01-01-0001"), "datetime64[s]")
     dates = states["Time"].dt.strftime("%Y%m%d")
@@ -70,5 +70,5 @@ if __name__ == "__main__":
     states.to_csv(f"data/ppo/{args.runname}/states{dates[0]}-{envParams['seasonLength']:03}.csv", index=False)
     controlSignals.to_csv(f"data/ppo/{args.runname}/controls{dates[0]}-{envParams['seasonLength']:03}.csv", index=False)
 
-    print(states.head())
-    print(controlSignals.head())
+    print(states)
+    print(controlSignals)

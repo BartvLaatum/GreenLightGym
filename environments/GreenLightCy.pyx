@@ -75,7 +75,7 @@ cdef class GreenLight:
 
     @cython.boundscheck(False) # turn off bounds-checking for entire function
     @cython.wraparound(False)  # turn off negative index wrapping for entire function
-    cpdef step(self, cnp.ndarray[cnp.float32_t, ndim=1] controls, cnp.ndarray[char, ndim=1] learnedControlIdx):
+    cpdef void step(self, cnp.ndarray[cnp.float32_t, ndim=1] controls, cnp.ndarray[char, ndim=1] learnedControlIdx):
         """
         Simulate the state of the system at the next time step using the GreenLight model.
         Inputs are the controls signals that are computed in the python environment, e.g., by an RL-agent.
@@ -305,6 +305,11 @@ cdef class GreenLight:
         np_obs[4] = self.a.mcFruitHarSum*1e-6               # Harvested fruit in dry matter weight [kg{CH20} m^{-2}]
         np_obs[5] = self.a.rParGhSun + self.a.rParGhLamp    # PAR radiation above the canopy [W m^{-2}]
         return np_obs
+
+    # CO2 injection rate [mg m^-2 s^-1]
+    @property
+    def co2InjectionRate(self):
+        return self.a.mcExtAir
 
     # returns the number of states
     @property

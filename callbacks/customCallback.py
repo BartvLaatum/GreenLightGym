@@ -1,5 +1,5 @@
 import gymnasium as gym
-from stable_baselines3.common.callbacks import EvalCallback
+from stable_baselines3.common.callbacks import EvalCallback, SaveVecNormalizeCallback
 from typing import Optional, Union
 from stable_baselines3.common.vec_env import VecEnv, is_vecenv_wrapped
 
@@ -20,6 +20,7 @@ class TensorboardCallback(EvalCallback):
         best_model_save_path: Optional[str] = None,
         deterministic: bool = True,
         verbose: int = 1,
+        save_vec_normalize = None,
     ):
         super().__init__(
             eval_env=eval_env,
@@ -28,9 +29,11 @@ class TensorboardCallback(EvalCallback):
             log_path=log_path,
             best_model_save_path=best_model_save_path,
             deterministic=deterministic,
-            verbose=verbose
+            verbose=verbose,
+            callback_on_best=save_vec_normalize,
         )
 
     def _on_step(self) -> bool:
         if self.n_calls % self.eval_freq == 0:
             super()._on_step()
+            # self.eval_env
