@@ -5,28 +5,34 @@ import yaml
 import numpy as np
 import pandas as pd
 from RLGreenLight.environments.pyutils import days2date
+from RLGreenLight.experiments.utils import loadParameters, make_vec_env
 import os
 import argparse
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("runname", type=str)
+    parser.add_argument("--project", type=str, default="TestVecLoadSave")
+    parser.add_argument("--runname", type=str, default="polar-dew-7")
     args = parser.parse_args()
 
     # hyperparameters
-    with open("hyperparameters/ppo/balance-rew-no-constraints.yml", "r") as f:
-        params = yaml.load(f, Loader=yaml.FullLoader)
-        envParams = params["GreenLight"]
-        options = params["options"]
+    hpPath = "hyperparameters/ppo/"
+    filename = "balance-rew-no-constraints.yml"
+    envParams, modelParams, options = loadParameters(hpPath, filename)
     SEED = 666
     envParams['training'] = False
 
-    # env = GreenLight(**envParams, options=options)
-    env = DummyVecEnv([lambda: GreenLight(**envParams, options=options)])
-    env = VecNormalize(env, norm_obs=True, norm_reward=True, clip_reward=1000, clip_obs=100)
-    env = VecMonitor(env, filename=None)
-    # args.runname = "cool-"
-    model = PPO.load(f"trainData/models/{args.runname}/best_model.zip", env=env)
+
+    env = make_vec_env(lambda: GreenLight(**envParams, options=options), numCpus=1, monitor_filename=None, vec_norm_kwargs={}, eval_env=True)
+    env = VecNormalize.load(f"trainData/{args.project}/envs/{args.runname}/vecnormalize.pkl", env)
+    # # env = GreenLight(**envParams, options=options)
+    # env = DummyVecEnv([lambda: GreenLight(**envParams, options=options)])
+    # env = VecNormalize(env, norm_obs=True, norm_reward=True, clip_reward=1000, clip_obs=100)
+    # env = VecMonitor(env, filename=None)
+
+
+
+    model = PPO.load(f"trainData/{args.project}/models/{args.runname}/best_model.zip", env=env)
     env = model.get_env()
     obs, info = env.env_method("reset", options=options)[0]
     obs = obs.reshape(1, -1)
@@ -40,8 +46,6 @@ if __name__ == "__main__":
     states[0, :] = obs[0, :envParams["modelObsVars"]]             # get initial states
     timevec[0] = env.env_method("getTimeInDays")[0]
 
-    print(timevec[0])
-    # print(obs)
 
     i=0
     while not dones[0]:
