@@ -270,6 +270,7 @@ cdef packed struct Parameters:
     char etaLampCool      # fraction of lamp input removed by cooling
     double zetaLampPar      # J to umol conversion of PAR output of lamp
 
+    char intLamps           # whether we use intercropping lamps
     float vIntLampPos     # Vertical position of the interlights within the canopy [0-1, 0 is above canopy and 1 is below]
     float fIntLampDown    # Fraction of interlight light output of lamps that is directed downwards
     char capIntLamp       # Capacity of interlight lamps
@@ -292,7 +293,7 @@ cdef packed struct Parameters:
     # double dmfm             # Dry matter to fresh matter ratio
 
 # Initialize the values of a Parameters struct
-cdef inline void initParameters(Parameters* p, char noLamps, char ledLamps, char hpsLamps):
+cdef inline void initParameters(Parameters* p, char noLamps, char ledLamps, char hpsLamps, char intLamps):
     p.alfaLeafAir = 5
     p.L = 2.45e6
     p.sigma = 5.67e-8
@@ -647,6 +648,9 @@ cdef inline void initParameters(Parameters* p, char noLamps, char ledLamps, char
         p.lampsOff = 18             # Time of day when lamps go off                           
 
     # Interlight parameters - no lamps
+    # currently we don't have interlights
+    # however, since the controls do compute them, we need to set them to 0
+    p.intLamps = intLamps
     p.vIntLampPos = 0.5
     p.fIntLampDown = 0.5
     p.capIntLamp = 10

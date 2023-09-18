@@ -31,6 +31,7 @@ if __name__ == "__main__":
 
 
     model = PPO.load(f"trainData/{args.project}/models/{args.runname}/best_model.zip", env=env)
+
     env = model.get_env()
     obs, info = env.env_method("reset", options=options)[0]
     obs = obs.reshape(1, -1)
@@ -44,9 +45,11 @@ if __name__ == "__main__":
     states[0, :] = obs[0, :envParams["modelObsVars"]]             # get initial states
     timevec[0] = env.env_method("getTimeInDays")[0]
     i=0
-    while not dones[0]:
+    while not dones[0] and i < 10:
         action, _states = model.predict(obs, deterministic=True)
         obs, rewards, dones, info = env.step(action)
+        print(obs)
+        print(env.unnormalize_obs(obs))
         states[i+1, :] = env.unnormalize_obs(obs)[0, :envParams["modelObsVars"]]
         timevec[i+1] = info[0]['Time']
         controlSignals[i+1, :] = info[0]['controls']
@@ -55,7 +58,6 @@ if __name__ == "__main__":
 
     states = np.insert(states, 0, timevec, axis=1)
     states = pd.DataFrame(data=states[:], columns=["Time", "Air Temperature", "CO2 concentration", "Humidity", "Fruit weight", "Fruit harvest", "PAR"])
-    controlSignals = pd.DataFrame(data=controlSignals, columns=["uBoil", "uCO2", "uThScr", "uVent", "uLamp", "uIntLamp", "uGroPipe", "uBlScr"])
 
     states["Time"] = np.asarray(days2date(states["Time"].values, "01-01-0001"), "datetime64[s]")
     dates = states["Time"].dt.strftime("%Y%m%d")

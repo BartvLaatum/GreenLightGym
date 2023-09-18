@@ -191,7 +191,7 @@ cdef inline double* controlSignal(Parameters* p, double* x, double* u, double* d
     u[2] = fmin(thScrCold, fmax(thScrHeat, thScrRh))
     u[3] = fmin(ventCold, fmax(ventHeat, ventRh))
     u[4] = lampOn
-    u[5] = intLampOn
+    u[5] = intLampOn * p.intLamps
     u[6] = proportionalControl(x[2], heatSetPoint, p.tHeatBand, 0, 1)
     u[7] = p.useBlScr * (1-d[9]) * fmax(lampOn, intLampOn)
 

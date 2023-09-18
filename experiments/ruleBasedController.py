@@ -19,9 +19,9 @@ def runNominalController(params, options):
     # convert first date of time column to YYYYMMDD format
     dates = states["Time"].dt.strftime("%Y%m%d")
 
-    # states.to_csv(f"data/lessControls/new-states{dates[0]}-{params['seasonLength']:03}.csv", index=False)
-    # controls.to_csv(f"data/lessControls/new-controls{dates[0]}-{params['seasonLength']:03}.csv", index=False)
-    # weather.to_csv(f"data/lessControls/new-weather{dates[0]}-{params['seasonLength']:03}.csv", index=False)
+    states.to_csv(f"data/ruleBasedControl/states{dates[0]}-{params['seasonLength']:03}.csv", index=False)
+    controls.to_csv(f"data/ruleBasedControl/controls{dates[0]}-{params['seasonLength']:03}.csv", index=False)
+    weather.to_csv(f"data/ruleBasedControl/weather{dates[0]}-{params['seasonLength']:03}.csv", index=False)
 
 if __name__ == "__main__":
     with open("hyperparameters/ruleBasedControl.yml", "r") as f:

@@ -8,28 +8,31 @@ from wandb.integration.sb3 import WandbCallback
 
 from torch.optim import Adam
 from torch.nn.modules.activation import ReLU, SiLU
-from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize, VecMonitor, VecEnv, SubprocVecEnv
+from stable_baselines3.common.vec_env import SubprocVecEnv, VecNormalize, VecMonitor, VecEnv
 
 from RLGreenLight.environments.GreenLight import GreenLight
 from RLGreenLight.callbacks.customCallback import TensorboardCallback, SaveVecNormalizeCallback, BaseCallback
 
-
 ACTIVATION_FN = {"ReLU": ReLU, "SiLU": SiLU}
 OPTIMIZER = {"ADAM": Adam}
 
-def loadParameters(path, filename):
+def loadParameters(env_id: str, path: str, filename: str, algorithm: str = None):
     with open(join(path, filename), "r") as f:
         params = yaml.load(f, Loader=yaml.FullLoader)
     
-    envParams = params["GreenLight"]
-    modelParams = params["PPO"]
+    envParams = params[env_id]
     options = params["options"]
-    if "policy_kwargs" in modelParams.keys():
-        modelParams["policy_kwargs"]["activation_fn"] = \
-            ACTIVATION_FN[modelParams["policy_kwargs"]["activation_fn"]]
-        modelParams["policy_kwargs"]["optimizer_class"] = \
-            OPTIMIZER[modelParams["policy_kwargs"]["optimizer_class"]]
+    
+    if algorithm is not None:
+        modelParams = params[algorithm]
 
+        if "policy_kwargs" in modelParams.keys():
+            modelParams["policy_kwargs"]["activation_fn"] = \
+                ACTIVATION_FN[modelParams["policy_kwargs"]["activation_fn"]]
+            modelParams["policy_kwargs"]["optimizer_class"] = \
+                OPTIMIZER[modelParams["policy_kwargs"]["optimizer_class"]]
+    else:
+        modelParams = None
     return envParams, modelParams, options
 
 def wandb_init(modelParams: Dict[str, Any],
@@ -54,7 +57,6 @@ def wandb_init(modelParams: Dict[str, Any],
         "envParams": {**envParams}
     }
 
-    print(project)
     run = wandb.init(
         project=project,
         config=config,
@@ -80,9 +82,7 @@ def make_vec_env(env_fn: Callable, numCpus: int, monitor_filename: str = None, v
     if eval_env:
         env.training = False
         env.norm_reward = False
-
     return env
-
 
 def create_callbacks(eval_freq: int,
                      env_log_dir: str,
