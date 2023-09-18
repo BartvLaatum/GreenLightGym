@@ -24,6 +24,7 @@ class TensorboardCallback(EvalCallback):
         name_vec_env: Optional[str] = None,         # name of the VecNormalize file
         callback_on_new_best = None,                # callback to call when a new best model is found
         verbose: int = 1,
+        save_vec_normalize = None,
     ):
         super().__init__(
             eval_env=eval_env,

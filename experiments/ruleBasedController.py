@@ -7,7 +7,6 @@ import time
 
 def runNominalController(params, options):
     GL = GreenLight(**params, options=options, training=False)
-
     # time controller
     start = time.time()
     states, controls, weather = runRuleBasedController(GL, options)

@@ -83,6 +83,8 @@ class GreenLight(gym.Env):
         self.obsLow = np.array(obsLow)
         self.obsHigh = np.array(obsHigh)
 
+        self.dmfm = 0.0627 # dry matter to fresh matter ratio
+
     def step(self, action: np.ndarray) -> Tuple[np.ndarray, float, bool, dict[str, Any]]:
         """
         Given an action computed by some agent, we simulate the next state of the system.
@@ -112,9 +114,20 @@ class GreenLight(gym.Env):
             )
 
     def rewardGrowth(self, obs: np.ndarray, action: np.ndarray) -> float:
-        reward = np.dot([obs[3]-self.prevYield, *-action], self.rewardCoefficients)
+        # accumulated fresh weight of tomatoes [kg [FM] m^-2]
+        fwtom = (obs[3]-self.prevYield)/self.dmfm
+
+        # act = self.GLModel.co2InjectionRate * self.timeinterval * 1e-6 # [kg m^-2 900s^-1]
+        # act
+        # print(act)
+        # print(act, fwtom)
+
+        reward = np.dot([fwtom, *-action], self.rewardCoefficients)
+
         self.prevYield = obs[3]
-        
+
+        # print(reward)
+
         penalty = np.dot(self.computePenalty(obs), self.penaltyCoefficients)
         return reward - penalty
 

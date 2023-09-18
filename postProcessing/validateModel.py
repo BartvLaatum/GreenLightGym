@@ -69,5 +69,5 @@ if __name__ == "__main__":
     states.to_csv(f"data/ppo/{args.runname}/states{dates[0]}-{envParams['seasonLength']:03}.csv", index=False)
     controlSignals.to_csv(f"data/ppo/{args.runname}/controls{dates[0]}-{envParams['seasonLength']:03}.csv", index=False)
 
-    print(states.head())
-    print(controlSignals.head())
+    print(states)
+    print(controlSignals)
