@@ -8,7 +8,7 @@ from wandb.integration.sb3 import WandbCallback
 
 from torch.optim import Adam
 from torch.nn.modules.activation import ReLU, SiLU
-from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize, VecMonitor, VecEnv
+from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize, VecMonitor, VecEnv, SubprocVecEnv
 
 from RLGreenLight.environments.GreenLight import GreenLight
 from RLGreenLight.callbacks.customCallback import TensorboardCallback, SaveVecNormalizeCallback, BaseCallback
@@ -41,6 +41,7 @@ def wandb_init(modelParams: Dict[str, Any],
                group: str,
                job_type: str,
                save_code: bool = False,
+               resume: bool = False
                ):
     config= {
         "policy": modelParams["policy"],
@@ -60,7 +61,8 @@ def wandb_init(modelParams: Dict[str, Any],
         group=group,
         sync_tensorboard=True,
         job_type=job_type,
-        save_code=save_code
+        save_code=save_code,
+        resume=True,
     )
     return run, config
 
@@ -72,7 +74,7 @@ def make_vec_env(env_fn: Callable, numCpus: int, monitor_filename: str = None, v
     if monitor_filename is not None and not os.path.exists(os.path.dirname(monitor_filename)):
         os.makedirs(os.path.dirname(monitor_filename), exist_ok=True)
 
-    env = DummyVecEnv([env_fn for _ in range(numCpus)])
+    env = SubprocVecEnv([env_fn for _ in range(numCpus)])
     env = VecMonitor(env, filename=monitor_filename)
     env = VecNormalize(env, **vec_norm_kwargs)
     if eval_env:

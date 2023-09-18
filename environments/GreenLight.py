@@ -111,19 +111,13 @@ class GreenLight(gym.Env):
             )
 
     def rewardGrowth(self, obs: np.ndarray, action: np.ndarray) -> float:
+
         # accumulated fresh weight of tomatoes [kg [FM] m^-2]
         fwtom = (obs[3]-self.prevYield)/self.dmfm
 
         # act = self.GLModel.co2InjectionRate * self.timeinterval * 1e-6 # [kg m^-2 900s^-1]
-        # act
-        # print(act)
-        # print(act, fwtom)
-
         reward = np.dot([fwtom, *-action], self.rewardCoefficients)
-
         self.prevYield = obs[3]
-
-        # print(reward)
 
         penalty = np.dot(self.computePenalty(obs), self.penaltyCoefficients)
         return reward - penalty
