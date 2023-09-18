@@ -1,4 +1,5 @@
 from RLGreenLight.experiments.utils import loadParameters, wandb_init, make_vec_env, create_callbacks
+# from stable_baselines3.common.vec_env import 
 from stable_baselines3 import PPO
 from multiprocessing import cpu_count
 
@@ -8,6 +9,7 @@ if __name__ == "__main__":
     filename = "balance-rew-no-constraints.yml"
     total_timesteps = 10_000
     numCpus = cpu_count() - 2
+    numCpus = 4
     SEED = 666
     project = "TestVecLoadSave"
     group = "short-test"
@@ -15,7 +17,7 @@ if __name__ == "__main__":
 
     # define
     run, config = wandb_init(modelParams, envParams, options, total_timesteps, SEED, project=project, group=group, job_type=None, save_code=True)
-    vec_norm_kwargs = {"norm_obs": True, "norm_reward": False, "clip_obs": 1000}
+    vec_norm_kwargs = {"norm_obs": True, "norm_reward": False, "clip_obs": 50_000, "clip_reward": 1000}
     monitor_filename = None
 
     env = make_vec_env(config["env"], numCpus=numCpus, monitor_filename=monitor_filename, vec_norm_kwargs=vec_norm_kwargs)
