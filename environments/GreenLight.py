@@ -25,6 +25,7 @@ class GreenLight(gym.Env):
                  noLamps: int,              # whether lamps are used
                  ledLamps: int,             # whether led lamps are used
                  hpsLamps: int,             # whether hps lamps are used
+                 intLamps: int,             # whether interlighting lamps are used
                  seasonLength: int,         # [days] length of the growing season
                  predHorizon: int,          # [days] number of future weather predictions
                  timeinterval: int,         # [s] time interval in between observations
@@ -38,6 +39,7 @@ class GreenLight(gym.Env):
                  options: Optional[dict[str, Any]] = None, # options for the environment (e.g. specify starting date)
                  training: bool = True,     # whether we are training or testing
                  num_envs: int = 1) -> None:
+
         super(GreenLight, self).__init__()
         # number of seconds in the day
         c = 86400
@@ -53,6 +55,7 @@ class GreenLight(gym.Env):
         self.noLamps = noLamps
         self.ledLamps = ledLamps
         self.hpsLamps = hpsLamps
+        self.intLamps = intLamps
         self.seasonLength = seasonLength
         self.predHorizon = predHorizon
         self.timeinterval = timeinterval
@@ -166,7 +169,7 @@ class GreenLight(gym.Env):
         # save co2 air, temperature air, humidity air, cFruit, par above the canpoy as effect from lamps and sun
         # retrieve par above canopy:
         modelObs = self.GLModel.getObs()
-        weatherIdx = [self.GLModel.timestep] + [int(ts * self.timeinterval/self.h) + self.GLModel.timestep for ts in range(1, self.Np+1)]
+        weatherIdx = [self.GLModel.timestep*self.solverSteps] + [(ts + self.GLModel.timestep)*self.solverSteps for ts in range(1, self.Np)]
         weatherObs = self.weatherData[weatherIdx, :self.weatherObsVars].flatten()
 
         return np.concatenate([modelObs, weatherObs], axis=0)
@@ -210,13 +213,47 @@ class GreenLight(gym.Env):
         # compute days since 01-01-0000
         # as time indicator by the model
         timeInDays = self.getTimeInDays()
-        self.GLModel = GL(self.weatherData, self.h, self.nx, self.nu, self.nd, self.noLamps, self.ledLamps, self.hpsLamps, self.solverSteps, timeInDays)
+        self.GLModel = GL(self.weatherData, self.h, self.nx, self.nu, self.nd, self.noLamps, self.ledLamps, self.hpsLamps, self.intLamps, self.solverSteps, timeInDays)
         self.terminated = False
         obs = self.getObs()
         self.prevYield = obs[3]
         self.prevAction = np.zeros((self.controlIdx.shape[0],))
         obs[[4,5]] = 0
         return obs, {}
+
+def controlScheme(options, controlVar, nightValue, dayValue):
+    """
+    Function to test the effect of controlling a certain variable.
+    """
+    obs, info = GL.reset()
+
+    N = GL.N                                        # number of timesteps to take
+    states = np.zeros((N+1, GL.modelObsVars))       # array to save states
+    controlSignals = np.zeros((N+1, GL.GLModel.nu)) # array to save rule-based controls controls
+    states[0, :] = obs[:GL.modelObsVars]             # get initial states
+    timevec = np.zeros((N+1,))                      # array to save time
+    timevec[0] = GL.GLModel.time
+    i=1
+
+    while not GL.terminated:
+        # check whether it is day or night
+        if GL.weatherData[i, :9] == 0:
+            controls = np.ones((GL.action_space.shape[0],))*nightValue
+        obs, r, terminated, _, info = GL.step(controls.astype(np.float32))
+        states[i, :] += obs[:GL.modelObsVars]
+        controlSignals[i, :] += info["controls"]
+        timevec[i] = info["Time"]
+        i+=1
+    # insert time vector into states array
+    states = np.insert(states, 0, timevec, axis=1)
+    states = pd.DataFrame(data=states[:], columns=["Time", "Air Temperature", "CO2 concentration", "Humidity", "Fruit weight", "Fruit harvest", "PAR"])
+    controlSignals = pd.DataFrame(data=controlSignals, columns=["uBoil", "uCO2", "uThScr", "uVent", "uLamp", "uIntLamp", "uGroPipe", "uBlScr"])
+    weatherData = pd.DataFrame(data=GL.weatherData[[int(ts * GL.timeinterval/GL.h) for ts in range(0, GL.Np+1)], :GL.weatherObsVars], columns=["Temperature", "Humidity", "PAR", "CO2 concentration", "Wind"])
+
+    return states, controlSignals, weatherData
+
+
+    pass
 
 def runRuleBasedController(GL, options):
     obs, info = GL.reset(options=options)
@@ -244,6 +281,7 @@ def runRuleBasedController(GL, options):
     weatherData = pd.DataFrame(data=GL.weatherData[[int(ts * GL.timeinterval/GL.h) for ts in range(0, GL.Np+1)], :GL.weatherObsVars], columns=["Temperature", "Humidity", "PAR", "CO2 concentration", "Wind"])
 
     return states, controlSignals, weatherData
+
 def runSimulationDefinedControls(GL, matlabControls, stateNames, matlabStates, nx):
     obs, info = GL.reset()
     N = matlabControls.shape[0]

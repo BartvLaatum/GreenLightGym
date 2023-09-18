@@ -942,15 +942,11 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
 	
     # PAR and NIR from the interlights absorbed by the greenhouse air [W m^{-2}]
     # Equation 7.22 [7]
-	# addAux(gl, 'rIntLampAir', (p.etaIntLampPar+p.etaIntLampNir)*gl.a.qIntLampIn - gl.a.rParIntLampCan - \
-	# 	gl.a.rNirIntLampCan - gl.a.rParIntLampFlr - gl.a.rNirIntLampFlr)
     a.rIntLampAir = (p.etaIntLampPar+p.etaIntLampNir)*a.qIntLampIn - a.rParIntLampCan - \
         a.rNirIntLampCan - a.rParIntLampFlr - a.rNirIntLampFlr
     
     # Global radiation from the sun absorbed by the greenhouse air [W m^{-2}]
     # Equation 35 [1]
-    # addAux(gl, 'rGlobSunAir', p.etaGlobAir*d.iGlob.*\
-    #     (gl.a.tauCovPar*p.etaGlobPar+(gl.a.aCanNir+gl.a.aFlrNir)*p.etaGlobNir))
     a.rGlobSunAir = p.etaGlobAir * d[0] * (a.tauCovPar * p.etaGlobPar + (a.aCanNir + a.aFlrNir) * p.etaGlobNir)
     
     # Global radiation from the sun absorbed by the cover [W m^{-2}]

@@ -8,8 +8,9 @@ GreenLight:
     noLamps: 0              # whether lamps are used
     ledLamps: 1             # whether led lamps are used
     hpsLamps: 0             # whether hps lamps are used
+    intLamps: 0             # whether int lamps are used
     h: 1                    # stepsize for the RK4 solver
-    seasonLength: 120       # number of growing days
+    seasonLength: 10       # number of growing days
     predHorizon: 3          # prediction horizon in days.
     timeinterval: 900       # [s] time interval at what rate do we observe and control the environment
     controlSignals: []      # list with all control signal we aim to learn, (empty for rule based controller)

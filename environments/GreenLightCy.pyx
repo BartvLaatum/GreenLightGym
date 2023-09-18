@@ -43,13 +43,14 @@ cdef class GreenLight:
                 char noLamps,
                 char ledLamps,
                 char hpsLamps,
+                char intLamps,
                 unsigned short solverSteps,
                 unsigned int timeInDays):
 
         self.p = <Parameters*>malloc(sizeof(Parameters))
         self.a = <AuxiliaryStates*>malloc(sizeof(AuxiliaryStates))
         self.u = <double*>malloc(nu * sizeof(double))
-        initParameters(self.p, noLamps, ledLamps, hpsLamps)
+        initParameters(self.p, noLamps, ledLamps, hpsLamps, intLamps)
         self.h = h
         self.nx = nx
         self.nu = nu

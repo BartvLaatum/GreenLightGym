@@ -8,41 +8,19 @@ GreenLight:
     noLamps: 0              # whether lamps are used
     ledLamps: 1             # whether led lamps are used
     hpsLamps: 0             # whether hps lamps are used
+    intLamps: 0             # whether int lamps are used
     h: 1                    # stepsize for the RK4 solver
-    seasonLength: 10       # number of growing days
-    predHorizon: 1          # prediction horizon in days.
+    seasonLength: 5        # number of growing days
+    predHorizon: 3          # prediction horizon in days.
     timeinterval: 900       # [s] time interval at what rate do we observe and control the environment
-    controlSignals: [co2]      # list with all control inputs we aim to control/learn
+    controlSignals: [] # list with all control signal we aim to learn, (or have different control schedule for)
     modelObsVars: 6         # number of variables we observe from the model
     weatherObsVars: 5       # number of weather variables we observe
     obsLow:  [15, 300, 60]   # lower bound for the observation space
     obsHigh: [35, 1200, 90]  # upper bound for the observation space
-    rewardCoefficients: [.88, .12]  # coefficients for the costs function
-    penaltyCoefficients: [.0, .0, .0] # coefficients for the penalty function
+    rewardCoefficients: [1]  # coefficients reward function
+    penaltyCoefficients: [.1, .01, .1] # coefficients for the penalty functio\n
 
-options:                    # set if we want to evaluate our model
+options:
     startDay: 273           # day since 01-january for starting the episode
     growthYear: 2011        # year in which we start growing season
-
-PPO:
-  policy: MlpPolicy
-  learning_rate: !!float 3e-5
-  n_steps: 1024
-  batch_size: 128
-  n_epochs: 10
-  gamma: 0.99
-  gae_lambda: 0.95
-  clip_range: 0.2
-  normalize_advantage: True
-  ent_coef: 0.0
-  vf_coef: 0.5
-  max_grad_norm: 0.5
-  use_sde: False
-  sde_sample_freq: -1
-  target_kl: null
-
-  policy_kwargs: {net_arch: {pi: [64, 64], vf: [256, 256]},
-                  optimizer_class: ADAM,
-                  optimizer_kwargs: {amsgrad: True},
-                  activation_fn: SiLU
-          }

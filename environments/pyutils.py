@@ -51,6 +51,8 @@ def loadWeatherData(weatherDataDir: str,
         d[5]: tSky          Sky temperature [deg C]
         d[6]: tSoOut        Outdoor soil temperature [deg C]
         d[7]: dli           Daily radiation sum [MJ m^{-2} day^{-1}]
+        d[8]: isDay         Whether it is day or night [0,1]
+        d[9]: isDaySmooth   Whether it is day or night [0,1] with a smooth transition
     """
     weatherDataPath = weatherDataDir + location + "/" + source + str(growthYear) + ".csv"
 
