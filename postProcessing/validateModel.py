@@ -22,17 +22,13 @@ if __name__ == "__main__":
     SEED = 666
     envParams['training'] = False
 
-
-    env = make_vec_env(lambda: GreenLight(**envParams, options=options), numCpus=1, monitor_filename=None, vec_norm_kwargs={}, eval_env=True)
+    vec_norm_kwargs = {"norm_obs": True, "norm_reward": False, "clip_obs": 1000, "clip_reward": 1000}
+    env = make_vec_env(lambda: GreenLight(**envParams, options=options), numCpus=1, monitor_filename=None, vec_norm_kwargs=vec_norm_kwargs, eval_env=True)
     env = VecNormalize.load(f"trainData/{args.project}/envs/{args.runname}/vecnormalize.pkl", env)
-    # # env = GreenLight(**envParams, options=options)
-    # env = DummyVecEnv([lambda: GreenLight(**envParams, options=options)])
-    # env = VecNormalize(env, norm_obs=True, norm_reward=True, clip_reward=1000, clip_obs=100)
-    # env = VecMonitor(env, filename=None)
-
 
 
     model = PPO.load(f"trainData/{args.project}/models/{args.runname}/best_model.zip", env=env)
+
     env = model.get_env()
     obs, info = env.env_method("reset", options=options)[0]
     obs = obs.reshape(1, -1)
@@ -48,20 +44,19 @@ if __name__ == "__main__":
 
 
     i=0
-    while not dones[0]:
+    while not dones[0] and i < 10:
         action, _states = model.predict(obs, deterministic=True)
         obs, rewards, dones, info = env.step(action)
+        print(obs)
+        print(env.unnormalize_obs(obs))
         states[i+1, :] = env.unnormalize_obs(obs)[0, :envParams["modelObsVars"]]
         timevec[i+1] = info[0]['Time']
         controlSignals[i+1, :] = info[0]['controls']
         rewards = env.unnormalize_reward(rewards)[0]
-        # print(obs.shape)
-        # print(info)
         i+=1
 
     states = np.insert(states, 0, timevec, axis=1)
     states = pd.DataFrame(data=states[:], columns=["Time", "Air Temperature", "CO2 concentration", "Humidity", "Fruit weight", "Fruit harvest", "PAR"])
-    controlSignals = pd.DataFrame(data=controlSignals, columns=["uBoil", "uCO2", "uThScr", "uVent", "uLamp", "uIntLamp", "uGroPipe", "uBlScr"])
 
     states["Time"] = np.asarray(days2date(states["Time"].values, "01-01-0001"), "datetime64[s]")
     dates = states["Time"].dt.strftime("%Y%m%d")

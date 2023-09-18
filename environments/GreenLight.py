@@ -237,7 +237,7 @@ def controlScheme(options, controlVar, nightValue, dayValue):
 
     while not GL.terminated:
         # check whether it is day or night
-        if GL.weatherData[i, :9] == 0:
+        if GL.weatherData[GL.GLModel.timestep * GL.solverSteps, :9] == 0:
             controls = np.ones((GL.action_space.shape[0],))*nightValue
         obs, r, terminated, _, info = GL.step(controls.astype(np.float32))
         states[i, :] += obs[:GL.modelObsVars]
