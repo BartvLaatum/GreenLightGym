@@ -18,7 +18,9 @@ if __name__ == "__main__":
     # numCpus = cpu_count() - 2
     numCpus = 4
     SEED = 666
-    envParams, modelParams, options = loadParameters(hpPath, filename)
+    env_id = "GreenLight"
+    algorithm = "PPO"
+    envParams, modelParams, options = loadParameters(env_id, hpPath, filename, algorithm)
 
     # define
     run, config = wandb_init(modelParams, envParams, options, args.total_timesteps, SEED, project=args.project, group=args.group, job_type="train", save_code=True)
