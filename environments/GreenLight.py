@@ -38,7 +38,7 @@ class GreenLight(gym.Env):
                  penaltyCoefficients: list[float], # coefficients for the penalty function
                  options: Optional[dict[str, Any]] = None, # options for the environment (e.g. specify starting date)
                  training: bool = True,     # whether we are training or testing
-                 num_envs: int = 1) -> None:
+                 ) -> None:
 
         super(GreenLight, self).__init__()
         # number of seconds in the day
@@ -69,7 +69,6 @@ class GreenLight(gym.Env):
         self.penaltyCoefficients = penaltyCoefficients
         self.training = training
         self.options = options
-        self.num_envs = num_envs
 
         # set up the action and observation space
         self.action_space = Box(low=-1, high=1, shape=(len(controlSignals),), dtype=np.float32)
