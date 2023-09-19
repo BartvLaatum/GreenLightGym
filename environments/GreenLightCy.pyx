@@ -31,8 +31,6 @@ cdef class GreenLight:
     cdef char nu            # number of control signals
     cdef char nd            # number of disturbances
     cdef unsigned short solverSteps # number of steps to take by solver between time interval for observing the env
-    # Dictionary mapping indices to functions
-    cdef dict idx2ControlSignal
 
     def __cinit__(self,
                 cnp.ndarray[cnp.double_t, ndim=2] weather,

@@ -38,7 +38,7 @@ class GreenLight(gym.Env):
                  penaltyCoefficients: list[float], # coefficients for the penalty function
                  options: Optional[dict[str, Any]] = None, # options for the environment (e.g. specify starting date)
                  training: bool = True,     # whether we are training or testing
-                 num_envs: int = 1) -> None:
+                 ) -> None:
 
         super(GreenLight, self).__init__()
         # number of seconds in the day
@@ -69,11 +69,10 @@ class GreenLight(gym.Env):
         self.penaltyCoefficients = penaltyCoefficients
         self.training = training
         self.options = options
-        self.num_envs = num_envs
 
         # set up the action and observation space
         self.action_space = Box(low=-1, high=1, shape=(len(controlSignals),), dtype=np.float32)
-        self.observation_space = Box(low=-1e4, high=1e4, shape=(self.modelObsVars+(self.Np+1)*self.weatherObsVars,), dtype=np.float32)
+        self.observation_space = Box(low=-1e4, high=1e4, shape=(self.modelObsVars+self.Np*self.weatherObsVars,), dtype=np.float32)
 
         # specify which signals we want to control, fixed various simulations
         controlIndices = {"boiler": 0, "co2": 1, "thermal": 2, "roofvent": 3, "lamps": 4, "intlamps": 5, "growpipes": 6, "blackout": 7}
@@ -178,7 +177,6 @@ class GreenLight(gym.Env):
         modelObs = self.GLModel.getObs()
         weatherIdx = [self.GLModel.timestep*self.solverSteps] + [(ts + self.GLModel.timestep)*self.solverSteps for ts in range(1, self.Np)]
         weatherObs = self.weatherData[weatherIdx, :self.weatherObsVars].flatten()
-
         return np.concatenate([modelObs, weatherObs], axis=0)
 
     def terminalState(self, states: np.ndarray) -> bool:
@@ -225,7 +223,6 @@ class GreenLight(gym.Env):
         obs = self.getObs()
         self.prevYield = obs[3]
         self.prevAction = np.zeros((self.controlIdx.shape[0],))
-        obs[[4,5]] = 0
         return obs, {}
 
 def controlScheme(options, controlVar, nightValue, dayValue):

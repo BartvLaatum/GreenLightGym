@@ -1,3 +1,4 @@
+# %%
 import pandas as pd
 from RLGreenLight.visualisations import createFigs
 from matplotlib import pyplot as plt
@@ -18,14 +19,15 @@ plt.rcParams['text.usetex'] = False
 plt.rcParams['mathtext.fontset'] = 'cm'
 plt.rc('axes', unicode_minus=False)
 
+# %%
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--date", type=str, default="20111001", help="Starting date of the simulation")
     parser.add_argument("--seasonLength", type=int, default=120, help="Length of the season")
     parser.add_argument("--controller", type=str, default="ppo", help="Controller to compare")
     parser.add_argument("--runname", type=str, help="Runname of the controller")
-    parser.add_argument("--months", type=int, default=[10], help="Month to plot")
-    parser.add_argument("--days", type=int, default=[1, 2, 3, 5, 6], help="Days to plot")
+    parser.add_argument("--months", nargs="*", type=int, default=[10], help="Month to plot")
+    parser.add_argument("--days", nargs="*", type=int, default=[1, 2, 3, 4 ,5], help="Days to plot")
     args = parser.parse_args()
 
     # load data rule based controller
@@ -36,8 +38,10 @@ if __name__ == "__main__":
     ppoStates = pd.read_csv(f"data/{args.controller}/{args.runname}/states{args.date}-{args.seasonLength:03}.csv")
     ppoControls = pd.read_csv(f"data/{args.controller}/{args.runname}/controls{args.date}-{args.seasonLength:03}.csv")
 
+
     states2plot = baselineStates.columns[1:]
-    controls2plot = baselineControls.columns[:]
+    controls2plot = ppoControls.columns[:]
+    print(controls2plot)
 
     # extract first of october from time column in baselineStates dataframe abd next five days
     baselineStates["Time"] = pd.to_datetime(baselineStates["Time"])
@@ -47,7 +51,9 @@ if __name__ == "__main__":
 
     baselineStates = baselineStates[baselineStates["Time"].dt.month.isin(args.months)]
     ppoStates = ppoStates[ppoStates["Time"].dt.month.isin(args.months)]
-    # baselineStates = baselineStates[baselineStates["Time"].dt.day == 1]	
+    baselineStates = baselineStates[baselineStates["Time"].dt.day.isin(args.days)]
+    ppoStates = ppoStates[ppoStates["Time"].dt.day.isin(args.days)]
+
     # baselineStates = baselineStates.reset_index(drop=True)
 
     # extract data from first of october and november
