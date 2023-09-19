@@ -217,6 +217,7 @@ cdef packed struct Parameters:
     char thScrSpDay       # Screen is closed at day when outdoor is below this temperature
     char thScrSpNight     # Screen is closed at night when outdoor is below this temperature
     char thScrPband       # P-band for thermal screen
+    short co2SpNight
     short co2SpDay         # Co2 is supplied if co2 is below this point during day
     char co2Band          # P-band for co2 supply
     char heatDeadZone     # Zone between heating setpoint and ventilation setpoint
@@ -289,8 +290,6 @@ cdef packed struct Parameters:
 
     float cLeakTop          # Fraction of leakage ventilation going from the top 
     double minWind          #  wind speed where the effect of wind on leakage begins
-
-    # double dmfm             # Dry matter to fresh matter ratio
 
 # Initialize the values of a Parameters struct
 cdef inline void initParameters(Parameters* p, char noLamps, char ledLamps, char hpsLamps, char intLamps):
@@ -543,6 +542,7 @@ cdef inline void initParameters(Parameters* p, char noLamps, char ledLamps, char
     p.thScrSpDay = 5
     p.thScrSpNight = 10
     p.thScrPband = -1
+    p.co2SpNight = 500
     p.co2SpDay = 800
     p.co2Band = -100
     p.heatDeadZone = 5

@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 from RLGreenLight.experiments.utils import loadParameters, wandb_init, make_vec_env, create_callbacks
-from RLGreenLight.environments.GreenLight import GreenLight, runRuleBasedController
+from RLGreenLight.environments.GreenLight import GreenLight, runRuleBasedController, controlScheme
 from RLGreenLight.visualisations.createFigs import createStatesFig, plotVariables
 from RLGreenLight.environments.pyutils import days2date
 
@@ -53,9 +53,44 @@ def interLightsExp(envParams, options):
     plt.legend()
     plt.show()
 
-def testControlScheme(envParams, options, controlVar, nightValue, dayValue):
+def runControlScheme(envParams, options, nightValue, dayValue):
     GL = GreenLight(**envParams, options=options, training=False)
+    states, controls, weather = controlScheme(GL, nightValue, dayValue)
+    states["Time"] = np.asarray(days2date(states["Time"].values, "01-01-0001"), "datetime64[s]")
+    controls["Time"] = states["Time"]
+    weather["Time"] = states["Time"]
+    return states, controls, weather
 
+def controlSchemeExp(envParams, options, controlVar):
+    """
+    Test the effect of controlling inter lights on the fruit weight.
+    Currently, the inter lights are controlled by the rule based controller.
+    """
+    lowNight = runControlScheme(envParams, options, nightValue=-1, dayValue=-.8)
+    highNight = runControlScheme(envParams, options, nightValue=-1, dayValue=-.8)
+
+    vars2plot = ["CO2 concentration", "Fruit weight", "PAR"]
+    lowNightdf = pd.DataFrame(columns=vars2plot)
+    # lowNightdf[vars2plot[0]] = lowNight[1][vars2plot[0]].to_numpy()
+    lowNightdf[vars2plot[0]] = lowNight[0][vars2plot[0]].to_numpy()
+    lowNightdf[vars2plot[1]] = lowNight[0][vars2plot[1]].to_numpy()
+    lowNightdf[vars2plot[2]] = lowNight[0][vars2plot[2]].to_numpy()
+    lowNightdf["Time"] = lowNight[0]["Time"]
+
+    highNightdf = pd.DataFrame(columns=vars2plot)
+    # highNightdf[vars2plot[0]] = highNight[1][vars2plot[0]].to_numpy()
+    highNightdf[vars2plot[0]] = highNight[0][vars2plot[0]].to_numpy()
+    highNightdf[vars2plot[1]] = highNight[0][vars2plot[1]].to_numpy()
+    highNightdf[vars2plot[2]] = highNight[0][vars2plot[2]].to_numpy()
+
+    highNightdf["Time"] = highNight[0]["Time"]
+
+
+    # plot controls
+    fig, axes = createStatesFig(vars2plot)
+    plotVariables(fig, axes=axes, states=lowNightdf, states2plot=vars2plot, label="Control", color="C00")
+    plotVariables(fig, axes=axes, states=highNightdf, states2plot=vars2plot, label="Control", color="C01")
+    plt.show()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -65,6 +100,10 @@ if __name__ == "__main__":
     filename = "interLamps.yml"
     env_id = "GreenLight"
     envParams, modelParams, options = loadParameters(env_id, hpPath, filename)
-    interLightsExp(envParams, options)
+    # interLightsExp(envParams, options)
 
+    filename = "co2Effects.yml"
+    envParams, modelParams, options = loadParameters(env_id, hpPath, filename)
 
+    controlVar = "uCO2"
+    controlSchemeExp(envParams, options, controlVar)

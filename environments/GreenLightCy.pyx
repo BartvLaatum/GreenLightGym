@@ -6,7 +6,7 @@ The python environment will send setpoints as actions to the cython module.
 Next, cython will compute the control signals, and simulate the new state of the greenhouse.
 Finally, the new state/measurement/disturbances will be returned to the python environment.
 """
-from auxiliaryStates cimport AuxiliaryStates
+from auxiliaryStates cimport AuxiliaryStates, update
 from defineParameters cimport Parameters, initParameters
 from differenceFunction cimport fRK4
 from computeControls cimport controlSignal
@@ -31,8 +31,6 @@ cdef class GreenLight:
     cdef char nu            # number of control signals
     cdef char nd            # number of disturbances
     cdef unsigned short solverSteps # number of steps to take by solver between time interval for observing the env
-    # Dictionary mapping indices to functions
-    cdef dict idx2ControlSignal
 
     def __cinit__(self,
                 cnp.ndarray[cnp.double_t, ndim=2] weather,
@@ -60,6 +58,9 @@ cdef class GreenLight:
         self.initWeather(weather)
         self.initStates(self.d[0], timeInDays)
 
+        # compute auxiliary states once before start of simulation
+        update(self.a, self.p, self.u, self.x, self.d[0])
+
     def __dealloc__(self):
         free(self.a)
         free(self.p)
@@ -73,6 +74,9 @@ cdef class GreenLight:
     def reset(self, unsigned int timeInDays):
         self.timestep = 0
         self.initStates(self.d[0], timeInDays)
+
+    def setNightCo2(self, short co2SpNight):
+        self.p.co2SpNight = co2SpNight
 
     @cython.boundscheck(False) # turn off bounds-checking for entire function
     @cython.wraparound(False)  # turn off negative index wrapping for entire function
@@ -101,7 +105,6 @@ cdef class GreenLight:
         for j in range(self.solverSteps):
             self.x = fRK4(self.a, self.p, self.u, self.x, self.d[self.timestep * self.solverSteps + j], self.h, self.nx)
         self.timestep += 1
-
 
     cdef void initWeather(self, cnp.ndarray[cnp.double_t, ndim=2] weather):
         """
@@ -256,6 +259,7 @@ cdef class GreenLight:
         # time since 01-01-0001 [days]:
         self.x[27] = timeInDays
 
+
     cpdef getWeatherArray(self):
         """
         Function that copies weather data from the cython module to a numpy array.
@@ -300,12 +304,16 @@ cdef class GreenLight:
         """
         cdef  cnp.ndarray[cnp.double_t, ndim=1] np_obs = np.zeros(6, dtype=np.double)
         np_obs[0] = self.x[2]                               # Air temperature in main compartment [deg C]
-        np_obs[1] = co2dens2ppm(self.x[2], 1e-6*self.x[0])  # CO2 concentration in main air compartment [ppm]
+        np_obs[1] = self.a.co2InPpm                         # CO2 concentration in main air compartment [ppm]
         np_obs[2] = 100*self.x[15]/satVp(self.x[2])         # Relative humidity in main air compartment [%]
         np_obs[3] = self.x[25]*1e-6                         # Fruit dry matter weight [kg{CH20} m^{-2}]
         np_obs[4] = self.a.mcFruitHarSum*1e-6               # Harvested fruit in dry matter weight [kg{CH20} m^{-2}]
         np_obs[5] = self.a.rParGhSun + self.a.rParGhLamp    # PAR radiation above the canopy [W m^{-2}]
         return np_obs
+
+    @property
+    def co2SpNight(self):
+        return self.p.co2SpNight
 
     # CO2 injection rate [mg m^-2 s^-1]
     @property

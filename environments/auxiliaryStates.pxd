@@ -1334,7 +1334,6 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
     # Relative humidity [%]
     a.rhIn = 100*x[15]/satVp(x[2])
 
-
     ###################################
     #### Convection and conduction ####
     ###################################
