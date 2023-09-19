@@ -41,7 +41,6 @@ if __name__ == "__main__":
 
     states2plot = baselineStates.columns[1:]
     controls2plot = ppoControls.columns[:]
-    print(controls2plot)
 
     # extract first of october from time column in baselineStates dataframe abd next five days
     baselineStates["Time"] = pd.to_datetime(baselineStates["Time"])
@@ -51,16 +50,15 @@ if __name__ == "__main__":
 
     baselineStates = baselineStates[baselineStates["Time"].dt.month.isin(args.months)]
     ppoStates = ppoStates[ppoStates["Time"].dt.month.isin(args.months)]
-    baselineStates = baselineStates[baselineStates["Time"].dt.day.isin(args.days)]
-    ppoStates = ppoStates[ppoStates["Time"].dt.day.isin(args.days)]
-
-    # baselineStates = baselineStates.reset_index(drop=True)
 
     # extract data from first of october and november
     baselineControls = baselineControls[baselineControls["Time"].dt.month.isin(args.months)]
-    baselineControls = baselineControls[baselineControls["Time"].dt.day.isin(args.days)]
     ppoControls = ppoControls[ppoControls["Time"].dt.month.isin(args.months)]
-    ppoControls = ppoControls[ppoControls["Time"].dt.day.isin(args.days)]
+    if args.days:
+        baselineControls = baselineControls[baselineControls["Time"].dt.day.isin(args.days)]
+        baselineStates = baselineStates[baselineStates["Time"].dt.day.isin(args.days)]
+        ppoStates = ppoStates[ppoStates["Time"].dt.day.isin(args.days)]	
+        ppoControls = ppoControls[ppoControls["Time"].dt.day.isin(args.days)]
 
     # plot the data
     fig, axes = createFigs.createStatesFig(states2plot)

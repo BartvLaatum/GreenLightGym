@@ -27,8 +27,15 @@ def createStatesFig(states2plot: list):
     """
     fig = plt.figure()
     nplots = len(states2plot)
+
+    if nplots % 2 == 0:
+        rows = nplots//2
+        cols = 2
+    else:
+        rows = nplots//2 + 1
+        cols = nplots//2 + 1
     # add subplot for each state
-    axes = [fig.add_subplot(nplots//2, 2, i+1) for i in range(nplots)]
+    axes = [fig.add_subplot(rows, cols, i+1) for i in range(nplots)]
     
     # set the xlabel for the final row of plots
     # remove xticks for all but the bottom row
@@ -55,6 +62,36 @@ def plotVariables(fig, axes: list, states: pd.DataFrame, states2plot: list, labe
         # ax.tick_params(axis='x', rotation=45)
         ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
     fig.autofmt_xdate()
+    return fig, axes
+
+def createDistFig(states2plot: list):
+    """
+    Function to plot variables simulated by GL model.
+    """
+    fig = plt.figure()
+    nplots = len(states2plot)
+    # add subplot for each state
+    axes = [fig.add_subplot(nplots//2, 2, i+1) for i in range(nplots)]
+    
+    # set the xlabel for the final row of plots
+    # remove xticks for all but the bottom row
+    # xlabel = "Time (days)"
+    for i, ax in enumerate(axes[:-2]):
+        # ax.tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
+        ax.set_xlabel(states2plot[i])
+
+    # set the ylabel for each plot
+    for i, ax in enumerate(axes):
+        ax.set_ylabel("Count")
+    return fig, axes
+
+
+def plotDistributions(fig, axes: list, states: pd.DataFrame, states2plot: list, label: str, color: str):
+    """
+    Function to plot variables simulated by GL model.
+    """
+    for i, ax in enumerate(axes):
+        sns.histplot(states[states2plot[i]], ax=ax, label=label, color=color)
     return fig, axes
 
 

@@ -8,7 +8,7 @@ GreenLight:
     noLamps: 0              # whether lamps are used
     ledLamps: 1             # whether led lamps are used
     hpsLamps: 0             # whether hps lamps are used
-    intLamps: 1             # whether 
+    intLamps: 0             # whether int lamps are used
     h: 1                    # stepsize for the RK4 solver
     seasonLength: 120       # number of growing days
     predHorizon: 0.25          # prediction horizon in days.

@@ -197,7 +197,7 @@ class GreenLight(gym.Env):
         delta = d1 - d0
         return delta.days + self.startDay
 
-    def reset(self, seed: int | None = None, options: dict[str: Any]=None) -> Tuple[np.ndarray, dict[str, Any]]:
+    def reset(self, seed: int | None = None, options: dict[str: Any] = None) -> Tuple[np.ndarray, dict[str, Any]]:
         """
         Reset the environment to a random initial state.
         Randomness is introduced by the growth year and start day.
@@ -219,40 +219,44 @@ class GreenLight(gym.Env):
         # as time indicator by the model
         timeInDays = self.getTimeInDays()
         self.GLModel = GL(self.weatherData, self.h, self.nx, self.nu, self.nd, self.noLamps, self.ledLamps, self.hpsLamps, self.intLamps, self.solverSteps, timeInDays)
+                
         self.terminated = False
         obs = self.getObs()
         self.prevYield = obs[3]
         self.prevAction = np.zeros((self.controlIdx.shape[0],))
         return obs, {}
 
-def controlScheme(options, controlVar, nightValue, dayValue):
+def controlScheme(GL, nightValue, dayValue):
     """
     Function to test the effect of controlling a certain variable.
     """
     obs, info = GL.reset()
-
+    GL.GLModel.setNightCo2(nightValue)
     N = GL.N                                        # number of timesteps to take
     states = np.zeros((N+1, GL.modelObsVars))       # array to save states
     controlSignals = np.zeros((N+1, GL.GLModel.nu)) # array to save rule-based controls controls
-    states[0, :] = obs[:GL.modelObsVars]             # get initial states
+    states[0, :] = obs[:GL.modelObsVars]            # get initial states
     timevec = np.zeros((N+1,))                      # array to save time
     timevec[0] = GL.GLModel.time
     i=1
 
     while not GL.terminated:
         # check whether it is day or night
-        if GL.weatherData[GL.GLModel.timestep * GL.solverSteps, :9] == 0:
+        if GL.weatherData[GL.GLModel.timestep * GL.solverSteps, 9] > 0:
+            controls = np.ones((GL.action_space.shape[0],))*dayValue
+        else:
             controls = np.ones((GL.action_space.shape[0],))*nightValue
         obs, r, terminated, _, info = GL.step(controls.astype(np.float32))
         states[i, :] += obs[:GL.modelObsVars]
         controlSignals[i, :] += info["controls"]
         timevec[i] = info["Time"]
         i+=1
+
     # insert time vector into states array
     states = np.insert(states, 0, timevec, axis=1)
     states = pd.DataFrame(data=states[:], columns=["Time", "Air Temperature", "CO2 concentration", "Humidity", "Fruit weight", "Fruit harvest", "PAR"])
     controlSignals = pd.DataFrame(data=controlSignals, columns=["uBoil", "uCO2", "uThScr", "uVent", "uLamp", "uIntLamp", "uGroPipe", "uBlScr"])
-    weatherData = pd.DataFrame(data=GL.weatherData[[int(ts * GL.timeinterval/GL.h) for ts in range(0, GL.Np+1)], :GL.weatherObsVars], columns=["Temperature", "Humidity", "PAR", "CO2 concentration", "Wind"])
+    weatherData = pd.DataFrame(data=GL.weatherData[[int(ts * GL.solverSteps) for ts in range(0, GL.Np+1)], :GL.weatherObsVars], columns=["Temperature", "Humidity", "PAR", "CO2 concentration", "Wind"])
 
     return states, controlSignals, weatherData
 

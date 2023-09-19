@@ -29,8 +29,6 @@ if __name__ == "__main__":
     env = make_vec_env(lambda: GreenLight(**envParams, options=options), numCpus=1, monitor_filename=None, vec_norm_kwargs=vec_norm_kwargs, eval_env=True)
     env = VecNormalize.load(f"trainData/{args.project}/envs/{args.runname}/vecnormalize.pkl", env)
 
-
-
     model = PPO.load(f"trainData/{args.project}/models/{args.runname}/best_model.zip", env=env)
 
     env = model.get_env()
