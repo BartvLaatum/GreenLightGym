@@ -8,6 +8,7 @@ GreenLight:
     noLamps: 0              # whether lamps are used
     ledLamps: 1             # whether led lamps are used
     hpsLamps: 0             # whether hps lamps are used
+    dmfm: 0.0627            # dry matter fresh matter ratio
     h: 1                    # stepsize for the RK4 solver
     seasonLength: 120       # number of growing days
     predHorizon: 3          # prediction horizon in days.

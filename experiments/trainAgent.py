@@ -2,6 +2,8 @@ from RLGreenLight.experiments.utils import loadParameters, wandb_init, make_vec_
 # from stable_baselines3.common.vec_env import 
 from stable_baselines3 import PPO
 from multiprocessing import cpu_count
+import matplotlib.pyplot as plt
+import wandb
 
 import argparse
 
@@ -18,10 +20,14 @@ if __name__ == "__main__":
     # numCpus = cpu_count() - 2
     numCpus = 4
     SEED = 666
-    envParams, modelParams, options = loadParameters(hpPath, filename)
+    n_eval_episodes = 1
+    env_id = "GreenLight"
+    algorithm = "PPO"
+    envParams, modelParams, options = loadParameters(env_id, hpPath, filename, algorithm)
 
     # define
     run, config = wandb_init(modelParams, envParams, options, args.total_timesteps, SEED, project=args.project, group=args.group, job_type="train", save_code=True)
+    
     vec_norm_kwargs = {"norm_obs": True, "norm_reward": True, "clip_obs": 50_000}
     monitor_filename = None
 
@@ -33,7 +39,7 @@ if __name__ == "__main__":
     eval_freq = args.total_timesteps//args.n_evals//numCpus
     save_name = "vec_norm"
 
-    callbacks = create_callbacks(eval_freq, env_log_dir, save_name, model_log_dir, eval_env, verbose=1)
+    callbacks = create_callbacks(n_eval_episodes, eval_freq, env_log_dir, save_name, model_log_dir, eval_env, run=run, verbose=1)
     tensorboard_log = f"trainData/{args.project}/logs/{run.name}"
 
     model = PPO(env=env, seed=SEED, verbose=0, **config["modelParams"], tensorboard_log=tensorboard_log)

@@ -1,14 +1,19 @@
 import os
 import yaml
+import numpy as np
 from os.path import join
-from typing import Dict, Any, Callable, List
+from typing import Dict, Any, Callable, List, Optional, Union, Tuple
+import warnings
+
+import gymnasium as gym
+
 
 import wandb
 from wandb.integration.sb3 import WandbCallback
 
 from torch.optim import Adam
 from torch.nn.modules.activation import ReLU, SiLU
-from stable_baselines3.common.vec_env import SubprocVecEnv, VecNormalize, VecMonitor, VecEnv
+from stable_baselines3.common.vec_env import SubprocVecEnv, VecNormalize, VecMonitor, VecEnv, is_vecenv_wrapped
 
 from RLGreenLight.environments.GreenLight import GreenLight
 from RLGreenLight.callbacks.customCallback import TensorboardCallback, SaveVecNormalizeCallback, BaseCallback
@@ -64,7 +69,7 @@ def wandb_init(modelParams: Dict[str, Any],
         sync_tensorboard=True,
         job_type=job_type,
         save_code=save_code,
-        resume=True,
+        resume=resume,
     )
     return run, config
 
@@ -84,15 +89,17 @@ def make_vec_env(env_fn: Callable, numCpus: int, monitor_filename: str = None, v
         env.norm_reward = False
     return env
 
-def create_callbacks(eval_freq: int,
+def create_callbacks(n_eval_episodes: int,
+                     eval_freq: int,
                      env_log_dir: str,
                      save_name: str,
                      model_log_dir: str,
                      eval_env: VecEnv,
                      verbose: int = 1,
+                     run: wandb.run = None
                      ) -> List[BaseCallback]:
     save_vec_norm = SaveVecNormalizeCallback(save_freq=eval_freq, save_path=env_log_dir, name_prefix=save_name)
     save_vec_best = SaveVecNormalizeCallback(save_freq=1, save_path=env_log_dir, verbose=2)
-    eval_callback = TensorboardCallback(eval_env, eval_freq=eval_freq, best_model_save_path=model_log_dir, name_vec_env=save_name, path_vec_env=env_log_dir, deterministic=True, callback_on_new_best=save_vec_best, verbose=verbose)
+    eval_callback = TensorboardCallback(eval_env, n_eval_episodes=n_eval_episodes, eval_freq=eval_freq, best_model_save_path=model_log_dir, name_vec_env=save_name, path_vec_env=env_log_dir, deterministic=True, callback_on_new_best=save_vec_best, run=run, verbose=verbose)
     wandbcallback = WandbCallback(verbose=verbose)
     return [save_vec_norm, eval_callback, wandbcallback]

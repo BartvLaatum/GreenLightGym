@@ -64,7 +64,7 @@ def loadWeatherData(weatherDataDir: str,
     dt = np.mean(np.diff(time-time[0])) # sample period of data [s]
     N0 = int(np.ceil(startDay*c/dt))    # Start index
     Ns = int(np.ceil(nDays*c/dt))       # Number of samples we need from regular data
-    Np = int(np.ceil(predHorizon*c/dt)) # Number of samples into the future we need from regular data
+    Np = int(np.ceil(predHorizon*c/dt))+1 # Number of samples into the future we need from regular data
 
     # check whether we exceed data length and we are in the final season
     if N0+Ns+Np > len(time):
@@ -133,7 +133,6 @@ def days2date(timeInDays: float, referenceDate: str):
     hours = time_component.astype(int)
     time_component = (time_component - hours) * 60          # Convert remaining decimal part to minutes
     minutes = time_component.astype(int)
-    # seconds = ((time_component - minutes) * 60).astype(int) # Convert remaining decimal part to seconds
     
     target_datetimes = [referenceDatetime + timedelta(days=int(int_day), hours=int(hour), minutes=int(minute)) for int_day, hour, minute in zip(int_days, hours, minutes)]
 
