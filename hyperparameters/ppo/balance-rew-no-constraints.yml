@@ -9,16 +9,16 @@ GreenLight:
     ledLamps: 1             # whether led lamps are used
     hpsLamps: 0             # whether hps lamps are used
     h: 1                    # stepsize for the RK4 solver
-    seasonLength: 10       # number of growing days
-    predHorizon: 1          # prediction horizon in days.
+    seasonLength: 120       # number of growing days
+    predHorizon: 0.25          # prediction horizon in days.
     timeinterval: 900       # [s] time interval at what rate do we observe and control the environment
     controlSignals: [co2]      # list with all control inputs we aim to control/learn
     modelObsVars: 6         # number of variables we observe from the model
     weatherObsVars: 5       # number of weather variables we observe
     obsLow:  [15, 300, 60]   # lower bound for the observation space
     obsHigh: [35, 1200, 90]  # upper bound for the observation space
-    rewardCoefficients: [.88, .12]  # coefficients for the costs function
-    penaltyCoefficients: [.0, .0, .0] # coefficients for the penalty function
+    rewardCoefficients: [.99999, .00001]  # coefficients for the costs function
+    penaltyCoefficients: [.0, .0, .0] # coefficients for the penalty functio\n
 
 options:                    # set if we want to evaluate our model
     startDay: 273           # day since 01-january for starting the episode
@@ -26,11 +26,11 @@ options:                    # set if we want to evaluate our model
 
 PPO:
   policy: MlpPolicy
-  learning_rate: !!float 3e-5
-  n_steps: 1024
-  batch_size: 128
+  learning_rate: !!float 1e-4
+  n_steps: 128                  # we update after n_steps calls of step() function. in the case of 10 envs --> 1280 timesteps are taken (equals to 10 days)
+  batch_size: 64
   n_epochs: 10
-  gamma: 0.99
+  gamma: 0.9
   gae_lambda: 0.95
   clip_range: 0.2
   normalize_advantage: True

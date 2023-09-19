@@ -44,6 +44,7 @@ def wandb_init(modelParams: Dict[str, Any],
                group: str,
                job_type: str,
                save_code: bool = False,
+               resume: bool = False
                ):
     config= {
         "policy": modelParams["policy"],
@@ -62,7 +63,8 @@ def wandb_init(modelParams: Dict[str, Any],
         group=group,
         sync_tensorboard=True,
         job_type=job_type,
-        save_code=save_code
+        save_code=save_code,
+        resume=True,
     )
     return run, config
 

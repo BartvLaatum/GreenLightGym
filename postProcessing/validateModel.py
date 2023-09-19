@@ -22,9 +22,12 @@ if __name__ == "__main__":
     SEED = 666
     envParams['training'] = False
 
-    vec_norm_kwargs = {"norm_obs": True, "norm_reward": False, "clip_obs": 1000, "clip_reward": 1000}
+    vec_norm_kwargs = {"norm_obs": True, "norm_reward": False, "clip_obs": 50_000, "clip_reward": 1000}
+    # vec_norm_kwargs = None
     env = make_vec_env(lambda: GreenLight(**envParams, options=options), numCpus=1, monitor_filename=None, vec_norm_kwargs=vec_norm_kwargs, eval_env=True)
     env = VecNormalize.load(f"trainData/{args.project}/envs/{args.runname}/vecnormalize.pkl", env)
+
+    print(env.clip_obs)
 
 
     model = PPO.load(f"trainData/{args.project}/models/{args.runname}/best_model.zip", env=env)
@@ -41,8 +44,6 @@ if __name__ == "__main__":
 
     states[0, :] = obs[0, :envParams["modelObsVars"]]             # get initial states
     timevec[0] = env.env_method("getTimeInDays")[0]
-
-
     i=0
     while not dones[0] and i < 10:
         action, _states = model.predict(obs, deterministic=True)
@@ -69,5 +70,5 @@ if __name__ == "__main__":
     states.to_csv(f"data/ppo/{args.runname}/states{dates[0]}-{envParams['seasonLength']:03}.csv", index=False)
     controlSignals.to_csv(f"data/ppo/{args.runname}/controls{dates[0]}-{envParams['seasonLength']:03}.csv", index=False)
 
-    print(states)
-    print(controlSignals)
+    # print(states)
+    # print(controlSignals)
