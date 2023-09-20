@@ -103,7 +103,7 @@ class TensorboardCallback(EvalCallback):
             mean_obs = np.mean(episode_obs, axis=0)
             
             actions = pd.DataFrame(data=mean_actions, columns=["uBoil", "uCO2", "uThScr", "uVent", "uLamp", "uIntLamp", "uGroPipe", "uBlScr"])
-            actions["Time"] = pd.to_datetime(days2date(time_vec[1:], "01-01-0001")).tz_localize('CET')
+            actions["Time"] = pd.to_datetime(days2date(time_vec[1:], "01-01-0001"))
 
             mean_ep_length, std_ep_length = np.mean(episode_lengths), np.std(episode_lengths)
             self.last_mean_reward = mean_reward
@@ -140,8 +140,6 @@ class TensorboardCallback(EvalCallback):
                 continue_training = continue_training and self._on_event()
 
             if self.run:
-                print(actions["Time"])
-                # data = [mean_actions[:,1]]
                 table = wandb.Table(dataframe=actions)#, columns=["Time", "CO2 injection"])
                 # self.run.log({'controls': actions})
                 # Create a line plot, specifying the x-axis as the 'Time' column
