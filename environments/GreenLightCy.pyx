@@ -251,7 +251,7 @@ cdef class GreenLight:
         # # start with 3.12 plants/m2, assume they are each 2 g = 6240 mg/m2.
         self.x[23] = 0.7*6240   # 70% in leafs
         self.x[24] = 0.25*6240  # 25% in stems
-        self.x[25] = 0.05*62400 # 5% in fruits we only harvest if this is > 300K
+        self.x[25] = 0.05*6240 # 5% in fruits we only harvest if this is > 300K
 
         # x.tCanSum.val = 0
         self.x[26] = 0
