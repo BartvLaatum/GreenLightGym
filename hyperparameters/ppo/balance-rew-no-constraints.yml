@@ -9,8 +9,9 @@ GreenLight:
     ledLamps: 1             # whether led lamps are used
     hpsLamps: 0             # whether hps lamps are used
     intLamps: 0             # whether int lamps are used
+    dmfm: 0.0627            # dry matter fresh matter ratio
     h: 1                    # stepsize for the RK4 solver
-    seasonLength: 120       # number of growing days
+    seasonLength: 1       # number of growing days
     predHorizon: 0.25          # prediction horizon in days.
     timeinterval: 900       # [s] time interval at what rate do we observe and control the environment
     controlSignals: [co2]      # list with all control inputs we aim to control/learn

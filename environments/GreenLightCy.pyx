@@ -59,7 +59,7 @@ cdef class GreenLight:
         self.initStates(self.d[0], timeInDays)
 
         # compute auxiliary states once before start of simulation
-        update(self.a, self.p, self.u, self.x, self.d[0])
+        # update(self.a, self.p, self.u, self.x, self.d[0])
 
     def __dealloc__(self):
         free(self.a)

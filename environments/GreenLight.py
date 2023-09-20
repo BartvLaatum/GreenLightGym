@@ -26,6 +26,7 @@ class GreenLight(gym.Env):
                  ledLamps: int,             # whether led lamps are used
                  hpsLamps: int,             # whether hps lamps are used
                  intLamps: int,             # whether interlighting lamps are used
+                 dmfm: float,               # [kg [FM] m^-2] dry matter fruit mass
                  seasonLength: int,         # [days] length of the growing season
                  predHorizon: int,          # [days] number of future weather predictions
                  timeinterval: int,         # [s] time interval in between observations
@@ -56,6 +57,7 @@ class GreenLight(gym.Env):
         self.ledLamps = ledLamps
         self.hpsLamps = hpsLamps
         self.intLamps = intLamps
+        self.dmfm = dmfm
         self.seasonLength = seasonLength
         self.predHorizon = predHorizon
         self.timeinterval = timeinterval
@@ -67,12 +69,12 @@ class GreenLight(gym.Env):
         self.weatherObsVars = weatherObsVars
         self.rewardCoefficients = rewardCoefficients
         self.penaltyCoefficients = penaltyCoefficients
-        self.training = training
         self.options = options
+        self.training = training
 
         # set up the action and observation space
         self.action_space = Box(low=-1, high=1, shape=(len(controlSignals),), dtype=np.float32)
-        self.observation_space = Box(low=-1e4, high=1e4, shape=(self.modelObsVars+self.Np*self.weatherObsVars,), dtype=np.float32)
+        self.observation_space = Box(low=-1e4, high=1e4, shape=(self.modelObsVars+(self.Np)*self.weatherObsVars,), dtype=np.float32)
 
         # specify which signals we want to control, fixed various simulations
         controlIndices = {"boiler": 0, "co2": 1, "thermal": 2, "roofvent": 3, "lamps": 4, "intlamps": 5, "growpipes": 6, "blackout": 7}
@@ -82,7 +84,6 @@ class GreenLight(gym.Env):
         self.obsLow = np.array(obsLow)
         self.obsHigh = np.array(obsHigh)
 
-        self.dmfm = 0.0627 # dry matter to fresh matter ratio
 
     def step(self, action: np.ndarray) -> Tuple[np.ndarray, float, bool, dict[str, Any]]:
         """
@@ -188,6 +189,9 @@ class GreenLight(gym.Env):
             return True
         return False
 
+    def getTime(self) -> float:
+        return self.GLModel.time
+
     def getTimeInDays(self) -> float:
         """
         Get time in days since 01-01-0001 upto the starting day of the simulation.
@@ -223,6 +227,8 @@ class GreenLight(gym.Env):
         self.terminated = False
         obs = self.getObs()
         self.prevYield = obs[3]
+        obs[1] = 400
+        obs[[4,5]] = 0
         self.prevAction = np.zeros((self.controlIdx.shape[0],))
         return obs, {}
 
