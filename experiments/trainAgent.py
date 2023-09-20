@@ -18,8 +18,12 @@ if __name__ == "__main__":
 
     hpPath = "hyperparameters/ppo/"
     filename = "balance-rew-no-constraints.yml"
-    # numCpus = cpu_count() - 2
-    # numCpus = 4
+
+    action_columns = ["uBoil", "uCO2", "uThScr", "uVent", "uLamp", "uIntLamp", "uGroPipe", "uBlScr"]
+    state_columns = ["Air Temperature", "CO2 concentration", "Humidity", "Fruit weight", "Fruit harvest", "PAR"]
+    states2plot = ["CO2 concentration", "Fruit weight"]
+    actions2plot = ["uCO2"]
+
     SEED = 666
     n_eval_episodes = 1
     env_id = "GreenLight"
@@ -40,7 +44,7 @@ if __name__ == "__main__":
     eval_freq = args.total_timesteps//args.n_evals//args.numCpus
     save_name = "vec_norm"
 
-    callbacks = create_callbacks(n_eval_episodes, eval_freq, env_log_dir, save_name, model_log_dir, eval_env, run=run, verbose=1)
+    callbacks = create_callbacks(n_eval_episodes, eval_freq, env_log_dir, save_name, model_log_dir, eval_env, run=run, action_columns=action_columns, state_columns=state_columns, states2plot=states2plot, actions2plot=actions2plot, verbose=1)
     tensorboard_log = f"trainData/{args.project}/logs/{run.name}"
 
     model = PPO(env=env, seed=SEED, verbose=0, **config["modelParams"], tensorboard_log=tensorboard_log)
