@@ -1,5 +1,5 @@
 import os
-from typing import Optional, Union
+from typing import Optional, Union, List
 
 import wandb
 import numpy as np
@@ -31,6 +31,10 @@ class TensorboardCallback(EvalCallback):
         name_vec_env: Optional[str] = None,         # name of the VecNormalize file
         callback_on_new_best = None,                # callback to call when a new best model is found
         run: Optional[wandb.run] = None,
+        state_columns: Optional[List[str]] = None,
+        action_columns: Optional[List[str]] = None,
+        states2plot: Optional[List[str]] = None,
+        actions2plot: Optional[List[str]] = None,
         verbose: int = 1,
     ):
         super().__init__(
@@ -46,6 +50,10 @@ class TensorboardCallback(EvalCallback):
         self.path_vec_env = path_vec_env
         self.name_vec_env = name_vec_env
         self.run = run
+        self.state_columns = state_columns
+        self.action_columns = action_columns
+        self.states2plot = states2plot
+        self.actions2plot = actions2plot
 
     def _on_step(self) -> bool:
 
@@ -101,12 +109,7 @@ class TensorboardCallback(EvalCallback):
             mean_reward, std_reward = np.mean(episode_rewards), np.std(episode_rewards)
             meanActions = np.mean(episode_actions, axis=0)
             meanObs = np.mean(episode_obs, axis=0)
-            
-            states = np.insert(meanObs, 0, time_vec, axis=1)
-            states = pd.DataFrame(data=states[:], columns=["Time", "Air Temperature", "CO2 concentration", "Humidity", "Fruit weight", "Fruit harvest", "PAR"])
 
-            actionsDf = pd.DataFrame(data=meanActions, columns=["uBoil", "uCO2", "uThScr", "uVent", "uLamp", "uIntLamp", "uGroPipe", "uBlScr"])
-            actionsDf["Time"] = pd.to_datetime(days2date(time_vec[1:], "01-01-0001"))
 
             mean_ep_length, std_ep_length = np.mean(episode_lengths), np.std(episode_lengths)
             self.last_mean_reward = mean_reward
@@ -138,20 +141,28 @@ class TensorboardCallback(EvalCallback):
                 if self.callback_on_new_best is not None:
                     continue_training = self.callback_on_new_best.on_step()
 
+                # plot if new best
+                if self.run:
+                    obsVars = self.eval_env.get_attr("modelObsVars", [0])[0]
+
+                    states = pd.DataFrame(data=meanObs[:, :obsVars], columns=self.state_columns)
+                    actions = pd.DataFrame(data=meanActions, columns=self.action_columns)
+                    actions["Time"] = pd.to_datetime(days2date(time_vec[1:], "01-01-0001"))
+                    states["Time"] = pd.to_datetime(days2date(time_vec[:], "01-01-0001"))
+
+                    tableActions = wandb.Table(dataframe=actions)
+                    tableStates = wandb.Table(dataframe=states)
+
+                    actionplots = [wandb.plot.line(tableActions, x="Time", y=act, title='CO2') for act in self.actions2plot]
+                    stateplots = [wandb.plot.line(tableStates, x="Time", y=state, title='Fruit weight') for state in self.states2plot]
+
+                    # Log the custom plot
+                    self.run.log({act: actionplots[i] for i, act in enumerate(self.actions2plot)})
+                    self.run.log({state: stateplots[i] for i, state in enumerate(self.states2plot)})
+
             # Trigger callback after every evaluation, if needed
             if self.callback is not None:
                 continue_training = continue_training and self._on_event()
-
-            if self.run:
-                table = wandb.Table(dataframe=actionsDf)#, columns=["Time", "CO2 injection"])
-                table.add_column("Fruit weight", states["Fruit weight"])
-                # self.run.log({'controls': actions})
-                # Create a line plot, specifying the x-axis as the 'Time' column
-                plot = wandb.plot.line(table, x="Time", y="uCO2", title='CO2')
-                plot = wandb.plot.line(table, x="Time", y="Fruit weight", title='Fruit weight')
-
-                # Log the custom plot
-                self.run.log({"Action": plot})
 
                 # self.run.log({"my_custom_plot": wandb.plot.line(table, "Time", "uCO2", title="CO2")})
 

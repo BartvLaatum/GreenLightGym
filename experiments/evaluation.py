@@ -54,7 +54,6 @@ def evaluate_policy(
         list containing per-episode rewards and second containing per-episode lengths
         (in number of steps).
     """
-    print(n_eval_episodes)
     is_monitor_wrapped = False
     # Avoid circular import
     from stable_baselines3.common.monitor import Monitor
@@ -98,7 +97,7 @@ def evaluate_policy(
     episode_starts = np.ones((env.num_envs,), dtype=bool)
 
     timevec[0] =  env.env_method("getTime", indices=0)[0]
-    episode_obs[:, 0, :obsVars] = observations[:, :obsVars]
+    episode_obs[:, 0, :obsVars] = env.unnormalize_obs(observations)[:, :obsVars]
 
     while (episode_counts < episode_count_targets).any():
         actions, states = model.predict(
@@ -113,7 +112,7 @@ def evaluate_policy(
 
 
         timevec[timestep+1] =  env.env_method("getTime", indices=0)[0]
-        episode_obs[:, timestep+1, :obsVars] = new_observations[:, :obsVars]
+        episode_obs[:, timestep+1, :obsVars] = env.unnormalize_obs(new_observations)[:, :obsVars]
 
         for i in range(n_envs):
             if episode_counts[i] < episode_count_targets[i]:

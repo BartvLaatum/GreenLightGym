@@ -95,11 +95,29 @@ def create_callbacks(n_eval_episodes: int,
                      save_name: str,
                      model_log_dir: str,
                      eval_env: VecEnv,
+                     run: wandb.run = None,
+                     action_columns: List[str] =None,
+                     state_columns:List[str] = None,
+                     states2plot:List[str] = None,
+                     actions2plot: List[str] = None,
                      verbose: int = 1,
-                     run: wandb.run = None
                      ) -> List[BaseCallback]:
     save_vec_norm = SaveVecNormalizeCallback(save_freq=eval_freq, save_path=env_log_dir, name_prefix=save_name)
     save_vec_best = SaveVecNormalizeCallback(save_freq=1, save_path=env_log_dir, verbose=2)
-    eval_callback = TensorboardCallback(eval_env, n_eval_episodes=n_eval_episodes, eval_freq=eval_freq, best_model_save_path=model_log_dir, name_vec_env=save_name, path_vec_env=env_log_dir, deterministic=True, callback_on_new_best=save_vec_best, run=run, verbose=verbose)
+    
+    eval_callback = TensorboardCallback(eval_env,\
+                                        n_eval_episodes=n_eval_episodes,\
+                                        eval_freq=eval_freq,
+                                        best_model_save_path=model_log_dir,\
+                                        name_vec_env=save_name,\
+                                        path_vec_env=env_log_dir,\
+                                        deterministic=True,\
+                                        callback_on_new_best=save_vec_best,\
+                                        run=run,\
+                                        action_columns=action_columns,\
+                                        state_columns=state_columns,\
+                                        states2plot=states2plot,\
+                                        actions2plot=actions2plot,\
+                                        verbose=verbose)
     wandbcallback = WandbCallback(verbose=verbose)
     return [save_vec_norm, eval_callback, wandbcallback]

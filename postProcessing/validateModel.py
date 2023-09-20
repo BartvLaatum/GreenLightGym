@@ -18,7 +18,9 @@ if __name__ == "__main__":
     # hyperparameters
     hpPath = "hyperparameters/ppo/"
     filename = "balance-rew-no-constraints.yml"
-    envParams, modelParams, options = loadParameters(hpPath, filename)
+    env_id = "GreenLight"
+    algorithm = "PPO"
+    envParams, modelParams, options = loadParameters(env_id, hpPath, filename, algorithm)
     SEED = 666
     envParams['training'] = False
 
@@ -42,11 +44,9 @@ if __name__ == "__main__":
     states[0, :] = obs[0, :envParams["modelObsVars"]]             # get initial states
     timevec[0] = env.env_method("getTimeInDays")[0]
     i=0
-    while not dones[0] and i < 10:
+    while not dones[0]:
         action, _states = model.predict(obs, deterministic=True)
         obs, rewards, dones, info = env.step(action)
-        print(obs)
-        print(env.unnormalize_obs(obs))
         states[i+1, :] = env.unnormalize_obs(obs)[0, :envParams["modelObsVars"]]
         timevec[i+1] = info[0]['Time']
         controlSignals[i+1, :] = info[0]['controls']
@@ -55,7 +55,7 @@ if __name__ == "__main__":
 
     states = np.insert(states, 0, timevec, axis=1)
     states = pd.DataFrame(data=states[:], columns=["Time", "Air Temperature", "CO2 concentration", "Humidity", "Fruit weight", "Fruit harvest", "PAR"])
-
+    controlSignals = pd.DataFrame(data=controlSignals, columns=["uBoil", "uCO2", "uThScr", "uVent", "uLamp", "uIntLamp", "uGroPipe", "uBlScr"])
     states["Time"] = np.asarray(days2date(states["Time"].values, "01-01-0001"), "datetime64[s]")
     dates = states["Time"].dt.strftime("%Y%m%d")
 
@@ -66,6 +66,3 @@ if __name__ == "__main__":
 
     states.to_csv(f"data/ppo/{args.runname}/states{dates[0]}-{envParams['seasonLength']:03}.csv", index=False)
     controlSignals.to_csv(f"data/ppo/{args.runname}/controls{dates[0]}-{envParams['seasonLength']:03}.csv", index=False)
-
-    # print(states)
-    # print(controlSignals)

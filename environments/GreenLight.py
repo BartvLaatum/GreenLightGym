@@ -178,7 +178,6 @@ class GreenLight(gym.Env):
         modelObs = self.GLModel.getObs()
         weatherIdx = [self.GLModel.timestep*self.solverSteps] + [(ts + self.GLModel.timestep)*self.solverSteps for ts in range(1, self.Np)]
         weatherObs = self.weatherData[weatherIdx, :self.weatherObsVars].flatten()
-
         return np.concatenate([modelObs, weatherObs], axis=0)
 
     def terminalState(self, states: np.ndarray) -> bool:

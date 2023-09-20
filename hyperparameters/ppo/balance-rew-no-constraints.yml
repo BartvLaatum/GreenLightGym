@@ -11,7 +11,7 @@ GreenLight:
     intLamps: 0             # whether int lamps are used
     dmfm: 0.0627            # dry matter fresh matter ratio
     h: 1                    # stepsize for the RK4 solver
-    seasonLength: 1       # number of growing days
+    seasonLength: 10       # number of growing days
     predHorizon: 0.25          # prediction horizon in days.
     timeinterval: 900       # [s] time interval at what rate do we observe and control the environment
     controlSignals: [co2]      # list with all control inputs we aim to control/learn
@@ -19,7 +19,7 @@ GreenLight:
     weatherObsVars: 5       # number of weather variables we observe
     obsLow:  [15, 300, 60]   # lower bound for the observation space
     obsHigh: [35, 1200, 90]  # upper bound for the observation space
-    rewardCoefficients: [.99999, .00001]  # coefficients for the costs function
+    rewardCoefficients: [.99995, .00005]  # coefficients for the costs function
     penaltyCoefficients: [.0, .0, .0] # coefficients for the penalty functio\n
 
 options:                    # set if we want to evaluate our model
