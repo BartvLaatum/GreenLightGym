@@ -143,8 +143,6 @@ class TensorboardCallback(EvalCallback):
                 continue_training = continue_training and self._on_event()
 
             if self.run:
-                print(actionsDf["Time"])
-                # data = [meanActionsDf[:,1]]
                 table = wandb.Table(dataframe=actionsDf)#, columns=["Time", "CO2 injection"])
                 table.add_column("Fruit weight", states["Fruit weight"])
                 # self.run.log({'controls': actions})
