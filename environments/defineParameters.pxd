@@ -1,11 +1,11 @@
 from libc.math cimport exp, INFINITY, pi
 
 cdef packed struct Parameters:
-    char alfaLeafAir # Convective heat transfer coefficient between leaf and greenhouse air
+    char alfaLeafAir        # Convective heat transfer coefficient between leaf and greenhouse air
     double L                # Latent heat of evaporation
     double sigma            # Stefan-Boltzmann constant
-    char epsCan    # FIR emission coefficient of canopy
-    char epsSky    # FIR emission coefficient of the sky
+    char epsCan             # FIR emission coefficient of canopy
+    char epsSky             # FIR emission coefficient of the sky
     float etaGlobNir        # Ratio of NIR in global radiation
     float etaGlobPar        # Ratio of PAR in global radiation
     

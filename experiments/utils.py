@@ -1,21 +1,20 @@
 import os
 import yaml
-import numpy as np
 from os.path import join
 from typing import Dict, Any, Callable, List, Optional, Union, Tuple
 import warnings
 
-import gymnasium as gym
-
-
 import wandb
-from wandb.integration.sb3 import WandbCallback
+import numpy as np
+import pandas as pd
+import gymnasium as gym
 
 from torch.optim import Adam
 from torch.nn.modules.activation import ReLU, SiLU
+from wandb.integration.sb3 import WandbCallback
 from stable_baselines3.common.vec_env import SubprocVecEnv, VecNormalize, VecMonitor, VecEnv, is_vecenv_wrapped
 
-from RLGreenLight.environments.GreenLight import GreenLight
+from RLGreenLight.environments.GreenLight import GreenLightBase
 from RLGreenLight.callbacks.customCallback import TensorboardCallback, SaveVecNormalizeCallback, BaseCallback
 
 ACTIVATION_FN = {"ReLU": ReLU, "SiLU": SiLU}
@@ -26,6 +25,7 @@ def loadParameters(env_id: str, path: str, filename: str, algorithm: str = None)
         params = yaml.load(f, Loader=yaml.FullLoader)
     
     envParams = params[env_id]
+    envBaseParams = params["GreenLightBase"]
     options = params["options"]
     
     if algorithm is not None:
@@ -38,7 +38,7 @@ def loadParameters(env_id: str, path: str, filename: str, algorithm: str = None)
                 OPTIMIZER[modelParams["policy_kwargs"]["optimizer_class"]]
     else:
         modelParams = None
-    return envParams, modelParams, options
+    return envBaseParams, envParams, modelParams, options
 
 def wandb_init(modelParams: Dict[str, Any],
                envParams: Dict[str, Any],
@@ -54,8 +54,8 @@ def wandb_init(modelParams: Dict[str, Any],
     config= {
         "policy": modelParams["policy"],
         "total_timesteps": timesteps,
-        "env": lambda: GreenLight(**envParams, options=options),
-        "eval_env": lambda: GreenLight(**envParams, options=options, training=False),
+        "env": lambda: GreenLightBase(**envParams, options=options),
+        "eval_env": lambda: GreenLightBase(**envParams, options=options, training=False),
         "seed": SEED,
         "note": "testing co2 control, daily balance",
         "modelParams": {**modelParams},
@@ -119,3 +119,89 @@ def create_callbacks(n_eval_episodes: int,
                                         verbose=verbose)
     wandbcallback = WandbCallback(verbose=verbose)
     return [eval_callback, wandbcallback]
+
+
+
+def controlScheme(GL, nightValue, dayValue):
+    """
+    Function to test the effect of controlling a certain variable.
+    """
+    obs, info = GL.reset()
+    GL.GLModel.setNightCo2(nightValue)
+    N = GL.N                                        # number of timesteps to take
+    states = np.zeros((N+1, GL.modelObsVars))       # array to save states
+    controlSignals = np.zeros((N+1, GL.GLModel.nu)) # array to save rule-based controls controls
+    states[0, :] = obs[:GL.modelObsVars]            # get initial states
+    timevec = np.zeros((N+1,))                      # array to save time
+    timevec[0] = GL.GLModel.time
+    i=1
+
+    while not GL.terminated:
+        # check whether it is day or night
+        if GL.weatherData[GL.GLModel.timestep * GL.solverSteps, 9] > 0:
+            controls = np.ones((GL.action_space.shape[0],))*dayValue
+        else:
+            controls = np.ones((GL.action_space.shape[0],))*nightValue
+        obs, r, terminated, _, info = GL.step(controls.astype(np.float32))
+        states[i, :] += obs[:GL.modelObsVars]
+        controlSignals[i, :] += info["controls"]
+        timevec[i] = info["Time"]
+        i+=1
+
+    # insert time vector into states array
+    states = np.insert(states, 0, timevec, axis=1)
+    states = pd.DataFrame(data=states[:], columns=["Time", "Air Temperature", "CO2 concentration", "Humidity", "Fruit weight", "Fruit harvest", "PAR"])
+    controlSignals = pd.DataFrame(data=controlSignals, columns=["uBoil", "uCO2", "uThScr", "uVent", "uLamp", "uIntLamp", "uGroPipe", "uBlScr"])
+    weatherData = pd.DataFrame(data=GL.weatherData[[int(ts * GL.solverSteps) for ts in range(0, GL.Np+1)], :GL.weatherObsVars], columns=["Temperature", "Humidity", "PAR", "CO2 concentration", "Wind"])
+
+    return states, controlSignals, weatherData
+
+def runRuleBasedController(GL, options, stateColumns, actionColumns):
+    obs, info = GL.reset(options=options)
+    N = GL.N                                        # number of timesteps to take
+    states = np.zeros((N+1, GL.modelObsVars))       # array to save states
+    controlSignals = np.zeros((N+1, GL.GLModel.nu)) # array to save rule-based controls controls
+    states[0, :] = obs[:GL.modelObsVars]             # get initial states
+    timevec = np.zeros((N+1,))                      # array to save time
+    timevec[0] = GL.GLModel.time
+    i=1
+    while not GL.terminated:
+        controls = np.ones((GL.action_space.shape[0],))*0.5
+        obs, r, terminated, _, info = GL.step(controls.astype(np.float32))
+        states[i, :] += obs[:GL.modelObsVars]
+        controlSignals[i, :] += info["controls"]
+        timevec[i] = info["Time"]
+        i+=1
+    
+    # insert time vector into states array
+    states = np.insert(states, 0, timevec, axis=1)
+    states = pd.DataFrame(data=states[:], columns=stateColumns)
+    controlSignals = pd.DataFrame(data=controlSignals, columns=actionColumns)
+    weatherData = pd.DataFrame(data=GL.weatherData[[int(ts * GL.timeinterval/GL.h) for ts in range(0, GL.Np+1)], :GL.weatherObsVars], columns=["Temperature", "Humidity", "PAR", "CO2 concentration", "Wind"])
+
+    return states, controlSignals, weatherData
+
+def runSimulationDefinedControls(GL, matlabControls, stateNames, matlabStates, nx):
+    obs, info = GL.reset()
+    N = matlabControls.shape[0]
+
+    cythonStates = np.zeros((N, nx))
+    cyhtonControls = np.zeros((N, GL.GLModel.nu))
+    cythonStates[0, :] = GL.GLModel.getStatesArray()
+
+    for i in range(1, N):
+        # print(i)
+        controls = matlabControls.iloc[i, :].values
+        obs, reward, terminated, truncated, info = GL.step(controls)
+        cythonStates[i, :] += GL.GLModel.getStatesArray()
+        cyhtonControls[i, :] += info["controls"]
+        # print("Day of the year", GL.GLModel.dayOfYear)
+        # print("time since midnight in hours", GL.GLModel.timeOfDay)
+        # print("Time lamp of the day", GL.GLModel.lampTimeOfDay)
+
+        if terminated:
+            break
+
+    cythonStates = pd.DataFrame(data=cythonStates, columns=stateNames[:])
+    cyhtonControls = pd.DataFrame(data=cyhtonControls, columns=["uBoil", "uCO2", "uThScr", "uVent", "uLamp", "uIntLamp", "uGroPipe", "uBlScr", "shScr", "perShScr", "uSide"])
+    return cythonStates, cyhtonControls

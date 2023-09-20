@@ -1,4 +1,4 @@
-from RLGreenLight.environments.GreenLight import GreenLight
+from RLGreenLight.environments.GreenLight import GreenLightBase
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize, VecMonitor
 import yaml
@@ -26,7 +26,7 @@ if __name__ == "__main__":
 
     vec_norm_kwargs = {"norm_obs": True, "norm_reward": False, "clip_obs": 50_000, "clip_reward": 1000}
     # vec_norm_kwargs = None
-    env = make_vec_env(lambda: GreenLight(**envParams, options=options), numCpus=1, monitor_filename=None, vec_norm_kwargs=vec_norm_kwargs, eval_env=True)
+    env = make_vec_env(lambda: GreenLightBase(**envParams, options=options), numCpus=1, monitor_filename=None, vec_norm_kwargs=vec_norm_kwargs, eval_env=True)
     env = VecNormalize.load(f"trainData/{args.project}/envs/{args.runname}/vecnormalize.pkl", env)
 
     model = PPO.load(f"trainData/{args.project}/models/{args.runname}/best_model.zip", env=env)

@@ -1,12 +1,12 @@
 import yaml
-from RLGreenLight.environments.GreenLight import GreenLight, runRuleBasedController
+from RLGreenLight.environments.GreenLight import GreenLightBase, runRuleBasedController
 from RLGreenLight.environments.pyutils import days2date
 import seaborn as sns; sns.set()
 import numpy as np
 import time
 
 def runNominalController(params, options):
-    GL = GreenLight(**params, options=options, training=False)
+    GL = GreenLightBase(**params, options=options, training=False)
     # time controller
     start = time.time()
     states, controls, weather = runRuleBasedController(GL, options)

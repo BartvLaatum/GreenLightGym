@@ -1,5 +1,4 @@
 from RLGreenLight.experiments.utils import loadParameters, wandb_init, make_vec_env, create_callbacks
-# from stable_baselines3.common.vec_env import 
 from stable_baselines3 import PPO
 from multiprocessing import cpu_count
 import matplotlib.pyplot as plt
@@ -26,9 +25,9 @@ if __name__ == "__main__":
 
     SEED = 666
     n_eval_episodes = 1
-    env_id = "GreenLight"
+    env_id = "GreenLightProduction"
     algorithm = "PPO"
-    envParams, modelParams, options = loadParameters(env_id, hpPath, filename, algorithm)
+    envBaseParams, envParams, modelParams, options = loadParameters(env_id, hpPath, filename, algorithm)
 
     # define
     run, config = wandb_init(modelParams, envParams, options, args.total_timesteps, SEED, project=args.project, group=args.group, job_type="train", save_code=True)

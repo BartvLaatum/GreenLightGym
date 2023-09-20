@@ -6,9 +6,7 @@ from libc.math cimport exp, log, fmax, fmin, floor
 cdef inline double proportionalControl(processVar, setPt, pBand, minVal, maxVal):
     return minVal + (maxVal - minVal)*(1/(1+exp(-2/pBand*log(100)*(processVar - setPt - pBand/2))))
 
-cdef inline double* controlSignal(Parameters* p, double* x, double* u, double* d):
-    cdef double timeOfDay
-    cdef double dayOfYear
+cdef inline double* controlSignal(AuxiliaryStates* a, Parameters* p, double* x, double* u, double* d):
     cdef double lampTimeOfDay
     cdef double lampDayOfYear
     cdef double lampNoCons
@@ -30,21 +28,13 @@ cdef inline double* controlSignal(Parameters* p, double* x, double* u, double* d
     cdef double thScrHeat
     cdef double thScrRh
 
-    timeOfDay = 24*(x[27] - floor(x[27])) # hours since midnight time of day [h]
-    dayOfYear = x[27] % 365.2425          
-
-
     # Control of the lamp according to the time of day [0/1]
     # if p.lampsOn < p.lampsOff, lamps are on from p.lampsOn to p.lampsOff each day
     # if p.lampsOn > p.lampsOff, lamps are on from p.lampsOn until p.lampsOff the next day
     # if p.lampsOn == p.lampsOff, lamps are always off
     # for continuous light, set p.lampsOn = -1, p.lampsOff = 25
-    # addAux(gl, 'lampTimeOfDay', ((p.lampsOn<=p.lampsOff).* ...
-    #     (p.lampsOn < gl.timeOfDay & gl.timeOfDay < p.lampsOff) + ... 
-        # (1-(p.lampsOn<=p.lampsOff)).*(p.lampsOn<gl.timeOfDay | gl.timeOfDay<p.lampsOff))...
-    #     .*1); % multiply by 1 to convert from logical to double
-    lampTimeOfDay = ((p.lampsOn <= p.lampsOff) * (p.lampsOn < timeOfDay and timeOfDay < p.lampsOff) + \
-                        (1-(p.lampsOn <= p.lampsOff)) * (p.lampsOn < timeOfDay or timeOfDay < p.lampsOff))
+    lampTimeOfDay = ((p.lampsOn <= p.lampsOff) * (p.lampsOn < a.timeOfDay and a.timeOfDay < p.lampsOff) + \
+                        (1-(p.lampsOn <= p.lampsOff)) * (p.lampsOn < a.timeOfDay or a.timeOfDay < p.lampsOff))
 
     # CURRENTLY UNUSED...
     # Control of the lamp according to the day of year [0/1]
@@ -52,8 +42,8 @@ cdef inline double* controlSignal(Parameters* p, double* x, double* u, double* d
     # if p.dayLampStart > p.dayLampStop, lamps are on from p.lampsOn until p.lampsOff the next year
     # if p.dayLampStart == p.dayLampStop, lamps are always off
     # for no influence of day of year, set p.dayLampStart = -1, p.dayLampStop > 366
-    lampDayOfYear = ((p.dayLampStart <= p.dayLampStop) * (p.dayLampStart < dayOfYear and dayOfYear < p.dayLampStop) + \
-                        (1-(p.dayLampStart <= p.dayLampStop)) * (p.dayLampStart < dayOfYear or dayOfYear < p.dayLampStop))
+    lampDayOfYear = ((p.dayLampStart <= p.dayLampStop) * (p.dayLampStart < a.dayOfYear and a.dayOfYear < p.dayLampStop) + \
+                        (1-(p.dayLampStart <= p.dayLampStop)) * (p.dayLampStart < a.dayOfYear or a.dayOfYear < p.dayLampStop))
 
 
     # THIS VARIABLE MAINLY REPRESENTS WHETHER WE ARE IN LIGHT PERIOD OF THE GREENHOUSE
@@ -65,10 +55,6 @@ cdef inline double* controlSignal(Parameters* p, double* x, double* u, double* d
     # However, the lamps may be switched off if it is too hot or too humid
     # in the greenhouse. In this case, the greenhouse is still considered
     # to be in the light period
-    # addAux(gl, 'lampNoCons', 1.*(gl.d.iGlob < gl.p.lampsOffSun).* ... # lamps are off if sun is not too bright
-    #     (gl.d.dayRadSum < gl.p.lampRadSumLimit).* ... # and the predicted daily radiation sum is less than the predefined limit 
-    #     gl.lampTimeOfDay.* ... # and the time of day is within the lighting period
-    #     gl.lampDayOfYear); # and the day of year is within the lighting season
     lampNoCons = (d[0] < p.lampsOffSun) * (d[7] < p.lampRadSumLimit) * lampTimeOfDay * lampDayOfYear
 
     ## Smoothing of control of the lamps
@@ -78,21 +64,18 @@ cdef inline double* controlSignal(Parameters* p, double* x, double* u, double* d
     # 1 at lampOn, 0 one hour before lampOn, with linear transition
     # Note: this current function doesn't do a linear interpolation if
     # lampOn == 0
-    linearLampSwitchOn = fmax(0, fmin(1, timeOfDay-p.lampsOn + 1))
+    linearLampSwitchOn = fmax(0, fmin(1, a.timeOfDay-p.lampsOn + 1))
 
     # Linear version of lamp switching on: 
     # 1 at lampOff, 0 one hour after lampOff, with linear transition
     # Note: this current function doesn't do a linear interpolation if
     # lampOff == 24
-    linearLampSwitchOff = fmax(0, fmin(1, p.lampsOff - timeOfDay + 1))
+    linearLampSwitchOff = fmax(0, fmin(1, p.lampsOff - a.timeOfDay + 1))
 
     # Combination of linear transitions above
     # if p.lampsOn < p.lampsOff, take the minimum of the above
     # if p.lampsOn > p.lampsOn, take the maximum
     # if p.lampsOn == p.lampsOff, set at 0
-    # addAux(gl, 'linearLampBothSwitches', ...
-    #     (p.lampsOn~=p.lampsOff).*((p.lampsOn<p.lampsOff).*min(gl.linearLampSwitchOn,gl.linearLampSwitchOff) ...
-    #     + (1-(p.lampsOn<p.lampsOff)).*max(gl.linearLampSwitchOn,gl.linearLampSwitchOff)));
     linearLampBothSwitches = (p.lampsOn!=p.lampsOff)*((p.lampsOn<p.lampsOff)*min(linearLampSwitchOn,linearLampSwitchOff)
         + (1-(p.lampsOn<p.lampsOff))*fmax(linearLampSwitchOn,linearLampSwitchOff))
 
@@ -102,9 +85,6 @@ cdef inline double* controlSignal(Parameters* p, double* x, double* u, double* d
     # interpolation in between
     # Does not take into account the lamp switching off due to 
     # instantaenous sun radiation, excess heat or humidity
-    # addAux(gl, 'smoothLamp', gl.linearLampBothSwitches.* ... # linear transition between lamp on and off
-    #     (gl.d.dayRadSum < gl.p.lampRadSumLimit).* ... # lamps off if the predicted daily radiation sum is more than the predefined limit 
-    #     gl.lampDayOfYear); # lamps off if day of year is not within the lighting season
     smoothLamp = linearLampBothSwitches * (d[7] < p.lampRadSumLimit) * lampDayOfYear
 
     # Indicates whether daytime climate settings should be used, i.e., if
@@ -170,16 +150,16 @@ cdef inline double* controlSignal(Parameters* p, double* x, double* u, double* d
 
     # Control for the interlights: 
     # 1 if interlights are on, 0 if interlights are off
-    # addAux(gl, 'intLampOn', gl.lampNoCons.* ... # Lamps should be on
-    #     proportionalControl(gl.x.tAir, gl.heatMax+gl.p.lampExtraHeat, -0.5, 0, 1).* ... # Switch lamp off if too hot inside
-    #     ... # Humidity: only switch off if blackout screen is used 
-    #     (gl.d.isDaySmooth + (1-gl.d.isDaySmooth).* ... # Blackout screen is only used at night 
-    #         max(proportionalControl(gl.rhIn, gl.p.rhMax+gl.p.blScrExtraRh, -0.5, 0, 1),... # Switch lamp off if too humid inside
-    #                     1-gl.ventCold))); 
-                        # if ventCold is 0 it's too cold inside to ventilate, 
-                        # better to raise the RH by heating. 
-                        # So don't open the blackout screen and 
-                        # don't stop illuminating in this case. 
+    # Lamps should be on
+    # Switch lamp off if too hot inside
+    # Humidity: only switch off if blackout screen is used 
+    # Blackout screen is only used at night 
+    # Switch lamp off if too humid inside
+    # 1-gl.ventCold))); 
+    # if ventCold is 0 it's too cold inside to ventilate, 
+    # better to raise the RH by heating. 
+    # So don't open the blackout screen and 
+    # don't stop illuminating in this case. 
     intLampOn = lampNoCons * proportionalControl(x[2], heatMax + p.lampExtraHeat, -0.5, 0, 1) * \
                 (d[9] + (1-d[9])) *\
                 fmax(proportionalControl(rhIn, p.rhMax + p.blScrExtraRh, -0.5, 0, 1), 1-ventCold)

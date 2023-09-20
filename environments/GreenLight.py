@@ -9,7 +9,7 @@ from RLGreenLight.environments.pyutils import loadWeatherData, satVp
 
 from datetime import date
 
-class GreenLight(gym.Env):
+class GreenLightBase(gym.Env):
     """
     Python wrapper class for the GreenLight model implemented in Cython.
     As input we get the weather data, number of variables for states, inputs and disturbances, and whether and which lamps we use.
@@ -41,7 +41,7 @@ class GreenLight(gym.Env):
                  training: bool = True,     # whether we are training or testing
                  ) -> None:
 
-        super(GreenLight, self).__init__()
+        super(GreenLightBase, self).__init__()
         # number of seconds in the day
         c = 86400
 
@@ -219,7 +219,7 @@ class GreenLight(gym.Env):
         self.weatherData = loadWeatherData(self.weatherDataDir, self.location, self.dataSource, self.growthYear, self.startDay, self.seasonLength, self.predHorizon, self.h, self.nd)
         self.actions = np.zeros((self.nu,))
 
-        # compute days since 01-01-0000
+        # compute days since 01-01-0001
         # as time indicator by the model
         timeInDays = self.getTimeInDays()
         self.GLModel = GL(self.weatherData, self.h, self.nx, self.nu, self.nd, self.noLamps, self.ledLamps, self.hpsLamps, self.intLamps, self.solverSteps, timeInDays)
@@ -232,94 +232,100 @@ class GreenLight(gym.Env):
         self.prevAction = np.zeros((self.controlIdx.shape[0],))
         return obs, {}
 
-def controlScheme(GL, nightValue, dayValue):
-    """
-    Function to test the effect of controlling a certain variable.
-    """
-    obs, info = GL.reset()
-    GL.GLModel.setNightCo2(nightValue)
-    N = GL.N                                        # number of timesteps to take
-    states = np.zeros((N+1, GL.modelObsVars))       # array to save states
-    controlSignals = np.zeros((N+1, GL.GLModel.nu)) # array to save rule-based controls controls
-    states[0, :] = obs[:GL.modelObsVars]            # get initial states
-    timevec = np.zeros((N+1,))                      # array to save time
-    timevec[0] = GL.GLModel.time
-    i=1
 
-    while not GL.terminated:
-        # check whether it is day or night
-        if GL.weatherData[GL.GLModel.timestep * GL.solverSteps, 9] > 0:
-            controls = np.ones((GL.action_space.shape[0],))*dayValue
+class GreenLightProduction(GreenLightBase):
+    """
+    Child class of GreenLightBase. This class also models the greenhouse crop production process.
+    But starts with a fully mature crop that is ready for harvest.
+    The start dates are early year, (January and Februari), which reflects the start of the harvest season.
+    """
+    def __init__(self,
+                 cLeaf: float = 2.5e5,
+                 cStem: float = 0.9e5,
+                 cFruit: float = 2.8e5,
+                 tCanSum: float  = 1035,
+                 tomatoPrice: float = 1.2,
+                 co2Price: float = 0.19,
+                 **kwargs,
+                 ) -> None:
+        super(GreenLightProduction, self).__init__(**kwargs)
+        self.cLeaf = cLeaf
+        self.cStem = cStem
+        self.cFruit = cFruit
+        self.tCanSum = tCanSum
+        self.tomatoPrice = tomatoPrice
+        self.co2Price = co2Price
+
+    def step(self, action: np.ndarray) -> Tuple[np.ndarray, float, bool, dict[str, Any]]:
+        """
+        Given an action computed by some agent, we simulate the next state of the system.
+        The system is modelled by the GreenLight model implemented in Cython.
+        We have to power to control the boiler valve, co2, thermal screen, roof vent, lamps, internal lamps, grow pipes and blackout screen.
+        """
+        # scale the action to the range of the control inputs, which is between [0, 1]
+        action = (action-self.action_space.low)/(self.action_space.high-self.action_space.low)
+        self.GLModel.step(action, self.controlIdx)
+
+        # state = self.GLModel.getStatesArray()
+        obs = self.harvestObs()
+        if self.terminalState(obs):
+            self.terminated = True
+
+        reward = self.rewardFunction(obs, action)
+        self.prevYield = obs[3]
+        info = {}
+        info = {"controls": self.GLModel.getControlsArray(),
+                "Time": self.GLModel.time}
+
+        return (obs,
+            reward,
+            self.terminated, 
+            False,
+            info
+            )
+
+    def harvestObs(self) -> np.ndarray:
+        modelObs = self.GLModel.getHarvestObs()
+        weatherIdx = [self.GLModel.timestep*self.solverSteps] + [(ts + self.GLModel.timestep)*self.solverSteps for ts in range(1, self.Np)]
+        weatherObs = self.weatherData[weatherIdx, :self.weatherObsVars].flatten()
+        return np.concatenate([modelObs, weatherObs], axis=0)
+
+    def rewardFunction(self, obs: np.ndarray, action: np.ndarray) -> float:
+        harvest = obs[4] * self.dmfm # [kg [FM] m^-2]
+        co2resource = self.GLModel.co2InjectionRate * self.timeinterval * 1e-6 # [kg m^-2 900s^-1]
+        reward = harvest * self.tomatoPrice - co2resource * self.co2Price
+        penalty = np.dot(self.computePenalty(obs), self.penaltyCoefficients)
+
+        return reward - penalty
+
+    def reset(self, seed: int | None = None, options: dict[str: Any] = None) -> Tuple[np.ndarray, dict[str, Any]]:
+        """
+        Reset the environment to a random initial state.
+        Randomness is introduced by the growth year and start day.
+        Which affect the weather data observed.
+        """
+        super().reset(seed=seed)
+        if self.training:
+            self.growthYear = np.random.choice([year for year in range(2012, 2020)])
+            self.startDay = np.random.choice([day for day in range(0, 200)])
         else:
-            controls = np.ones((GL.action_space.shape[0],))*nightValue
-        obs, r, terminated, _, info = GL.step(controls.astype(np.float32))
-        states[i, :] += obs[:GL.modelObsVars]
-        controlSignals[i, :] += info["controls"]
-        timevec[i] = info["Time"]
-        i+=1
+            self.growthYear = self.options["growthYear"]
+            self.startDay = self.options["startDay"]
 
-    # insert time vector into states array
-    states = np.insert(states, 0, timevec, axis=1)
-    states = pd.DataFrame(data=states[:], columns=["Time", "Air Temperature", "CO2 concentration", "Humidity", "Fruit weight", "Fruit harvest", "PAR"])
-    controlSignals = pd.DataFrame(data=controlSignals, columns=["uBoil", "uCO2", "uThScr", "uVent", "uLamp", "uIntLamp", "uGroPipe", "uBlScr"])
-    weatherData = pd.DataFrame(data=GL.weatherData[[int(ts * GL.solverSteps) for ts in range(0, GL.Np+1)], :GL.weatherObsVars], columns=["Temperature", "Humidity", "PAR", "CO2 concentration", "Wind"])
+        # load in weather data for this simulation
+        self.weatherData = loadWeatherData(self.weatherDataDir, self.location, self.dataSource, self.growthYear, self.startDay, self.seasonLength, self.predHorizon, self.h, self.nd)
+        self.actions = np.zeros((self.nu,))
 
-    return states, controlSignals, weatherData
+        # compute days since 01-01-0001
+        # as time indicator by the model
+        timeInDays = self.getTimeInDays()
+        self.GLModel = GL(self.weatherData, self.h, self.nx, self.nu, self.nd, self.noLamps, self.ledLamps, self.hpsLamps, self.intLamps, self.solverSteps, timeInDays)
+        self.GLModel.setCropState(self.cLeaf, self.cStem, self.cFruit, self.tCanSum)
+
+        self.terminated = False
+        return self.getObs(), {}
 
 
-    pass
-
-def runRuleBasedController(GL, options):
-    obs, info = GL.reset(options=options)
-    N = GL.N                                        # number of timesteps to take
-    states = np.zeros((N+1, GL.modelObsVars))       # array to save states
-    controlSignals = np.zeros((N+1, GL.GLModel.nu)) # array to save rule-based controls controls
-    states[0, :] = obs[:GL.modelObsVars]             # get initial states
-    timevec = np.zeros((N+1,))                      # array to save time
-    timevec[0] = GL.GLModel.time
-    i=1
-    while not GL.terminated:
-        controls = np.ones((GL.action_space.shape[0],))*0.5
-        # convert controls to np.float32
-        # controls = controls.astype(np.float32)
-
-        obs, r, terminated, _, info = GL.step(controls.astype(np.float32))
-        states[i, :] += obs[:GL.modelObsVars]
-        controlSignals[i, :] += info["controls"]
-        timevec[i] = info["Time"]
-        i+=1
-    # insert time vector into states array
-    states = np.insert(states, 0, timevec, axis=1)
-    states = pd.DataFrame(data=states[:], columns=["Time", "Air Temperature", "CO2 concentration", "Humidity", "Fruit weight", "Fruit harvest", "PAR"])
-    controlSignals = pd.DataFrame(data=controlSignals, columns=["uBoil", "uCO2", "uThScr", "uVent", "uLamp", "uIntLamp", "uGroPipe", "uBlScr"])
-    weatherData = pd.DataFrame(data=GL.weatherData[[int(ts * GL.timeinterval/GL.h) for ts in range(0, GL.Np+1)], :GL.weatherObsVars], columns=["Temperature", "Humidity", "PAR", "CO2 concentration", "Wind"])
-
-    return states, controlSignals, weatherData
-
-def runSimulationDefinedControls(GL, matlabControls, stateNames, matlabStates, nx):
-    obs, info = GL.reset()
-    N = matlabControls.shape[0]
-
-    cythonStates = np.zeros((N, nx))
-    cyhtonControls = np.zeros((N, GL.GLModel.nu))
-    cythonStates[0, :] = GL.GLModel.getStatesArray()
-
-    for i in range(1, N):
-        # print(i)
-        controls = matlabControls.iloc[i, :].values
-        obs, reward, terminated, truncated, info = GL.step(controls)
-        cythonStates[i, :] += GL.GLModel.getStatesArray()
-        cyhtonControls[i, :] += info["controls"]
-        # print("Day of the year", GL.GLModel.dayOfYear)
-        # print("time since midnight in hours", GL.GLModel.timeOfDay)
-        # print("Time lamp of the day", GL.GLModel.lampTimeOfDay)
-
-        if terminated:
-            break
-
-    cythonStates = pd.DataFrame(data=cythonStates, columns=stateNames[:])
-    cyhtonControls = pd.DataFrame(data=cyhtonControls, columns=["uBoil", "uCO2", "uThScr", "uVent", "uLamp", "uIntLamp", "uGroPipe", "uBlScr", "shScr", "perShScr", "uSide"])
-    return cythonStates, cyhtonControls
 
 if __name__ == "__main__":
     pass

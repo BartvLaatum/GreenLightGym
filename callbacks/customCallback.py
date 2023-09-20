@@ -7,8 +7,7 @@ import pandas as pd
 import gymnasium as gym
 
 from stable_baselines3.common.callbacks import EvalCallback, BaseCallback
-from stable_baselines3.common.vec_env import VecNormalize
-from stable_baselines3.common.vec_env import VecEnv, sync_envs_normalization
+from stable_baselines3.common.vec_env import VecEnv, VecNormalize, sync_envs_normalization
 
 from RLGreenLight.experiments.evaluation import evaluate_policy
 from RLGreenLight.environments.pyutils import days2date
