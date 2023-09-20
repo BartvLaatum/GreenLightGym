@@ -99,11 +99,16 @@ class TensorboardCallback(EvalCallback):
                 )
 
             mean_reward, std_reward = np.mean(episode_rewards), np.std(episode_rewards)
-            mean_actions = np.mean(episode_actions, axis=0)
-            mean_obs = np.mean(episode_obs, axis=0)
+            meanActions = np.mean(episode_actions, axis=0)
+            meanObs = np.mean(episode_obs, axis=0)
             
-            actions = pd.DataFrame(data=mean_actions, columns=["uBoil", "uCO2", "uThScr", "uVent", "uLamp", "uIntLamp", "uGroPipe", "uBlScr"])
-            actions["Time"] = pd.to_datetime(days2date(time_vec[1:], "01-01-0001"))
+            states = np.insert(meanObs, 0, time_vec, axis=1)
+            actions = np.insert(meanActions, 0, time_vec[1:], axis=1)
+            
+            modelObsVars = self.eval_env.get_attr("modelObsVar", [0])[0]
+            states = pd.DataFrame(data=states[:, :modelObsVar+1], columns=["Time", "Air Temperature", "CO2 concentration", "Humidity", "Fruit weight", "Fruit harvest", "PAR"])
+
+            actionsDf = pd.DataFrame(data=actions, columns=["Time", "uBoil", "uCO2", "uThScr", "uVent", "uLamp", "uIntLamp", "uGroPipe", "uBlScr"])
 
             mean_ep_length, std_ep_length = np.mean(episode_lengths), np.std(episode_lengths)
             self.last_mean_reward = mean_reward
@@ -135,18 +140,21 @@ class TensorboardCallback(EvalCallback):
                 if self.callback_on_new_best is not None:
                     continue_training = self.callback_on_new_best.on_step()
 
+                # plot if new best
+                if self.run:
+                    table = wandb.Table(dataframe=actionsDf)#, columns=["Time", "CO2 injection"])
+                    table.add_column("Fruit weight", states["Fruit weight"])
+                    plotCo2 = wandb.plot.line(table, x="Time", y="uCO2", title='CO2')
+                    plotFruit = wandb.plot.line(table, x="Time", y="Fruit weight", title='Fruit weight')
+
+                    # Log the custom plot
+                    self.run.log({"Action": plotCo2})
+                    self.run.log({"Action": plotFruit})
+
             # Trigger callback after every evaluation, if needed
             if self.callback is not None:
                 continue_training = continue_training and self._on_event()
 
-            if self.run:
-                table = wandb.Table(dataframe=actions)#, columns=["Time", "CO2 injection"])
-                # self.run.log({'controls': actions})
-                # Create a line plot, specifying the x-axis as the 'Time' column
-                plot = wandb.plot.line(table, x="Time", y="uCO2", title='CO2')
-
-                # Log the custom plot
-                self.run.log({"Action": plot})
 
                 # self.run.log({"my_custom_plot": wandb.plot.line(table, "Time", "uCO2", title="CO2")})
 
