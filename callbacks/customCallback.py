@@ -99,11 +99,14 @@ class TensorboardCallback(EvalCallback):
                 )
 
             mean_reward, std_reward = np.mean(episode_rewards), np.std(episode_rewards)
-            mean_actions = np.mean(episode_actions, axis=0)
-            mean_obs = np.mean(episode_obs, axis=0)
+            meanActions = np.mean(episode_actions, axis=0)
+            meanObs = np.mean(episode_obs, axis=0)
             
-            actions = pd.DataFrame(data=mean_actions, columns=["uBoil", "uCO2", "uThScr", "uVent", "uLamp", "uIntLamp", "uGroPipe", "uBlScr"])
-            actions["Time"] = pd.to_datetime(days2date(time_vec[1:], "01-01-0001")).tz_localize('CET')
+            states = np.insert(meanObs, 0, time_vec, axis=1)
+            states = pd.DataFrame(data=states[:], columns=["Time", "Air Temperature", "CO2 concentration", "Humidity", "Fruit weight", "Fruit harvest", "PAR"])
+
+            actionsDf = pd.DataFrame(data=meanActions, columns=["uBoil", "uCO2", "uThScr", "uVent", "uLamp", "uIntLamp", "uGroPipe", "uBlScr"])
+            actionsDf["Time"] = pd.to_datetime(days2date(time_vec[1:], "01-01-0001"))
 
             mean_ep_length, std_ep_length = np.mean(episode_lengths), np.std(episode_lengths)
             self.last_mean_reward = mean_reward
@@ -140,12 +143,14 @@ class TensorboardCallback(EvalCallback):
                 continue_training = continue_training and self._on_event()
 
             if self.run:
-                print(actions["Time"])
-                # data = [mean_actions[:,1]]
-                table = wandb.Table(dataframe=actions)#, columns=["Time", "CO2 injection"])
+                print(actionsDf["Time"])
+                # data = [meanActionsDf[:,1]]
+                table = wandb.Table(dataframe=actionsDf)#, columns=["Time", "CO2 injection"])
+                table.add_column("Fruit weight", states["Fruit weight"])
                 # self.run.log({'controls': actions})
                 # Create a line plot, specifying the x-axis as the 'Time' column
                 plot = wandb.plot.line(table, x="Time", y="uCO2", title='CO2')
+                plot = wandb.plot.line(table, x="Time", y="Fruit weight", title='Fruit weight')
 
                 # Log the custom plot
                 self.run.log({"Action": plot})
