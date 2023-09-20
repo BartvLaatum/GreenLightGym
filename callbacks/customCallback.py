@@ -60,8 +60,10 @@ class TensorboardCallback(EvalCallback):
         continue_training = True
 
         if self.n_calls % self.eval_freq == 0:
-            path = os.path.join(self.path_vec_env, f"{self.name_vec_env}_{self.num_timesteps}_steps.pkl")
-            self.eval_env = VecNormalize.load(path, self.eval_env)
+            # path = os.path.join(self.path_vec_env, f"{self.name_vec_env}_{self.num_timesteps}_steps.pkl")
+            # print(path)
+            # self.eval_env = VecNormalize.load(path, self.eval_env)
+            # print(eval_env.obs_rms[:6])
             # Sync training and eval env if there is VecNormalize
             if self.model.get_vec_normalize_env() is not None:
                 try:
@@ -75,7 +77,6 @@ class TensorboardCallback(EvalCallback):
 
             # Reset success rate buffer
             self._is_success_buffer = []
-
             episode_rewards, episode_lengths, episode_actions, episode_obs, time_vec = evaluate_policy(
                 self.model,
                 self.eval_env,

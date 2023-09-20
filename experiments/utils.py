@@ -102,9 +102,7 @@ def create_callbacks(n_eval_episodes: int,
                      actions2plot: List[str] = None,
                      verbose: int = 1,
                      ) -> List[BaseCallback]:
-    save_vec_norm = SaveVecNormalizeCallback(save_freq=eval_freq, save_path=env_log_dir, name_prefix=save_name)
     save_vec_best = SaveVecNormalizeCallback(save_freq=1, save_path=env_log_dir, verbose=2)
-    
     eval_callback = TensorboardCallback(eval_env,\
                                         n_eval_episodes=n_eval_episodes,\
                                         eval_freq=eval_freq,
@@ -120,4 +118,4 @@ def create_callbacks(n_eval_episodes: int,
                                         actions2plot=actions2plot,\
                                         verbose=verbose)
     wandbcallback = WandbCallback(verbose=verbose)
-    return [save_vec_norm, eval_callback, wandbcallback]
+    return [eval_callback, wandbcallback]

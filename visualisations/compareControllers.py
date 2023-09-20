@@ -60,6 +60,8 @@ if __name__ == "__main__":
         ppoStates = ppoStates[ppoStates["Time"].dt.day.isin(args.days)]	
         ppoControls = ppoControls[ppoControls["Time"].dt.day.isin(args.days)]
 
+    print(ppoControls)
+
     # plot the data
     fig, axes = createFigs.createStatesFig(states2plot)
     fig, axes = createFigs.plotVariables(fig, axes, baselineStates, states2plot, "Rule-based controller", "C00")
