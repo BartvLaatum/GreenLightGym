@@ -20,9 +20,9 @@ if __name__ == "__main__":
     stateColumns = ["Time", "Air Temperature", "CO2 concentration", "Humidity", "Fruit weight", "Fruit harvest", "PAR", "Hour of the Day", "Day of the Year"]
     actionColumns = ["uBoil", "uCO2", "uThScr", "uVent", "uLamp", "uIntLamp", "uGroPipe", "uBlScr"]
 
-    envBaseParams, envParams, modelParams, options = loadParameters(env_id, hpPath, filename)
+    envBaseParams, envSpecificParams, modelParams, options = loadParameters(env_id, hpPath, filename)
     
-    GL = eval(env_id)(**envParams, **envBaseParams, options=options, training=False)
+    GL = eval(env_id)(**envSpecificParams, **envBaseParams, options=options, training=False)
     start = time.time()
     states, controls, weatherData = runRuleBasedController(GL, options, stateColumns, actionColumns)
     end = time.time()

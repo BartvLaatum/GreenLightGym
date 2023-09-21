@@ -12,9 +12,9 @@ import gymnasium as gym
 from torch.optim import Adam
 from torch.nn.modules.activation import ReLU, SiLU
 from wandb.integration.sb3 import WandbCallback
-from stable_baselines3.common.vec_env import SubprocVecEnv, VecNormalize, VecMonitor, VecEnv, is_vecenv_wrapped
+from stable_baselines3.common.vec_env import SubprocVecEnv, VecNormalize, VecMonitor, VecEnv
 
-from RLGreenLight.environments.GreenLight import GreenLightBase
+from RLGreenLight.environments.GreenLight import GreenLightBase, GreenLightProduction
 from RLGreenLight.callbacks.customCallback import TensorboardCallback, SaveVecNormalizeCallback, BaseCallback
 
 ACTIVATION_FN = {"ReLU": ReLU, "SiLU": SiLU}
@@ -24,7 +24,10 @@ def loadParameters(env_id: str, path: str, filename: str, algorithm: str = None)
     with open(join(path, filename), "r") as f:
         params = yaml.load(f, Loader=yaml.FullLoader)
     
-    envParams = params[env_id]
+    if env_id != "GreenLightBase":
+        envSpecificParams = params[env_id]
+    else:
+        envSpecificParams = {}
     envBaseParams = params["GreenLightBase"]
     options = params["options"]
     
@@ -38,10 +41,12 @@ def loadParameters(env_id: str, path: str, filename: str, algorithm: str = None)
                 OPTIMIZER[modelParams["policy_kwargs"]["optimizer_class"]]
     else:
         modelParams = None
-    return envBaseParams, envParams, modelParams, options
+    return envBaseParams, envSpecificParams, modelParams, options
 
-def wandb_init(modelParams: Dict[str, Any],
+def wandb_init(env: str,
+               modelParams: Dict[str, Any],
                envParams: Dict[str, Any],
+               envSpecificParams: Dict[str, Any],
                options: Dict[str, Any],
                timesteps: int,
                SEED: int,
@@ -54,12 +59,12 @@ def wandb_init(modelParams: Dict[str, Any],
     config= {
         "policy": modelParams["policy"],
         "total_timesteps": timesteps,
-        "env": lambda: GreenLightBase(**envParams, options=options),
-        "eval_env": lambda: GreenLightBase(**envParams, options=options, training=False),
+        "env": lambda: env(**envSpecificParams, **envParams, options=options),
+        "eval_env": lambda: env(**envSpecificParams, **envParams, options=options, training=False),
         "seed": SEED,
         "note": "testing co2 control, daily balance",
         "modelParams": {**modelParams},
-        "envParams": {**envParams}
+        "envParams": {**envSpecificParams, **envParams}
     }
 
     run = wandb.init(
@@ -102,20 +107,21 @@ def create_callbacks(n_eval_episodes: int,
                      actions2plot: List[str] = None,
                      verbose: int = 1,
                      ) -> List[BaseCallback]:
+
     save_vec_best = SaveVecNormalizeCallback(save_freq=1, save_path=env_log_dir, verbose=2)
-    eval_callback = TensorboardCallback(eval_env,\
-                                        n_eval_episodes=n_eval_episodes,\
+    eval_callback = TensorboardCallback(eval_env,
+                                        n_eval_episodes=n_eval_episodes,
                                         eval_freq=eval_freq,
-                                        best_model_save_path=model_log_dir,\
-                                        name_vec_env=save_name,\
-                                        path_vec_env=env_log_dir,\
-                                        deterministic=True,\
-                                        callback_on_new_best=save_vec_best,\
-                                        run=run,\
-                                        action_columns=action_columns,\
-                                        state_columns=state_columns,\
-                                        states2plot=states2plot,\
-                                        actions2plot=actions2plot,\
+                                        best_model_save_path=model_log_dir,
+                                        name_vec_env=save_name,
+                                        path_vec_env=env_log_dir,
+                                        deterministic=True,
+                                        callback_on_new_best=save_vec_best,
+                                        run=run,
+                                        action_columns=action_columns,
+                                        state_columns=state_columns,
+                                        states2plot=states2plot,
+                                        actions2plot=actions2plot,
                                         verbose=verbose)
     wandbcallback = WandbCallback(verbose=verbose)
     return [eval_callback, wandbcallback]
@@ -156,8 +162,8 @@ def controlScheme(GL, nightValue, dayValue):
 
     return states, controlSignals, weatherData
 
-def runRuleBasedController(GL, options, stateColumns, actionColumns):
-    obs, info = GL.reset(options=options)
+def runRuleBasedController(GL, stateColumns, actionColumns):
+    obs, info = GL.reset()
     N = GL.N                                        # number of timesteps to take
     states = np.zeros((N+1, GL.modelObsVars))       # array to save states
     controlSignals = np.zeros((N+1, GL.GLModel.nu)) # array to save rule-based controls controls

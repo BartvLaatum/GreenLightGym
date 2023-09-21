@@ -3,7 +3,7 @@ from gymnasium.spaces import Box
 
 import numpy as np
 import pandas as pd
-from typing import Optional, Any, Tuple
+from typing import Optional, Tuple, Any, List, Dict
 from RLGreenLight.environments.GreenLightCy import GreenLight as GL
 from RLGreenLight.environments.pyutils import loadWeatherData, satVp
 
@@ -30,14 +30,14 @@ class GreenLightBase(gym.Env):
                  seasonLength: int,         # [days] length of the growing season
                  predHorizon: int,          # [days] number of future weather predictions
                  timeinterval: int,         # [s] time interval in between observations
-                 controlSignals: list[str],  # list with all the control signals we aim to with RL/controller
+                 controlSignals: List[str],  # list with all the control signals we aim to with RL/controller
                  modelObsVars: int,          # number of variables we observe from the model
                  weatherObsVars: int,        # number of variables we observe from the weather data
-                 obsLow: list[float],       # lower bound for the observation space
-                 obsHigh: list[float],      # upper bound for the observation space
-                 rewardCoefficients: list[float], # coefficients for the reward function
-                 penaltyCoefficients: list[float], # coefficients for the penalty function
-                 options: Optional[dict[str, Any]] = None, # options for the environment (e.g. specify starting date)
+                 obsLow: List[float],       # lower bound for the observation space
+                 obsHigh: List[float],      # upper bound for the observation space
+                 rewardCoefficients: List[float], # coefficients for the reward function
+                 penaltyCoefficients: List[float], # coefficients for the penalty function
+                 options: Optional[Dict[str, Any]] = None, # options for the environment (e.g. specify starting date)
                  training: bool = True,     # whether we are training or testing
                  ) -> None:
 
@@ -85,7 +85,7 @@ class GreenLightBase(gym.Env):
         self.obsHigh = np.array(obsHigh)
 
 
-    def step(self, action: np.ndarray) -> Tuple[np.ndarray, float, bool, dict[str, Any]]:
+    def step(self, action: np.ndarray) -> Tuple[np.ndarray, float, bool, Dict[str, Any]]:
         """
         Given an action computed by some agent, we simulate the next state of the system.
         The system is modelled by the GreenLight model implemented in Cython.
@@ -201,7 +201,7 @@ class GreenLightBase(gym.Env):
         delta = d1 - d0
         return delta.days + self.startDay
 
-    def reset(self, seed: int | None = None, options: dict[str: Any] = None) -> Tuple[np.ndarray, dict[str, Any]]:
+    def reset(self, seed: int | None = None, options: Dict[str, Any] = None) -> Tuple[np.ndarray, Dict[str, Any]]:
         """
         Reset the environment to a random initial state.
         Randomness is introduced by the growth year and start day.
@@ -256,7 +256,7 @@ class GreenLightProduction(GreenLightBase):
         self.tomatoPrice = tomatoPrice
         self.co2Price = co2Price
 
-    def step(self, action: np.ndarray) -> Tuple[np.ndarray, float, bool, dict[str, Any]]:
+    def step(self, action: np.ndarray) -> Tuple[np.ndarray, float, bool, Dict[str, Any]]:
         """
         Given an action computed by some agent, we simulate the next state of the system.
         The system is modelled by the GreenLight model implemented in Cython.
@@ -267,7 +267,7 @@ class GreenLightProduction(GreenLightBase):
         self.GLModel.step(action, self.controlIdx)
 
         # state = self.GLModel.getStatesArray()
-        obs = self.harvestObs()
+        obs = self.getObs()
         if self.terminalState(obs):
             self.terminated = True
 
@@ -284,21 +284,23 @@ class GreenLightProduction(GreenLightBase):
             info
             )
 
-    def harvestObs(self) -> np.ndarray:
+    def getObs(self) -> np.ndarray:
         modelObs = self.GLModel.getHarvestObs()
         weatherIdx = [self.GLModel.timestep*self.solverSteps] + [(ts + self.GLModel.timestep)*self.solverSteps for ts in range(1, self.Np)]
         weatherObs = self.weatherData[weatherIdx, :self.weatherObsVars].flatten()
         return np.concatenate([modelObs, weatherObs], axis=0)
 
     def rewardFunction(self, obs: np.ndarray, action: np.ndarray) -> float:
-        harvest = obs[4] * self.dmfm # [kg [FM] m^-2]
-        co2resource = self.GLModel.co2InjectionRate * self.timeinterval * 1e-6 # [kg m^-2 900s^-1]
-        reward = harvest * self.tomatoPrice - co2resource * self.co2Price
-        penalty = np.dot(self.computePenalty(obs), self.penaltyCoefficients)
-
+        """
+        Compute the reward given the harvest of the model.
+        """
+        harvest = obs[4] * self.dmfm                                            # [kg [FM] m^-2]
+        co2resource = self.GLModel.co2InjectionRate * self.timeinterval * 1e-6  # [kg m^-2 900s^-1]
+        reward = harvest*self.tomatoPrice - co2resource*self.co2Price           # [euro m^-2]
+        penalty = np.dot(self.computePenalty(obs), self.penaltyCoefficients)    # penalty for constraint violations
         return reward - penalty
 
-    def reset(self, seed: int | None = None, options: dict[str: Any] = None) -> Tuple[np.ndarray, dict[str, Any]]:
+    def reset(self, seed: int | None = None, options: Dict[str, Any] = None) -> Tuple[np.ndarray, Dict[str, Any]]:
         """
         Reset the environment to a random initial state.
         Randomness is introduced by the growth year and start day.
@@ -319,13 +321,13 @@ class GreenLightProduction(GreenLightBase):
         # compute days since 01-01-0001
         # as time indicator by the model
         timeInDays = self.getTimeInDays()
+        
+        # initialize the model in C, set the crop state to mature crop
         self.GLModel = GL(self.weatherData, self.h, self.nx, self.nu, self.nd, self.noLamps, self.ledLamps, self.hpsLamps, self.intLamps, self.solverSteps, timeInDays)
         self.GLModel.setCropState(self.cLeaf, self.cStem, self.cFruit, self.tCanSum)
 
         self.terminated = False
         return self.getObs(), {}
-
-
 
 if __name__ == "__main__":
     pass

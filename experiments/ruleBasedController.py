@@ -5,11 +5,11 @@ import seaborn as sns; sns.set()
 import numpy as np
 import time
 
-def runNominalController(params, options):
+def runNominalController(params, options, state_columns, actions_columns):
     GL = GreenLightBase(**params, options=options, training=False)
     # time controller
     start = time.time()
-    states, controls, weather = runRuleBasedController(GL, options)
+    states, controls, weather = runRuleBasedController(GL, state_columns, actions_columns)
     end = time.time()
     print(f"Time to run controller: {end-start}")
     states["Time"] = np.asarray(days2date(states["Time"].values, "01-01-0001"), "datetime64[s]")
@@ -28,5 +28,7 @@ if __name__ == "__main__":
         params = yaml.load(f, Loader=yaml.FullLoader)
         fixedParams = params["GreenLight"]
         options = params["options"]
+    state_columns = ["Time", "Air Temperature", "CO2 concentration", "Humidity", "Fruit weight", "Fruit harvest", "PAR"]
+    actions_columns = ["uBoil", "uCO2", "uThScr", "uVent", "uLamp", "uIntLamp", "uGroPipe", "uBlScr"]
 
-    runNominalController(fixedParams, options)
+    runNominalController(fixedParams, options, state_columns, actions_columns)

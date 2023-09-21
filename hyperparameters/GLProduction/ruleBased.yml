@@ -1,0 +1,37 @@
+GreenLightBase:
+    weatherDataDir: "environments/data/" # path to the weather data file
+    location: "Amsterdam"   # location of the weatherdata
+    dataSource: "KNMI"      # which data source we use
+    nx: 28                  # Number of states
+    nu: 8                   # number of control variables for GreenLight
+    nd: 10                  # weather variables
+    noLamps: 0              # whether lamps are used
+    ledLamps: 1             # whether led lamps are used
+    hpsLamps: 0             # whether hps lamps are used
+    intLamps: 0             # whether int lamps are used
+    dmfm: 0.0627            # dry matter fresh matter ratio
+    h: 1                    # stepsize for the RK4 solver
+    seasonLength: 1        # number of growing days
+    predHorizon: 0.25       # prediction horizon in days.
+    timeinterval: 900       # [s] time interval at what rate do we observe and control the environment
+    controlSignals: []   # list with all control inputs we aim to control/learn
+    modelObsVars: 8         # number of variables we observe from the model
+    weatherObsVars: 5       # number of weather variables we observe
+    obsLow:  [15, 300, 60]  # lower bound for the observation space
+    obsHigh: [35, 1200, 90] # upper bound for the observation space
+    rewardCoefficients: []  # coefficients for the costs function
+    penaltyCoefficients: [.0, .0, .0] # coefficients for the penalty function
+    
+
+GreenLightProduction:
+    cLeaf: !!float 2.5e5
+    cStem: !!float 0.9e5
+    cFruit: !!float 2.8e5
+    tCanSum: 1035
+    tomatoPrice: 1.2
+    co2Price: 0.19
+
+
+options:                    # Options for the the evaluation date 
+    startDay: 0             # day since 01-january for starting the episode
+    growthYear: 2011        # year in which we start growing season
