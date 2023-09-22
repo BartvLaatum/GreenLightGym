@@ -154,8 +154,8 @@ class TensorboardCallback(EvalCallback):
                     tableActions = wandb.Table(dataframe=actions)
                     tableStates = wandb.Table(dataframe=states)
 
-                    actionplots = [wandb.plot.line(tableActions, x="Time", y=act, title='CO2') for act in self.actions2plot]
-                    stateplots = [wandb.plot.line(tableStates, x="Time", y=state, title='Fruit weight') for state in self.states2plot]
+                    actionplots = [wandb.plot.line(tableActions, x="Time", y=act, title='Actions') for act in self.actions2plot]
+                    stateplots = [wandb.plot.line(tableStates, x="Time", y=state, title='States') for state in self.states2plot]
 
                     # Log the custom plot
                     self.run.log({act: actionplots[i] for i, act in enumerate(self.actions2plot)})
@@ -164,9 +164,6 @@ class TensorboardCallback(EvalCallback):
             # Trigger callback after every evaluation, if needed
             if self.callback is not None:
                 continue_training = continue_training and self._on_event()
-
-
-                # self.run.log({"my_custom_plot": wandb.plot.line(table, "Time", "uCO2", title="CO2")})
 
         return continue_training
 
