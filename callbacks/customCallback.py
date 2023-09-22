@@ -7,8 +7,7 @@ import pandas as pd
 import gymnasium as gym
 
 from stable_baselines3.common.callbacks import EvalCallback, BaseCallback
-from stable_baselines3.common.vec_env import VecNormalize
-from stable_baselines3.common.vec_env import VecEnv, sync_envs_normalization
+from stable_baselines3.common.vec_env import VecEnv, VecNormalize, sync_envs_normalization
 
 from RLGreenLight.experiments.evaluation import evaluate_policy
 from RLGreenLight.environments.pyutils import days2date
@@ -150,6 +149,7 @@ class TensorboardCallback(EvalCallback):
                     actions = pd.DataFrame(data=meanActions, columns=self.action_columns)
                     actions["Time"] = pd.to_datetime(days2date(time_vec[1:], "01-01-0001"))
                     states["Time"] = pd.to_datetime(days2date(time_vec[:], "01-01-0001"))
+                    states["Cumulative harvest"] = states["Fruit harvest"].cumsum()
 
                     tableActions = wandb.Table(dataframe=actions)
                     tableStates = wandb.Table(dataframe=states)

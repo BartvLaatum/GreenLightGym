@@ -4,14 +4,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from RLGreenLight.experiments.utils import loadParameters, wandb_init, make_vec_env, create_callbacks
-from RLGreenLight.environments.GreenLight import GreenLight, runRuleBasedController, controlScheme
+from RLGreenLight.experiments.utils import loadParameters, runRuleBasedController, controlScheme
+from RLGreenLight.environments.GreenLight import GreenLightBase
 from RLGreenLight.visualisations.createFigs import createStatesFig, plotVariables
 from RLGreenLight.environments.pyutils import days2date
 
 
 def runNominalController(envParams, options):
-    GL = GreenLight(**envParams, options=options, training=False)
+    GL = GreenLightBase(**envParams, options=options, training=False)
     # time controller
     states, controls, weather = runRuleBasedController(GL, options)
     states["Time"] = np.asarray(days2date(states["Time"].values, "01-01-0001"), "datetime64[s]")
@@ -54,7 +54,7 @@ def interLightsExp(envParams, options):
     plt.show()
 
 def runControlScheme(envParams, options, nightValue, dayValue):
-    GL = GreenLight(**envParams, options=options, training=False)
+    GL = GreenLightBase(**envParams, options=options, training=False)
     states, controls, weather = controlScheme(GL, nightValue, dayValue)
     states["Time"] = np.asarray(days2date(states["Time"].values, "01-01-0001"), "datetime64[s]")
     controls["Time"] = states["Time"]
