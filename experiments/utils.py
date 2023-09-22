@@ -7,18 +7,35 @@ import warnings
 import wandb
 import numpy as np
 import pandas as pd
-import gymnasium as gym
 
 from torch.optim import Adam
 from torch.nn.modules.activation import ReLU, SiLU
 from wandb.integration.sb3 import WandbCallback
 from stable_baselines3.common.vec_env import SubprocVecEnv, VecNormalize, VecMonitor, VecEnv
+from stable_baselines3.common.utils import set_random_seed
 
 from RLGreenLight.environments.GreenLight import GreenLightBase, GreenLightProduction
 from RLGreenLight.callbacks.customCallback import TensorboardCallback, SaveVecNormalizeCallback, BaseCallback
 
 ACTIVATION_FN = {"ReLU": ReLU, "SiLU": SiLU}
 OPTIMIZER = {"ADAM": Adam}
+
+envs = {"GreenLightBase": GreenLightBase, "GreenLightProduction": GreenLightProduction}
+
+def make_env(env_id, rank, seed, kwargs, kwargsSpecific, options, eval_env):
+    """
+    Utility function for multiprocessed env.
+    
+    :param env_id: (str) the environment ID
+    :return: (Gym Environment) The gym environment
+    """
+    def _init():
+        env = envs[env_id](**kwargsSpecific, **kwargs, options=options)
+        if eval_env:
+            env.training = False
+        env.action_space.seed(seed + rank)
+        return env
+    return _init
 
 def loadParameters(env_id: str, path: str, filename: str, algorithm: str = None):
     with open(join(path, filename), "r") as f:
@@ -28,8 +45,13 @@ def loadParameters(env_id: str, path: str, filename: str, algorithm: str = None)
         envSpecificParams = params[env_id]
     else:
         envSpecificParams = {}
+
     envBaseParams = params["GreenLightBase"]
     options = params["options"]
+
+    state_columns = params["state_columns"]
+    action_columns = params["action_columns"]
+
     
     if algorithm is not None:
         modelParams = params[algorithm]
@@ -41,13 +63,11 @@ def loadParameters(env_id: str, path: str, filename: str, algorithm: str = None)
                 OPTIMIZER[modelParams["policy_kwargs"]["optimizer_class"]]
     else:
         modelParams = None
-    return envBaseParams, envSpecificParams, modelParams, options
+    return envBaseParams, envSpecificParams, modelParams, options, state_columns, action_columns
 
-def wandb_init(env: str,
-               modelParams: Dict[str, Any],
+def wandb_init(modelParams: Dict[str, Any],
                envParams: Dict[str, Any],
                envSpecificParams: Dict[str, Any],
-               options: Dict[str, Any],
                timesteps: int,
                SEED: int,
                project: str,
@@ -56,11 +76,10 @@ def wandb_init(env: str,
                save_code: bool = False,
                resume: bool = False
                ):
+
     config= {
         "policy": modelParams["policy"],
         "total_timesteps": timesteps,
-        "env": lambda: env(**envSpecificParams, **envParams, options=options),
-        "eval_env": lambda: env(**envSpecificParams, **envParams, options=options, training=False),
         "seed": SEED,
         "note": "testing co2 control, daily balance",
         "modelParams": {**modelParams},
@@ -78,7 +97,15 @@ def wandb_init(env: str,
     )
     return run, config
 
-def make_vec_env(env_fn: Callable, numCpus: int, monitor_filename: str = None, vec_norm_kwargs: Dict[str, Any] = None, eval_env: bool = False) -> VecEnv:
+def make_vec_env(env_id: str,
+                 envParams: Dict[str, Any],
+                 envSpecificParams: Dict[str, Any],
+                 options: Dict[str, Any],
+                 seed: int,
+                 numCpus: int,
+                 monitor_filename: str | None = None,
+                 vec_norm_kwargs: Dict[str, Any] | None = None,
+                 eval_env: bool = False) -> VecEnv:
     """
     Creates a normalized environment.
     """
@@ -86,12 +113,13 @@ def make_vec_env(env_fn: Callable, numCpus: int, monitor_filename: str = None, v
     if monitor_filename is not None and not os.path.exists(os.path.dirname(monitor_filename)):
         os.makedirs(os.path.dirname(monitor_filename), exist_ok=True)
 
-    env = SubprocVecEnv([env_fn for _ in range(numCpus)])
+    env = SubprocVecEnv([make_env(env_id, rank, seed, envParams, envSpecificParams, options, eval_env=eval_env) for rank in range(numCpus)])
     env = VecMonitor(env, filename=monitor_filename)
     env = VecNormalize(env, **vec_norm_kwargs)
     if eval_env:
         env.training = False
         env.norm_reward = False
+    env.seed(seed)
     return env
 
 def create_callbacks(n_eval_episodes: int,
@@ -101,10 +129,10 @@ def create_callbacks(n_eval_episodes: int,
                      model_log_dir: str,
                      eval_env: VecEnv,
                      run: wandb.run = None,
-                     action_columns: List[str] =None,
-                     state_columns:List[str] = None,
-                     states2plot:List[str] = None,
-                     actions2plot: List[str] = None,
+                     action_columns: List[str] | None = None,
+                     state_columns:List[str] | None = None,
+                     states2plot:List[str] | None = None,
+                     actions2plot: List[str] | None = None,
                      verbose: int = 1,
                      ) -> List[BaseCallback]:
 
@@ -125,8 +153,6 @@ def create_callbacks(n_eval_episodes: int,
                                         verbose=verbose)
     wandbcallback = WandbCallback(verbose=verbose)
     return [eval_callback, wandbcallback]
-
-
 
 def controlScheme(GL, nightValue, dayValue):
     """
@@ -181,7 +207,7 @@ def runRuleBasedController(GL, stateColumns, actionColumns):
     
     # insert time vector into states array
     states = np.insert(states, 0, timevec, axis=1)
-    states = pd.DataFrame(data=states[:], columns=stateColumns)
+    states = pd.DataFrame(data=states[:], columns=["Time"]+stateColumns)
     controlSignals = pd.DataFrame(data=controlSignals, columns=actionColumns)
     weatherData = pd.DataFrame(data=GL.weatherData[[int(ts * GL.timeinterval/GL.h) for ts in range(0, GL.Np+1)], :GL.weatherObsVars], columns=["Temperature", "Humidity", "PAR", "CO2 concentration", "Wind"])
 

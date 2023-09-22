@@ -35,3 +35,6 @@ GreenLightProduction:
 options:                    # Options for the the evaluation date 
     startDay: 0             # day since 01-january for starting the episode
     growthYear: 2011        # year in which we start growing season
+
+state_columns: ["Air Temperature", "CO2 concentration", "Humidity", "Fruit weight", "Fruit harvest", "PAR", "Hour of the Day", "Day of the Year"]
+action_columns: ["uBoil", "uCO2", "uThScr", "uVent", "uLamp", "uIntLamp", "uGroPipe", "uBlScr"]

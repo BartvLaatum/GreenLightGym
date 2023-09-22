@@ -23,26 +23,23 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # check cpus available
-    assert args.numCpus <= cpu_count(), f"Number of CPUs requested ({args.numCpus}) is greater than available ({cpu_count()})"
+    assert args.numCpus <= cpu_count(), \
+        f"Number of CPUs requested ({args.numCpus}) is greater than available ({cpu_count()})"
 
     hpPath = f"hyperparameters/{args.HPfolder}/"
-    action_columns = ["uBoil", "uCO2", "uThScr", "uVent", "uLamp", "uIntLamp", "uGroPipe", "uBlScr"]
-    state_columns = ["Air Temperature", "CO2 concentration", "Humidity", "Fruit weight", "Fruit harvest", "PAR", "Hour of the Day", "Day of the Year"]
     states2plot = ["CO2 concentration", "Fruit weight", "Fruit harvest", "PAR", "Cumulative harvest"]
     actions2plot = ["uCO2"]
 
     SEED = 666
     n_eval_episodes = 1
     algorithm = "PPO"
-    envBaseParams, envSpecificParams, modelParams, options =\
+    envBaseParams, envSpecificParams, modelParams, options, state_columns, action_columns =\
                             loadParameters(args.env_id, hpPath, args.HPfilename, algorithm)
 
     # define
-    run, config = wandb_init(envs[args.env_id],
-                             modelParams,
+    run, config = wandb_init(modelParams,
                              envBaseParams,
                              envSpecificParams,
-                             options,
                              args.total_timesteps,
                              SEED,
                              project=args.project,
@@ -53,16 +50,24 @@ if __name__ == "__main__":
     monitor_filename = None
     vec_norm_kwargs = {"norm_obs": True, "norm_reward": True, "clip_obs": 50_000}
 
-    env = make_vec_env(config["env"],
+    env = make_vec_env(args.env_id,
+                       envBaseParams,
+                       envSpecificParams,
+                       options,
+                       seed=SEED,
                        numCpus=args.numCpus,
                        monitor_filename=monitor_filename,
                        vec_norm_kwargs=vec_norm_kwargs)
 
-    eval_env = make_vec_env(config["eval_env"],
+    eval_env = make_vec_env(args.env_id,
+                            envBaseParams,
+                            envSpecificParams,
+                            options,
+                            seed=SEED,
                             numCpus=1,
                             monitor_filename=monitor_filename,
                             vec_norm_kwargs=vec_norm_kwargs,
-                            eval_env=True)
+                            eval_env=True,)
 
     env_log_dir = f"trainData/{args.project}/envs/{run.name}/"
     model_log_dir = f"trainData/{args.project}/models/{run.name}/"
@@ -75,7 +80,7 @@ if __name__ == "__main__":
                                  save_name,
                                  model_log_dir,
                                  eval_env,
-                                 run=None,
+                                 run=run,
                                  action_columns=action_columns,
                                  state_columns=state_columns,
                                  states2plot=states2plot,

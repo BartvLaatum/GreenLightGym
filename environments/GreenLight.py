@@ -201,7 +201,7 @@ class GreenLightBase(gym.Env):
         delta = d1 - d0
         return delta.days + self.startDay
 
-    def reset(self, seed: int | None = None, options: Dict[str, Any] = None) -> Tuple[np.ndarray, Dict[str, Any]]:
+    def reset(self, seed: Optional[int] = None) -> Tuple[np.ndarray, Dict[str, Any]]:
         """
         Reset the environment to a random initial state.
         Randomness is introduced by the growth year and start day.
@@ -223,7 +223,7 @@ class GreenLightBase(gym.Env):
         # as time indicator by the model
         timeInDays = self.getTimeInDays()
         self.GLModel = GL(self.weatherData, self.h, self.nx, self.nu, self.nd, self.noLamps, self.ledLamps, self.hpsLamps, self.intLamps, self.solverSteps, timeInDays)
-                
+
         self.terminated = False
         obs = self.getObs()
         self.prevYield = obs[3]
@@ -300,7 +300,7 @@ class GreenLightProduction(GreenLightBase):
         penalty = np.dot(self.computePenalty(obs), self.penaltyCoefficients)    # penalty for constraint violations
         return reward - penalty
 
-    def reset(self, seed: int | None = None, options: Dict[str, Any] = None) -> Tuple[np.ndarray, Dict[str, Any]]:
+    def reset(self, seed: Optional[int] = None) -> Tuple[np.ndarray, Dict[str, Any]]:
         """
         Reset the environment to a random initial state.
         Randomness is introduced by the growth year and start day.

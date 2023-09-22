@@ -110,7 +110,6 @@ def evaluate_policy(
         current_rewards += rewards
         current_lengths += 1
 
-
         timevec[timestep+1] =  env.env_method("getTime", indices=0)[0]
         episode_obs[:, timestep+1, :obsVars] = env.unnormalize_obs(new_observations)[:, :obsVars]
 
