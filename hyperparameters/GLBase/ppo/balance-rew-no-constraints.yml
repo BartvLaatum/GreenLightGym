@@ -1,4 +1,4 @@
-GreenLight:
+GreenLightBase:
     weatherDataDir: "environments/data/" # path to the weather data file
     location: "Amsterdam"   # location of the weatherdata
     dataSource: "KNMI"      # which data source we use
@@ -14,7 +14,7 @@ GreenLight:
     seasonLength: 10       # number of growing days
     predHorizon: 0.25          # prediction horizon in days.
     timeinterval: 900       # [s] time interval at what rate do we observe and control the environment
-    controlSignals: [co2]      # list with all control inputs we aim to control/learn
+    controlSignals: ["co2"]      # list with all control inputs we aim to control/learn
     modelObsVars: 6         # number of variables we observe from the model
     weatherObsVars: 5       # number of weather variables we observe
     obsLow:  [15, 300, 60]   # lower bound for the observation space
@@ -25,6 +25,9 @@ GreenLight:
 options:                    # set if we want to evaluate our model
     startDay: 273           # day since 01-january for starting the episode
     growthYear: 2011        # year in which we start growing season
+
+state_columns: ["Air Temperature", "CO2 concentration", "Humidity", "Fruit weight", "Fruit harvest", "PAR"]
+action_columns: ["uBoil", "uCO2", "uThScr", "uVent", "uLamp", "uIntLamp", "uGroPipe", "uBlScr"]
 
 PPO:
   policy: MlpPolicy

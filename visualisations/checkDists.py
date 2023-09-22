@@ -4,12 +4,12 @@ import matplotlib.pyplot as plt
 from RLGreenLight.visualisations.createFigs import createDistFig, plotDistributions
 from stable_baselines3.common.vec_env import VecNormalize
 from RLGreenLight.experiments.utils import loadParameters, make_vec_env
-from RLGreenLight.environments.GreenLight import GreenLight
+from RLGreenLight.environments.GreenLight import GreenLightBase
 import numpy as np
 
 def load_env(envParams, options):
     vec_norm_kwargs = {"norm_obs": True, "norm_reward": False, "clip_obs": 1000, "clip_reward": 1000}
-    env = make_vec_env(lambda: GreenLight(**envParams, options=options), numCpus=1, monitor_filename=None, vec_norm_kwargs=vec_norm_kwargs, eval_env=True)
+    env = make_vec_env(lambda: GreenLightBase(**envParams, options=options), numCpus=1, monitor_filename=None, vec_norm_kwargs=vec_norm_kwargs, eval_env=True)
     env = VecNormalize.load(f"trainData/{args.project}/envs/{args.runname}/vecnormalize.pkl", env)
     return env
 

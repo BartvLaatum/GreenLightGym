@@ -1,6 +1,6 @@
 # Import the Parameters struct from defineParameters.pxd
 from defineParameters cimport Parameters
-from libc.math cimport cos, M_PI, exp, sqrt, fabs, fmax, fmin, log
+from libc.math cimport cos, M_PI, exp, sqrt, fabs, fmax, fmin, log, floor
 from utils cimport satVp, cond, co2dens2ppm
 
 cdef packed struct AuxiliaryStates:
@@ -220,6 +220,8 @@ cdef packed struct AuxiliaryStates:
     #######################
     #### Control rules ####
     #######################
+    double timeOfDay
+    double dayOfYear
     double co2InPpm
     double rhIn
 
@@ -432,8 +434,21 @@ cdef inline double airMc(double f12, double c1, double c2):
     # Equation 45 [1]
     return fabs(f12)*(c1-c2)
 
+cdef inline void initAuxStates(AuxiliaryStates* a, double &x[27]):
+    
+    a.co2InPpm = co2dens2ppm(x[2], 1e-6*x[0])
+    a.rhIn = 100*x[15]/satVp(x[2])
+
+    a.rParGhSun = 0
+    a.rParGhLamp = 0
+    a.mcFruitHarSum = 0
+
+    a.timeOfDay = 24*(x[27] - floor(x[27])) # hours since midnight time of day [h]
+    a.dayOfYear = x[27] % 364.2425          
+
+
 # Function to update the auxiliary states based on the Parameters struct
-cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double &x[27], double &d[7]):
+cdef inline void update(AuxiliaryStates* a, Parameters* p, double* u, double* x, double* d):
     """
     Update the auxiliary states based on the Parameters struct and previous auxiliary states.
 
@@ -1328,6 +1343,10 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
     #######################
     #### Control Rules ####
     #######################
+
+    a.timeOfDay = 24*(x[27] - floor(x[27])) # hours since midnight time of day [h]
+    a.dayOfYear = x[27] % 365.2425          # day of year [d]
+
     # CO2 concentration in main compartment [ppm]
     a.co2InPpm = co2dens2ppm(x[2], 1e-6*x[0])
 
@@ -1764,13 +1783,8 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double &u[11], double
 
     # Fruit harvest [mg{CH2O} m^{-2} s^{-1}]
     # Equation A45 [5], Equation 7.45 [7]
-    # addAux(gl, 'mcFruitHar', smoothHar(x.cFruit, p.cFruitMax, 1e4, 5e4))
     a.mcFruitHar = smoothHar(x[25], p.cFruitMax, 1e4, 5e4)
-    # print("", mcFruitHar)
-
-    # comptures sum of the harvest fruit over the past timestep
-    a.mcFruitHarSum += a.mcFruitHar
-
+  
     # Net crop assimilation [mg{CO2} m^{-2} s^{-1}]
     # It is assumed that for every mol of CH2O in net assimilation, a mol
     # of CO2 is taken from the air, thus the conversion uses molar masses

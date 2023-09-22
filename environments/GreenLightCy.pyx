@@ -6,7 +6,7 @@ The python environment will send setpoints as actions to the cython module.
 Next, cython will compute the control signals, and simulate the new state of the greenhouse.
 Finally, the new state/measurement/disturbances will be returned to the python environment.
 """
-from auxiliaryStates cimport AuxiliaryStates, update
+from auxiliaryStates cimport AuxiliaryStates, update, initAuxStates
 from defineParameters cimport Parameters, initParameters
 from differenceFunction cimport fRK4
 from computeControls cimport controlSignal
@@ -60,6 +60,7 @@ cdef class GreenLight:
 
         # compute auxiliary states once before start of simulation
         # update(self.a, self.p, self.u, self.x, self.d[0])
+        initAuxStates(self.a, self.x)
 
     def __dealloc__(self):
         free(self.a)
@@ -96,7 +97,7 @@ cdef class GreenLight:
         # we have controls inputs that are based on setpoits (computed here)
         # and we have control inputs that are learned (computed in python environment)
         # compute control signal at specific time step
-        self.u = controlSignal(self.p, self.x, self.u, self.d[self.timestep*self.solverSteps])
+        self.u = controlSignal(self.a, self.p, self.x, self.u, self.d[self.timestep*self.solverSteps])
 
         for i in range(len(learnedControlIdx)):
             self.u[learnedControlIdx[i]] = controls[i]
@@ -123,6 +124,23 @@ cdef class GreenLight:
         for i in range(n):
             for j in range(l):
                 self.d[i][j] = np_weather[i, j]
+
+    cpdef void setCropState(self, float cLeaf, float cStem, float cFruit, float tCanSum):
+        """
+        Function to set the crop state of the GreenLight model.
+        Except for the cBuffer state which we compute using the model.
+        We copy the array with states that was loaded in by the python environment to an array in the cython module.
+
+        Args:
+            cLeaf (float): Carbohydrates in leaves [mg{CH20} m^{-2}]
+            cStem (float): Carbohydrates in stem [mg{CH20} m^{-2}]
+            cFruit (float): Carbohydrates in fruit [mg{CH20} m^{-2}]
+            tCanSum (float): Crop development stage [C day]
+        """
+        self.x[23] = cLeaf
+        self.x[24] = cStem
+        self.x[25] = cFruit
+        self.x[26] = tCanSum
 
     cpdef void setStates(self, cnp.ndarray[cnp.double_t, ndim=1] states):
         """
@@ -305,10 +323,22 @@ cdef class GreenLight:
         cdef  cnp.ndarray[cnp.double_t, ndim=1] np_obs = np.zeros(6, dtype=np.double)
         np_obs[0] = self.x[2]                               # Air temperature in main compartment [deg C]
         np_obs[1] = self.a.co2InPpm                         # CO2 concentration in main air compartment [ppm]
-        np_obs[2] = 100*self.x[15]/satVp(self.x[2])         # Relative humidity in main air compartment [%]
+        np_obs[2] = self.a.rhIn                             # Relative humidity in main air compartment [%]
         np_obs[3] = self.x[25]*1e-6                         # Fruit dry matter weight [kg{CH20} m^{-2}]
         np_obs[4] = self.a.mcFruitHarSum*1e-6               # Harvested fruit in dry matter weight [kg{CH20} m^{-2}]
         np_obs[5] = self.a.rParGhSun + self.a.rParGhLamp    # PAR radiation above the canopy [W m^{-2}]
+        return np_obs
+
+    cpdef getHarvestObs(self):
+        cdef  cnp.ndarray[cnp.double_t, ndim=1] np_obs = np.zeros(8, dtype=np.double)
+        np_obs[0] = self.x[2]                               # Air temperature in main compartment [deg C]
+        np_obs[1] = self.a.co2InPpm                         # CO2 concentration in main air compartment [ppm]
+        np_obs[2] = self.a.rhIn                             # Relative humidity in main air compartment [%]
+        np_obs[3] = self.x[25]*1e-6                         # Fruit dry matter weight [kg{CH20} m^{-2}]
+        np_obs[4] = self.a.mcFruitHarSum*1e-6               # Harvested fruit in dry matter weight [kg{CH20} m^{-2}]
+        np_obs[5] = self.a.rParGhSun + self.a.rParGhLamp    # PAR radiation above the canopy [W m^{-2}]
+        np_obs[6] = self.a.timeOfDay                        # Time of day [h]
+        np_obs[7] = self.a.dayOfYear                        # Time of day of lamps [h]
         return np_obs
 
     @property

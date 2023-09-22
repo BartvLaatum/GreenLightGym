@@ -24,6 +24,10 @@ cdef inline double* fRK4(AuxiliaryStates* a, Parameters* p, double* u, double* x
 
     # update auxiliary states
     update(a, p, u, x, d)
+
+    # comptures the harvested fruit over the timestep
+    a.mcFruitHarSum += a.mcFruitHar*h
+
     k1 = ODE(a, p, x, u, d, nx)
 
     for i in range(nx):
@@ -47,6 +51,7 @@ cdef inline double* fRK4(AuxiliaryStates* a, Parameters* p, double* u, double* x
     # Runge-Kutta 4th order method
     for l in range(nx):
         x[l] += h/6 * (k1[l] + 2*k2[l] + 2*k3[l] + k4[l])
+
 
     free(k1)
     free(k2)
