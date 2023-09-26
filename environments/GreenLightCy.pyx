@@ -191,7 +191,7 @@ cdef class GreenLight:
         x[25]: cFruit   Carbohydrates in fruit [mg{CH20} m^{-2}]
         x[26]: tCanSum  Crop development stage [C day]
 
-        x[27]: time     Time since 00-00-0000 [days]
+        x[27]: time     Time since 01-01-0001 [days]
     """
         # self.x = <double(*)[26]>malloc(sizeof(double))
         # Air and vapor pressure are assumed to start at the night setpoints
@@ -339,6 +339,10 @@ cdef class GreenLight:
         np_obs[5] = self.a.rParGhSun + self.a.rParGhLamp    # PAR radiation above the canopy [W m^{-2}]
         np_obs[6] = self.a.timeOfDay                        # Time of day [h]
         np_obs[7] = self.a.dayOfYear                        # Time of day of lamps [h]
+        np_obs[8] = self.a.co2InjectionRate                 # CO2 injection rate [mg m^-2 s^-1]
+        np_obs[9] = self.a.qLampIn                          # electrical power of lamps [W m^-2]
+        np_obs[10] = self.a.hBoilPipe                       # heat demand of boiler [W m^-2]
+        np_obs[11] = self.x[9]                              # pipe temperature [deg C]
         return np_obs
 
     @property

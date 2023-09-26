@@ -444,7 +444,7 @@ cdef inline void initAuxStates(AuxiliaryStates* a, double &x[27]):
     a.mcFruitHarSum = 0
 
     a.timeOfDay = 24*(x[27] - floor(x[27])) # hours since midnight time of day [h]
-    a.dayOfYear = x[27] % 364.2425          
+    a.dayOfYear = x[27] % 365.2425
 
 
 # Function to update the auxiliary states based on the Parameters struct
@@ -1345,6 +1345,9 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double* u, double* x,
     #######################
 
     a.timeOfDay = 24*(x[27] - floor(x[27])) # hours since midnight time of day [h]
+
+    # not completely accurate, since we assume there are 365.2425 days in a year.
+    # while this actually is a average of leap years and non-leap years.
     a.dayOfYear = x[27] % 365.2425          # day of year [d]
 
     # CO2 concentration in main compartment [ppm]

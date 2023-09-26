@@ -31,7 +31,7 @@ GreenLightProduction:
     co2Price: 0.19
 
 options:                    # Options for the the evaluation date 
-    startDay: 0             # day since 01-january for starting the episode
+    startDay: 31             # day since 01-january for starting the episode
     growthYear: 2011        # year in which we start growing season
 
 state_columns: ["Air Temperature", "CO2 concentration", "Humidity", "Fruit weight", "Fruit harvest", "PAR", "Hour of the Day", "Day of the Year"]
@@ -40,7 +40,7 @@ action_columns: ["uBoil", "uCO2", "uThScr", "uVent", "uLamp", "uIntLamp", "uGroP
 
 PPO:
   policy: MlpPolicy
-  learning_rate: !!float 1e-4
+  learning_rate: !!float 3e-4
   n_steps: 128                  # we update after n_steps calls of step() function. in the case of 10 envs --> 1280 timesteps are taken (equals to 10 days)
   batch_size: 64
   n_epochs: 10

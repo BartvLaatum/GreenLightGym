@@ -18,7 +18,7 @@ GreenLightBase:
     modelObsVars: 8         # number of variables we observe from the model
     weatherObsVars: 5       # number of weather variables we observe
     obsLow:  [15, 300, 60]  # lower bound for the observation space
-    obsHigh: [35, 1200, 90] # upper bound for the observation space
+    obsHigh: [35, 1000, 90] # upper bound for the observation space
     rewardCoefficients: []  # coefficients for the costs function
     penaltyCoefficients: [.0, .0, .0] # coefficients for the penalty function
     
@@ -33,7 +33,7 @@ GreenLightProduction:
 
 
 options:                    # Options for the the evaluation date 
-    startDay: 0             # day since 01-january for starting the episode
+    startDay: 182             # day since 01-january for starting the episode
     growthYear: 2011        # year in which we start growing season
 
 state_columns: ["Air Temperature", "CO2 concentration", "Humidity", "Fruit weight", "Fruit harvest", "PAR", "Hour of the Day", "Day of the Year"]

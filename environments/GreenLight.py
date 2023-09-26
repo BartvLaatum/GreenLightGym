@@ -166,6 +166,7 @@ class GreenLightBase(gym.Env):
         # penalty is the sum of the squared differences between the observation and the bounds
         # penalty is zero if the observation is within the bounds
         Npen = self.obsLow.shape[0]
+        print(obs[:Npen])
         lowerbound = self.obsLow[:] - obs[:Npen]
         lowerbound[lowerbound < 0] = 0
         upperbound = obs[:Npen] - self.obsHigh[:]
