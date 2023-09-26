@@ -29,7 +29,7 @@ GreenLightProduction:
     cFruit: !!float 2.8e5
     tCanSum: 1035
     tomatoPrice: 1.2
-    co2Price: 0.19
+    co2Price: 0.1
 
 
 options:                    # Options for the the evaluation date 

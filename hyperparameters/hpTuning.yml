@@ -1,3 +1,76 @@
+program: train.py
+method: random
+metric:
+  name: mean_reward
+  goal: optimize
+
+parameters:
+  learning_rate:
+    distribution: log_uniform
+    min: !!float 1e-6
+    max: !!float 1e-3
+  n_steps:
+    distribution: q_uniform_values
+      q: 8
+      min: 32
+      max: 96
+  batch_size:
+    distribution: q_log_uniform_values
+    q: 8
+    min: 32
+    max: 256
+  n_epochs:
+    value: 10
+  policy:
+    value: MlpPolicy
+  gamma:
+    distribution: log_uniform
+    min: 0.999
+    max: 0.9
+  gae_lambda: 
+    distribution: uniform
+    min: 0.9
+    max: 0.99
+  clip_range:
+    value: 0.2
+  normalize_advantage: 
+    value: True
+  ent_coef:
+    value: 0.0
+  vf_coef:
+    value: 0.5
+  max_grad_norm:
+    value: 0.5
+  use_sde: 
+    value: False
+  sde_sample_freq:
+    value: -1
+  target_kl: 
+    values: null
+
+  # policy_kwargs: 
+  net_arch: 
+    pi:
+      distribution: q_log_uniform
+      q: 8
+      min: 16
+      max: 128
+    vf:
+      distribution: q_log_uniform
+      q: 64
+      min: 64
+      max: 512
+    optimizer_class:
+       value: ADAM
+      optimizer_kwargs:
+        value: amsgrad: value: True
+    activation_fn: 
+      distribution: categorical
+        values: [Tanh, SiLU]
+
+
+
+
 GreenLightBase:
     weatherDataDir: "environments/data/" # path to the weather data file
     location: "Amsterdam"   # location of the weatherdata
@@ -20,7 +93,7 @@ GreenLightBase:
     obsLow:  [15, 300, 60]  # lower bound for the observation space
     obsHigh: [35, 1200, 90] # upper bound for the observation space
     rewardCoefficients: []  # coefficients for the costs function
-    penaltyCoefficients: [.0, !!float 1e-10, .0] # coefficients for the penalty function
+    penaltyCoefficients: [.0, !!float 1e-9, .0] # coefficients for the penalty function
 
 GreenLightProduction:
     cLeaf: !!float 2.5e5
@@ -31,7 +104,7 @@ GreenLightProduction:
     co2Price: 0.1
 
 options:                    # Options for the the evaluation date 
-    startDay: 182             # day since 01-feb for starting the episode
+    startDay: 31             # day since 01-feb for starting the episode
     growthYear: 2011        # year in which we start growing season
 
 state_columns: ["Air Temperature", "CO2 concentration", "Humidity", "Fruit weight", "Fruit harvest", "PAR"]
@@ -60,3 +133,5 @@ PPO:
                   optimizer_kwargs: {amsgrad: True},
                   activation_fn: Tanh
           }
+
+
