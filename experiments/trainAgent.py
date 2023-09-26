@@ -16,7 +16,7 @@ if __name__ == "__main__":
     parser.add_argument("--HPfolder", type=str, default="GLBase")
     parser.add_argument("--HPfilename", type=str, default="ppo.yml")
     parser.add_argument("--env_id", type=str, default="GreenLightBase")
-    parser.add_argument("--total_timesteps", type=int, default=400_000)
+    parser.add_argument("--total_timesteps", type=int, default=500_000)
     parser.add_argument("--n_eval_episodes", type=int, default=1)
     parser.add_argument("--numCpus", type=int, default=4)
     parser.add_argument("--n_evals", type=int, default=10)

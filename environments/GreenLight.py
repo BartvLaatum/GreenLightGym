@@ -74,7 +74,7 @@ class GreenLightBase(gym.Env):
 
         # set up the action and observation space
         self.action_space = Box(low=-1, high=1, shape=(len(controlSignals),), dtype=np.float32)
-        self.observation_space = Box(low=-1e4, high=1e4, shape=(self.modelObsVars+(self.Np)*self.weatherObsVars,), dtype=np.float32)
+        self.observation_space = Box(low=-1e4, high=1e4, shape=(self.modelObsVars+(self.Np+1)*self.weatherObsVars,), dtype=np.float32)
 
         # specify which signals we want to control, fixed various simulations
         controlIndices = {"boiler": 0, "co2": 1, "thermal": 2, "roofvent": 3, "lamps": 4, "intlamps": 5, "growpipes": 6, "blackout": 7}
@@ -286,7 +286,7 @@ class GreenLightProduction(GreenLightBase):
             )
 
     def getObs(self) -> np.ndarray:
-        modelObs = self.GLModel.getHarvestObs()
+        modelObs = self.GLModel.getObs()
         weatherIdx = [self.GLModel.timestep*self.solverSteps] + [(ts + self.GLModel.timestep)*self.solverSteps for ts in range(1, self.Np)]
         weatherObs = self.weatherData[weatherIdx, :self.weatherObsVars].flatten()
         return np.concatenate([modelObs, weatherObs], axis=0)
@@ -295,7 +295,7 @@ class GreenLightProduction(GreenLightBase):
         """
         Compute the reward given the harvest of the model.
         """
-        harvest = obs[4] * self.dmfm                                            # [kg [FM] m^-2]
+        harvest = obs[4] / self.dmfm                                            # [kg [FM] m^-2]
         co2resource = self.GLModel.co2InjectionRate * self.timeinterval * 1e-6  # [kg m^-2 900s^-1]
         reward = harvest*self.tomatoPrice - co2resource*self.co2Price           # [euro m^-2]
         penalty = np.dot(self.computePenalty(obs), self.penaltyCoefficients)    # penalty for constraint violations
@@ -328,6 +328,7 @@ class GreenLightProduction(GreenLightBase):
         self.GLModel.setCropState(self.cLeaf, self.cStem, self.cFruit, self.tCanSum)
 
         self.terminated = False
+        
         return self.getObs(), {}
 
 if __name__ == "__main__":
