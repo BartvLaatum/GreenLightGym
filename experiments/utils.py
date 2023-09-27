@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 
 from torch.optim import Adam
-from torch.nn.modules.activation import ReLU, SiLU, Tanh
+from torch.nn.modules.activation import ReLU, SiLU
 from wandb.integration.sb3 import WandbCallback
 from stable_baselines3.common.vec_env import SubprocVecEnv, VecNormalize, VecMonitor, VecEnv
 from stable_baselines3.common.utils import set_random_seed
@@ -17,7 +17,7 @@ from stable_baselines3.common.utils import set_random_seed
 from RLGreenLight.environments.GreenLight import GreenLightBase, GreenLightProduction
 from RLGreenLight.callbacks.customCallback import TensorboardCallback, SaveVecNormalizeCallback, BaseCallback
 
-ACTIVATION_FN = {"ReLU": ReLU, "SiLU": SiLU, "Tanh": Tanh}
+ACTIVATION_FN = {"ReLU": ReLU, "SiLU": SiLU}
 OPTIMIZER = {"ADAM": Adam}
 
 envs = {"GreenLightBase": GreenLightBase, "GreenLightProduction": GreenLightProduction}
@@ -161,7 +161,6 @@ def controlScheme(GL, nightValue, dayValue):
     obs, info = GL.reset()
     GL.GLModel.setNightCo2(nightValue)
     N = GL.N                                        # number of timesteps to take
-    frew
     states = np.zeros((N+1, GL.modelObsVars))       # array to save states
     controlSignals = np.zeros((N+1, GL.GLModel.nu)) # array to save rule-based controls controls
     states[0, :] = obs[:GL.modelObsVars]            # get initial states
@@ -193,19 +192,17 @@ def runRuleBasedController(GL, stateColumns, actionColumns):
     obs, info = GL.reset()
     N = GL.N                                        # number of timesteps to take
     states = np.zeros((N+1, GL.modelObsVars))       # array to save states
-    controlSignals = np.zeros((N, GL.GLModel.nu)) # array to save rule-based controls controls
-    episode_rewards = np.zeros((N, 1))
+    controlSignals = np.zeros((N+1, GL.GLModel.nu)) # array to save rule-based controls controls
     states[0, :] = obs[:GL.modelObsVars]             # get initial states
     timevec = np.zeros((N+1,))                      # array to save time
     timevec[0] = GL.GLModel.time
-    i = 0
+    i=1
     while not GL.terminated:
         controls = np.ones((GL.action_space.shape[0],))*0.5
         obs, r, terminated, _, info = GL.step(controls.astype(np.float32))
-        states[i+1, :] += obs[:GL.modelObsVars]
+        states[i, :] += obs[:GL.modelObsVars]
         controlSignals[i, :] += info["controls"]
-        timevec[i+1] = info["Time"]
-        episode_rewards[i] += r
+        timevec[i] = info["Time"]
         i+=1
     
     # insert time vector into states array
@@ -213,8 +210,6 @@ def runRuleBasedController(GL, stateColumns, actionColumns):
     states = pd.DataFrame(data=states[:], columns=["Time"]+stateColumns)
     controlSignals = pd.DataFrame(data=controlSignals, columns=actionColumns)
     weatherData = pd.DataFrame(data=GL.weatherData[[int(ts * GL.timeinterval/GL.h) for ts in range(0, GL.Np+1)], :GL.weatherObsVars], columns=["Temperature", "Humidity", "PAR", "CO2 concentration", "Wind"])
-
-    print(episode_rewards.cumsum())
 
     return states, controlSignals, weatherData
 
@@ -227,6 +222,7 @@ def runSimulationDefinedControls(GL, matlabControls, stateNames, matlabStates, n
     cythonStates[0, :] = GL.GLModel.getStatesArray()
 
     for i in range(1, N):
+        # print(i)
         controls = matlabControls.iloc[i, :].values
         obs, reward, terminated, truncated, info = GL.step(controls)
         cythonStates[i, :] += GL.GLModel.getStatesArray()
