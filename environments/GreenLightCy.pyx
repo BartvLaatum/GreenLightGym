@@ -330,7 +330,7 @@ cdef class GreenLight:
         return np_obs
 
     cpdef getHarvestObs(self):
-        cdef  cnp.ndarray[cnp.double_t, ndim=1] np_obs = np.zeros(8, dtype=np.double)
+        cdef  cnp.ndarray[cnp.double_t, ndim=1] np_obs = np.zeros(12, dtype=np.double)
         np_obs[0] = self.x[2]                               # Air temperature in main compartment [deg C]
         np_obs[1] = self.a.co2InPpm                         # CO2 concentration in main air compartment [ppm]
         np_obs[2] = self.a.rhIn                             # Relative humidity in main air compartment [%]
@@ -338,7 +338,11 @@ cdef class GreenLight:
         np_obs[4] = self.a.mcFruitHarSum*1e-6               # Harvested fruit in dry matter weight [kg{CH20} m^{-2}]
         np_obs[5] = self.a.rParGhSun + self.a.rParGhLamp    # PAR radiation above the canopy [W m^{-2}]
         np_obs[6] = self.a.timeOfDay                        # Time of day [h]
-        np_obs[7] = self.a.dayOfYear                        # Time of day of lamps [h]
+        np_obs[7] = self.a.dayOfYear                        # day of the year [d]
+        np_obs[8] = self.a.mcExtAir                         # CO2 injection rate [mg m^-2 s^-1]
+        np_obs[9] = self.a.qLampIn                          # electrical power of lamps [W m^-2]
+        np_obs[10] = self.a.hBoilPipe                       # heat demand of greenhouse [W m^-2]
+        np_obs[11] = self.x[9]                              # pipe temperature [deg C]
         return np_obs
 
     @property
