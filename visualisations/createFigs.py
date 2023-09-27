@@ -1,4 +1,4 @@
-import seaborn as sns; sns.set()
+import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -19,6 +19,8 @@ plt.rcParams['ytick.labelsize'] = 18
 plt.rcParams['text.usetex'] = False
 plt.rcParams['mathtext.fontset'] = 'cm'
 plt.rc('axes', unicode_minus=False)
+# show grid
+plt.rcParams['axes.grid'] = True
 
 
 def createStatesFig(states2plot: list):
@@ -56,7 +58,7 @@ def plotVariables(fig, axes: list, states: pd.DataFrame, states2plot: list, labe
     Function to plot variables simulated by GL model.
     """
     for i, ax in enumerate(axes):
-        ax.plot(states["Time"], states[states2plot[i]], label=label, color=color, alpha=0.5, linewidth=3)
+        ax.step(states["Time"], states[states2plot[i]], label=label, color=color, alpha=0.8, linewidth=3)
     # rotate xticks
     for ax in axes:
         # ax.tick_params(axis='x', rotation=45)
@@ -95,7 +97,7 @@ def plotDistributions(fig, axes: list, states: pd.DataFrame, states2plot: list, 
     return fig, axes
 
 
-    # axes = states.plot(x="Time", y=states2plot, subplots=True, linewidth=3, alpha=0.5, color=color, label=[label]*len(states2plot))
+    # axes = states.plot(x="Time", y=states2plot, subplots=True, linewidth=3, alpha=0.8, color=color, label=[label]*len(states2plot))
 
     # for ax in axes[1:]:
     #     ax.legend().remove()

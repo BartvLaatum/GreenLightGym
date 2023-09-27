@@ -191,7 +191,7 @@ cdef class GreenLight:
         x[25]: cFruit   Carbohydrates in fruit [mg{CH20} m^{-2}]
         x[26]: tCanSum  Crop development stage [C day]
 
-        x[27]: time     Time since 00-00-0000 [days]
+        x[27]: time     Time since 01-01-0001 [days]
     """
         # self.x = <double(*)[26]>malloc(sizeof(double))
         # Air and vapor pressure are assumed to start at the night setpoints
