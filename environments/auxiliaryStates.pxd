@@ -444,7 +444,11 @@ cdef inline void initAuxStates(AuxiliaryStates* a, double &x[27]):
     a.mcFruitHarSum = 0
 
     a.timeOfDay = 24*(x[27] - floor(x[27])) # hours since midnight time of day [h]
-    a.dayOfYear = x[27] % 365.2425          
+    a.dayOfYear = x[27] % 365.2425    
+   
+    a.mcExtAir = 0
+    a.qLampIn = 0  
+    a.hBoilPipe = 0    
 
 
 # Function to update the auxiliary states based on the Parameters struct
