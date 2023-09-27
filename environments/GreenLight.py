@@ -77,7 +77,7 @@ class GreenLightBase(gym.Env):
         self.observation_space = Box(low=-1e4, high=1e4, shape=(self.modelObsVars+(self.Np+1)*self.weatherObsVars,), dtype=np.float32)
 
         # specify which signals we want to control, fixed various simulations
-        controlIndices = {"boiler": 0, "co2": 1, "thermal": 2, "roofvent": 3, "lamps": 4, "intlamps": 5, "growpipes": 6, "blackout": 7}
+        controlIndices = {"uBoil": 0, "uCO2": 1, "uThScr": 2, "uVent": 3, "uLamp": 4, "uIntLamp": 5, "uGroPipe": 6, "uBlScr": 7}
         self.controlIdx = np.array([controlIndices[controlInput] for controlInput in controlSignals], dtype=np.int8)
 
         # lower and upper bounds for air temperature, co2 concentration, humidity
@@ -114,7 +114,6 @@ class GreenLightBase(gym.Env):
             )
 
     def rewardGrowth(self, obs: np.ndarray, action: np.ndarray) -> float:
-
         # accumulated fresh weight of tomatoes [kg [FM] m^-2]
         fwtom = (obs[3]-self.prevYield)/self.dmfm
 
@@ -329,6 +328,116 @@ class GreenLightProduction(GreenLightBase):
         self.terminated = False
         
         return self.getObs(), {}
+
+
+class GreenLightHarvest(GreenLightBase):
+    """
+    Child class of GreenLightBase. This class also models the greenhouse crop production process.
+    But starts with a fully mature crop that is ready for harvest.
+    The start dates are early year, (January and Februari), which reflects the start of the harvest season.
+    """
+    def __init__(self,
+                 cLeaf: float = 2.5e5,
+                 cStem: float = 0.9e5,
+                 cFruit: float = 2.8e5,
+                 tCanSum: float  = 1035,
+                 tomatoPrice: float = 1.2,
+                 co2Price: float = 0.19,
+                 gasPrice: float = 0.35,
+                 electricityPrice: float = 0.1,
+                 energyContentGas: float  = 31.65,
+                 **kwargs,
+                 ) -> None:
+        super(GreenLightHarvest, self).__init__(**kwargs)
+        self.cLeaf = cLeaf
+        self.cStem = cStem
+        self.cFruit = cFruit
+        self.tCanSum = tCanSum
+        self.tomatoPrice = tomatoPrice
+        self.co2Price = co2Price
+        self.gasPrice = gasPrice
+        self.electricityPrice = electricityPrice
+        self.energyContentGas = energyContentGas
+
+    def step(self, action: np.ndarray) -> Tuple[np.ndarray, float, bool, Dict[str, Any]]:
+        """
+        Given an action computed by some agent, we simulate the next state of the system.
+        The system is modelled by the GreenLight model implemented in Cython.
+        We have to power to control the boiler valve, co2, thermal screen, roof vent, lamps, internal lamps, grow pipes and blackout screen.
+        """
+        # scale the action to the range of the control inputs, which is between [0, 1]
+        action = (action-self.action_space.low)/(self.action_space.high-self.action_space.low)
+        self.GLModel.step(action, self.controlIdx)
+
+        # state = self.GLModel.getStatesArray()
+        obs = self.getObs()
+        if self.terminalState(obs):
+            self.terminated = True
+
+        reward = self.rewardFunction(obs, action)
+        self.prevYield = obs[3]
+        info = {}
+        info = {"controls": self.GLModel.getControlsArray(),
+                "Time": self.GLModel.time}
+
+        return (obs,
+            reward,
+            self.terminated, 
+            False,
+            info
+            )
+
+    def getObs(self) -> np.ndarray:
+        modelObs = self.GLModel.getHarvestObs()
+        weatherIdx = [self.GLModel.timestep*self.solverSteps] + [(ts + self.GLModel.timestep)*self.solverSteps for ts in range(1, self.Np)]
+        weatherObs = self.weatherData[weatherIdx, :self.weatherObsVars].flatten()
+        return np.concatenate([modelObs, weatherObs], axis=0)
+
+    def rewardFunction(self, obs: np.ndarray, action: np.ndarray) -> float:
+        """
+        Compute the reward given the harvest of the model.
+        """
+        harvest = obs[4] / self.dmfm                                                # [kg [FM] m^-2]
+        co2resource = obs[8] * self.timeinterval * 1e-6                             # [kg m^-2 900s^-1]
+        electricityResource = obs[9] * (self.timeinterval/3600) * 1e-3              # [kWh m^-2]
+        heatResource = (obs[10] * self.timeinterval* 1e-6)/self.energyContentGas    # [MJ m^-2 900s^-1]
+        
+        reward = harvest*self.tomatoPrice - co2resource*self.co2Price -\
+         electricityResource*self.electricityPrice - heatResource*self.gasPrice     # [euro m^-2]
+        penalty = np.dot(self.computePenalty(obs), self.penaltyCoefficients)        # penalty for constraint violations
+        return reward - penalty
+
+    def reset(self, seed: Optional[int] = None) -> Tuple[np.ndarray, Dict[str, Any]]:
+        """
+        Reset the environment to a random initial state.
+        Randomness is introduced by the growth year and start day.
+        Which affect the weather data observed.
+        """
+        super().reset(seed=seed)
+        if self.training:
+            self.growthYear = np.random.choice([year for year in range(2012, 2020)])
+            self.startDay = np.random.choice([day for day in range(0, 200)])
+        else:
+            self.growthYear = self.options["growthYear"]
+            self.startDay = self.options["startDay"]
+
+        # load in weather data for this simulation
+        self.weatherData = loadWeatherData(self.weatherDataDir, self.location, self.dataSource, self.growthYear, self.startDay, self.seasonLength, self.predHorizon, self.h, self.nd)
+        self.actions = np.zeros((self.nu,))
+
+        # compute days since 01-01-0001
+        # as time indicator by the model
+        timeInDays = self.getTimeInDays()
+        
+        # initialize the model in C, set the crop state to mature crop
+        self.GLModel = GL(self.weatherData, self.h, self.nx, self.nu, self.nd, self.noLamps, self.ledLamps, self.hpsLamps, self.intLamps, self.solverSteps, timeInDays)
+        self.GLModel.setCropState(self.cLeaf, self.cStem, self.cFruit, self.tCanSum)
+
+        self.terminated = False
+        
+        return self.getObs(), {}
+
+
 
 if __name__ == "__main__":
     pass
