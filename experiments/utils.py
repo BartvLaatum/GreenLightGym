@@ -161,7 +161,6 @@ def controlScheme(GL, nightValue, dayValue):
     obs, info = GL.reset()
     GL.GLModel.setNightCo2(nightValue)
     N = GL.N                                        # number of timesteps to take
-    frew
     states = np.zeros((N+1, GL.modelObsVars))       # array to save states
     controlSignals = np.zeros((N+1, GL.GLModel.nu)) # array to save rule-based controls controls
     states[0, :] = obs[:GL.modelObsVars]            # get initial states
