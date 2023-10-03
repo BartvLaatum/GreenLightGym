@@ -1,6 +1,10 @@
-*__pycache__*
-*build*
-*data*
-*unused/*
+__pycache__/
+build/
+data/
+trainData/
+wandb/
+unused/
+figures/
+*.so
 *.c
 *.pyd
