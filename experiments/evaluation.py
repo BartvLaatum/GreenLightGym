@@ -91,13 +91,14 @@ def evaluate_policy(
     episode_actions = np.zeros((n_envs, N, nu))
     episode_obs = np.zeros((n_envs, N+1, env.observation_space.shape[0]))
     timevec = np.zeros((N+1,))  # array to save time
+    model_actions = np.zeros((n_envs, N, env.action_space.shape[0]))
 
     observations = env.reset()
     states = None
     episode_starts = np.ones((env.num_envs,), dtype=bool)
 
     timevec[0] =  env.env_method("getTime", indices=0)[0]
-    episode_obs[:, 0, :obsVars] = env.unnormalize_obs(observations)[:, :obsVars]
+    episode_obs[:, 0, :] = env.unnormalize_obs(observations)[:, :]
 
     while (episode_counts < episode_count_targets).any():
         actions, states = model.predict(
@@ -106,12 +107,13 @@ def evaluate_policy(
             episode_start=episode_starts,
             deterministic=deterministic,
         )
+        model_actions[:, timestep, :] += actions
         new_observations, rewards, dones, infos = env.step(actions)
         current_rewards += rewards
         current_lengths += 1
 
         timevec[timestep+1] =  env.env_method("getTime", indices=0)[0]
-        episode_obs[:, timestep+1, :obsVars] = env.unnormalize_obs(new_observations)[:, :obsVars]
+        episode_obs[:, timestep+1, :] = env.unnormalize_obs(new_observations)[:, :]
 
         for i in range(n_envs):
             if episode_counts[i] < episode_count_targets[i]:
@@ -156,5 +158,5 @@ def evaluate_policy(
     if reward_threshold is not None:
         assert mean_reward > reward_threshold, "Mean reward below threshold: " f"{mean_reward:.2f} < {reward_threshold:.2f}"
     if return_episode_rewards:
-        return episode_rewards, episode_lengths, episode_actions, episode_obs, timevec
-    return mean_reward, std_reward, np.mean(episode_actions, axis=0), np.mean(episode_obs, axis=0), timevec
+        return episode_rewards, episode_lengths, episode_actions, model_actions, episode_obs, timevec
+    return mean_reward, std_reward, np.mean(episode_actions, axis=0), np.mean(model_actions, axis=0), np.mean(episode_obs, axis=0), timevec
