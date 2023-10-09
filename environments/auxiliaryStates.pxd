@@ -1791,7 +1791,7 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double* u, double* x,
     # Fruit harvest [mg{CH2O} m^{-2} s^{-1}]
     # Equation A45 [5], Equation 7.45 [7]
     a.mcFruitHar = smoothHar(x[25], p.cFruitMax, 1e4, 5e4)
-  
+
     # Net crop assimilation [mg{CO2} m^{-2} s^{-1}]
     # It is assumed that for every mol of CH2O in net assimilation, a mol
     # of CO2 is taken from the air, thus the conversion uses molar masses
