@@ -5,6 +5,7 @@ trainData/
 wandb/
 unused/
 figures/
+wandb/
 *.so
 *.c
 *.pyd
