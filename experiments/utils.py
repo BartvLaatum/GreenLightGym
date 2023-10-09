@@ -9,18 +9,18 @@ import numpy as np
 import pandas as pd
 
 from torch.optim import Adam
-from torch.nn.modules.activation import ReLU, SiLU
+from torch.nn.modules.activation import ReLU, SiLU, Tanh
 from wandb.integration.sb3 import WandbCallback
 from stable_baselines3.common.vec_env import SubprocVecEnv, VecNormalize, VecMonitor, VecEnv
 from stable_baselines3.common.utils import set_random_seed
 
-from RLGreenLight.environments.GreenLight import GreenLightBase, GreenLightProduction
+from RLGreenLight.environments.GreenLight import GreenLightBase, GreenLightCO2, GreenLightHarvest
 from RLGreenLight.callbacks.customCallback import TensorboardCallback, SaveVecNormalizeCallback, BaseCallback
 
-ACTIVATION_FN = {"ReLU": ReLU, "SiLU": SiLU}
+ACTIVATION_FN = {"ReLU": ReLU, "SiLU": SiLU, "Tanh":Tanh}
 OPTIMIZER = {"ADAM": Adam}
 
-envs = {"GreenLightBase": GreenLightBase, "GreenLightProduction": GreenLightProduction}
+envs = {"GreenLightBase": GreenLightBase, "GreenLightCO2": GreenLightCO2, "GreenLightHarvest": GreenLightHarvest}
 
 def make_env(env_id, rank, seed, kwargs, kwargsSpecific, options, eval_env):
     """
@@ -72,6 +72,7 @@ def wandb_init(modelParams: Dict[str, Any],
                SEED: int,
                project: str,
                group: str,
+               runname: str,
                job_type: str,
                save_code: bool = False,
                resume: bool = False
@@ -90,6 +91,7 @@ def wandb_init(modelParams: Dict[str, Any],
         project=project,
         config=config,
         group=group,
+        name=runname,
         sync_tensorboard=True,
         job_type=job_type,
         save_code=save_code,

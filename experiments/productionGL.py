@@ -5,7 +5,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 from RLGreenLight.experiments.utils import loadParameters, runRuleBasedController
-from RLGreenLight.environments.GreenLight import GreenLightProduction
+from RLGreenLight.environments.GreenLight import GreenLightCO2
 from RLGreenLight.environments.pyutils import days2date
 from RLGreenLight.visualisations.createFigs import createStatesFig, plotVariables 
 
@@ -16,7 +16,7 @@ if __name__ == "__main__":
 
     hpPath = "hyperparameters/ProductionGL/"
     filename = "ruleBased.yml"
-    env_id = "GreenLightProduction"
+    env_id = "GreenLightCO2"
     stateColumns = ["Time", "Air Temperature", "CO2 concentration", "Humidity", "Fruit weight", "Fruit harvest", "PAR", "Hour of the Day", "Day of the Year"]
     actionColumns = ["uBoil", "uCO2", "uThScr", "uVent", "uLamp", "uIntLamp", "uGroPipe", "uBlScr"]
 

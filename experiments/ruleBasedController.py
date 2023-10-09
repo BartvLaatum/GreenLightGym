@@ -21,7 +21,6 @@ def runNominalController(env_id, envParams, envSpecificParams, options, state_co
 
     # convert first date of time column to YYYYMMDD format
     dates = states["Time"].dt.strftime("%Y%m%d")
-    print(dates[0])
 
     states.to_csv(f"data/ruleBasedControl/states{dates[0]}-{envParams['seasonLength']:03}.csv", index=False)
     controls.to_csv(f"data/ruleBasedControl/controls{dates[0]}-{envParams['seasonLength']:03}.csv", index=False)
