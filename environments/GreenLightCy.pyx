@@ -277,7 +277,6 @@ cdef class GreenLight:
         # time since 01-01-0001 [days]:
         self.x[27] = timeInDays
 
-
     cpdef getWeatherArray(self):
         """
         Function that copies weather data from the cython module to a numpy array.
@@ -346,6 +345,16 @@ cdef class GreenLight:
         return np_obs
 
     @property
+    # returns the maximum co2 injection rate [mg m^-2 s^-1]
+    def maxco2rate(self):
+        return self.p.phiExtCo2/self.p.aFlr
+
+    # returns the maximum fruit harvest rate [mg m^-2 s^-1]
+    @property
+    def maxHarvest(self):
+        return self.p.rgFruit
+
+    @property
     def co2SpNight(self):
         return self.p.co2SpNight
 
@@ -396,7 +405,3 @@ cdef class GreenLight:
     @property
     def time(self):
         return self.x[27]
-
-    # property lampTimeOfDay:
-    #     def __get__(self):
-    #         return self.a.lampTimeOfDay

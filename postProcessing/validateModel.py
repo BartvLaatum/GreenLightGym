@@ -18,7 +18,6 @@ if __name__ == "__main__":
     parser.add_argument("--env_id", type=str, default="GreenLightBase")
     parser.add_argument("--HPfolder", type=str, default="GLBase")
     parser.add_argument("--HPfilename", type=str, default="ppo.yml")
-
     args = parser.parse_args()
 
     # hyperparameters

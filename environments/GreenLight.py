@@ -89,7 +89,7 @@ class GreenLightBase(gym.Env):
         """
         Given an action computed by some agent, we simulate the next state of the system.
         The system is modelled by the GreenLight model implemented in Cython.
-        We have to power to control the boiler valve, co2, thermal screen, roof vent, lamps, internal lamps, grow pipes and blackout screen.
+        We have to control the boiler valve, co2, thermal screen, roof vent, lamps, internal lamps, grow pipes and blackout screen.
         """
         # scale the action to the range of the control inputs, which is between [0, 1]
         action = (action-self.action_space.low)/(self.action_space.high-self.action_space.low)
@@ -149,13 +149,6 @@ class GreenLightBase(gym.Env):
         Reward consists of the harvest over the past time step minus the costs of the control inputs.
         Reward reflect the profit of the greenhouse and constraint violations.
         """
-        # make weighted sum from costs and harves
-        # costs are negative, harvest is positive
-        # harvest is in the obs[4] variable
-        # costs are result from actions
-        # print("previous Yield", self.prevYield)
-        # print("current Yield", obs[3])
-        # print(obs[3] - self.prevYield)
         reward = np.dot([obs[3], *-action], self.rewardCoefficients)
         penalty = np.dot(self.computePenalty(obs), self.penaltyCoefficients)
         return reward - penalty
@@ -165,7 +158,6 @@ class GreenLightBase(gym.Env):
         # penalty is the sum of the squared differences between the observation and the bounds
         # penalty is zero if the observation is within the bounds
         Npen = self.obsLow.shape[0]
-        print(obs[:Npen])
         lowerbound = self.obsLow[:] - obs[:Npen]
         lowerbound[lowerbound < 0] = 0
         upperbound = obs[:Npen] - self.obsHigh[:]
@@ -173,8 +165,10 @@ class GreenLightBase(gym.Env):
         return lowerbound**2 + upperbound**2
 
     def getObs(self) -> np.ndarray:
-        # save co2 air, temperature air, humidity air, cFruit, par above the canpoy as effect from lamps and sun
-        # retrieve par above canopy:
+        """
+        save co2 air, temperature air, humidity air, cFruit, par above the canpoy as effect from lamps and sun
+        retrieve par above canopy:
+        """
         modelObs = self.GLModel.getObs()
         weatherIdx = [self.GLModel.timestep*self.solverSteps] + [(ts + self.GLModel.timestep)*self.solverSteps for ts in range(1, self.Np)]
         weatherObs = self.weatherData[weatherIdx, :self.weatherObsVars].flatten()
@@ -233,7 +227,7 @@ class GreenLightBase(gym.Env):
         return obs, {}
 
 
-class GreenLightProduction(GreenLightBase):
+class GreenLightCO2(GreenLightBase):
     """
     Child class of GreenLightBase. This class also models the greenhouse crop production process.
     But starts with a fully mature crop that is ready for harvest.
@@ -246,15 +240,18 @@ class GreenLightProduction(GreenLightBase):
                  tCanSum: float  = 1035,
                  tomatoPrice: float = 1.2,
                  co2Price: float = 0.19,
+                 reward = "regular",
                  **kwargs,
                  ) -> None:
-        super(GreenLightProduction, self).__init__(**kwargs)
+        super(GreenLightCO2, self).__init__(**kwargs)
+        rewardFunctions = {"regular": self.rewardFunction, "scaled": self.rewardFunctionScaled}
         self.cLeaf = cLeaf
         self.cStem = cStem
         self.cFruit = cFruit
         self.tCanSum = tCanSum
         self.tomatoPrice = tomatoPrice
         self.co2Price = co2Price
+        self.rewardF = rewardFunctions[reward]
 
     def step(self, action: np.ndarray) -> Tuple[np.ndarray, float, bool, Dict[str, Any]]:
         """
@@ -271,7 +268,7 @@ class GreenLightProduction(GreenLightBase):
         if self.terminalState(obs):
             self.terminated = True
 
-        reward = self.rewardFunction(obs, action)
+        reward = self.rewardF(obs, action)
         self.prevYield = obs[3]
         info = {}
         info = {"controls": self.GLModel.getControlsArray(),
@@ -300,6 +297,16 @@ class GreenLightProduction(GreenLightBase):
         penalty = np.dot(self.computePenalty(obs), self.penaltyCoefficients)    # penalty for constraint violations
         return reward - penalty
 
+    def rewardFunctionScaled(self, obs: np.ndarray, action: np.ndarray) -> float:
+        harvest = obs[4] / self.dmfm                                            # [kg [FM] m^-2]
+        co2resource = self.GLModel.co2InjectionRate * self.timeinterval * 1e-6  # [kg m^-2 900s^-1]
+        reward = harvest*self.tomatoPrice - co2resource*self.co2Price           # [euro m^-2]
+        co2pen = self.computePenalty(obs)[1]                                    # penalty for constraint violations
+        return self.scale(reward, self.rmin, self.rmax) - self.scale(co2pen, self.penmin, self.penmax)
+
+    def scale(self, r, rmin, rmax):
+        return (r-rmin)/(rmax-rmin)
+
     def reset(self, seed: Optional[int] = None) -> Tuple[np.ndarray, Dict[str, Any]]:
         """
         Reset the environment to a random initial state.
@@ -326,10 +333,15 @@ class GreenLightProduction(GreenLightBase):
         self.GLModel = GL(self.weatherData, self.h, self.nx, self.nu, self.nd, self.noLamps, self.ledLamps, self.hpsLamps, self.intLamps, self.solverSteps, timeInDays)
         self.GLModel.setCropState(self.cLeaf, self.cStem, self.cFruit, self.tCanSum)
 
-        self.terminated = False
-        
-        return self.getObs(), {}
+        # max reward for fruit growth
+        self.rmax = 1e-6*self.GLModel.maxHarvest/self.dmfm * self.timeinterval * self.tomatoPrice   # [€ kg^-1 [FM] m^-2]
+        self.rmin = - 1e-6 * self.GLModel.maxco2rate * self.co2Price                                # [€ kg^-1 m^2]
+        self.penmax = 9e6                                                                           # max penalty on CO2 bound
+        self.penmin = 0                                                                             # min penalty on CO2 bound
 
+        self.terminated = False
+
+        return self.getObs(), {}
 
 class GreenLightHarvest(GreenLightBase):
     """
