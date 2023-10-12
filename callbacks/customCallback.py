@@ -76,7 +76,7 @@ class TensorboardCallback(EvalCallback):
 
             # Reset success rate buffer
             self._is_success_buffer = []
-            episode_rewards, episode_lengths, episode_actions, episode_obs, time_vec = evaluate_policy(
+            episode_rewards, episode_lengths, episode_actions, model_actions, episode_obs, time_vec = evaluate_policy(
                 self.model,
                 self.eval_env,
                 n_eval_episodes=self.n_eval_episodes,

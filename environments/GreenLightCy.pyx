@@ -69,15 +69,12 @@ cdef class GreenLight:
         free(self.x)
         free(self.u)
 
-    def setTimestep(self, int timestep):
-        self.timestep = timestep
+    # def setTimestep(self, int timestep):
+    #     self.timestep = timestep
 
-    def reset(self, unsigned int timeInDays):
-        self.timestep = 0
-        self.initStates(self.d[0], timeInDays)
-
-    def setNightCo2(self, short co2SpNight):
-        self.p.co2SpNight = co2SpNight
+    # def reset(self, unsigned int timeInDays):
+    #     self.timestep = 0
+    #     self.initStates(self.d[0], timeInDays)
 
     @cython.boundscheck(False) # turn off bounds-checking for entire function
     @cython.wraparound(False)  # turn off negative index wrapping for entire function
@@ -345,63 +342,71 @@ cdef class GreenLight:
         return np_obs
 
     @property
-    # returns the maximum co2 injection rate [mg m^-2 s^-1]
+    def maxHeatCap(self):
+        # returns the maximum heat capacity of the greenhouse [W m^-2]
+        return self.p.pBoil / self.p.aFlr
+
+    @property
+    def heatDemand(self):
+        # returns the heat demand of the greenhouse [W m^-2]
+        return self.a.hBoilPipe
+
+    @property
     def maxco2rate(self):
+        # returns the maximum co2 injection rate [mg m^-2 s^-1]
         return self.p.phiExtCo2/self.p.aFlr
 
-    # returns the maximum fruit harvest rate [mg m^-2 s^-1]
     @property
     def maxHarvest(self):
+        # returns the maximum fruit harvest rate [mg m^-2 s^-1]
         return self.p.rgFruit
 
     @property
-    def co2SpNight(self):
-        return self.p.co2SpNight
-
-    # CO2 injection rate [mg m^-2 s^-1]
-    @property
     def co2InjectionRate(self):
+        # CO2 injection rate [mg m^-2 s^-1]
         return self.a.mcExtAir
 
-    # returns the number of states
     @property
     def nx(self):
+        # returns the number of states
         return self.nx
 
     @property
-    # returns the number of control signals
     def nu(self):
+        # returns the number of control signals
         return self.nu
 
     @property
-    # returns the number of disturbances
     def nd(self):
-            return self.nd
+        # returns the number of disturbances
+        return self.nd
 
     @property
-    # returns amount of PAR radiation above the canopy from the sun
     def rParGhSun(self):
+        # returns amount of PAR radiation above the canopy from the sun
         return self.a.rParGhSun
     
     @property
-    # returns the amount of PAR radiation above the canopy from the lamps
     def rParGhLamp(self):
+        # returns the amount of PAR radiation above the canopy from the lamps
         return self.a.rParGhLamp
 
     @property
-    # returns the current timestep
     def timestep(self):
+        # returns the current timestep
         return self.timestep
 
     @property
-    # returns the co2 concentration in the air in [ppm]
     def co2InPpm(self):
+        # returns the co2 concentration in the air in [ppm]
         return self.a.co2InPpm
 
     @property
     def rhIn(self):
+        # relative indoor humidity [%]
         return self.a.rhIn
 
     @property
     def time(self):
+        # time in days since 01-01-0001
         return self.x[27]

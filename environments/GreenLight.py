@@ -87,15 +87,15 @@ class GreenLightBase(gym.Env):
 
     def step(self, action: np.ndarray) -> Tuple[np.ndarray, float, bool, Dict[str, Any]]:
         """
-        Given an action computed by some agent, we simulate the next state of the system.
-        The system is modelled by the GreenLight model implemented in Cython.
-        We have to control the boiler valve, co2, thermal screen, roof vent, lamps, internal lamps, grow pipes and blackout screen.
+        Given an action we simulate the next state of the system.
+        The system is numerically simulated by the GreenLight model implemented in C.
+        We can choose to control the boiler valve, co2, thermal screen, roof vent, lamps, internal lamps, grow pipes and blackout screen.
         """
+
         # scale the action to the range of the control inputs, which is between [0, 1]
-        action = (action-self.action_space.low)/(self.action_space.high-self.action_space.low)
+        action = self._scale(action, self.action_space.low, self.action_space.high)
         self.GLModel.step(action, self.controlIdx)
 
-        # state = self.GLModel.getStatesArray()
         obs = self._getObs()
         if self._terminalState(obs):
             self.terminated = True
@@ -145,7 +145,7 @@ class GreenLightBase(gym.Env):
         Returns:
             obs (np.ndarray): observation of the system variables
         """
-        modelObs = self.GLModel._getObs()
+        modelObs = self.GLModel.getObs()
         weatherIdx = [self.GLModel.timestep*self.solverSteps] + [(ts + self.GLModel.timestep)*self.solverSteps for ts in range(1, self.Np)]
         weatherObs = self.weatherData[weatherIdx, :self.weatherObsVars].flatten()
         return np.concatenate([modelObs, weatherObs], axis=0)
@@ -179,7 +179,7 @@ class GreenLightBase(gym.Env):
         delta = d1 - d0
         return delta.days + self.startDay
 
-    def scale(self, r, rmin, rmax):
+    def _scale(self, r, rmin, rmax):
         """
         Function that scales input between [0, 1].
         Either for the reward or penalty.
@@ -191,8 +191,53 @@ class GreenLightBase(gym.Env):
         """
         Container function that resets the environment.
         """
-        raise NotImplementedError
+        super().reset(seed=seed)
+        # determine the growth year and start day based on whether we are training or testing
+        if self.training:
+            self.growthYear = np.random.choice([year for year in range(2012, 2020)])
+            # from Januari to November
+            self.startDay = np.random.choice([day for day in range(0, 305)])
+        else:
+            self.growthYear = self.options["growthYear"]
+            self.startDay = self.options["startDay"]
 
+        # load in weather data for this simulation
+        self.weatherData = loadWeatherData(
+            self.weatherDataDir,
+            self.location,
+            self.dataSource,
+            self.growthYear,
+            self.startDay,
+            self.seasonLength,
+            self.predHorizon,
+            self.h,
+            self.nd
+            )
+
+        # compute days since 01-01-0001
+        # as time indicator by the model
+        timeInDays = self._getTimeInDays()
+
+        # initialize the model in C, set the crop state to mature crop
+        self.GLModel = GL(self.weatherData,
+                          self.h,
+                          self.nx,
+                          self.nu,
+                          self.nd,
+                          self.noLamps,
+                          self.ledLamps,
+                          self.hpsLamps,
+                          self.intLamps,
+                          self.solverSteps,
+                          timeInDays
+                          )
+        self.terminated = False
+
+        # max and min penalty for constraint violations
+        self.penmax = np.array([225, 9e6, 900])         # max penalty
+        self.penmin = np.zeros(self.obsLow.shape[0])    # min penalty
+
+        return self._getObs(), {}
 
 class GreenLightCO2(GreenLightBase):
     """
@@ -226,7 +271,8 @@ class GreenLightCO2(GreenLightBase):
         co2resource = self.GLModel.co2InjectionRate * self.timeinterval * 1e-6  # [kg m^-2 900s^-1]
         reward = harvest*self.tomatoPrice - co2resource*self.co2Price           # [euro m^-2]
         abs_penalty = self._computePenalty(obs)
-        return self.scale(reward, self.rmin, self.rmax) - self.scale(abs_penalty, self.penmin, self.penmax)
+        return self._scale(reward, self.rmin, self.rmax) -\
+            self._scale(abs_penalty, self.penmin, self.penmax)[1]
 
     def reset(self, seed: Optional[int] = None) -> Tuple[np.ndarray, Dict[str, Any]]:
         """
@@ -234,41 +280,22 @@ class GreenLightCO2(GreenLightBase):
         Randomness is introduced by the growth year and start day.
         Which affect the weather data observed.
         """
+        # call init function of gymnasium Env class
         super().reset(seed=seed)
-        if self.training:
-            self.growthYear = np.random.choice([year for year in range(2012, 2020)])
-            self.startDay = np.random.choice([day for day in range(0, 200)])
-        else:
-            self.growthYear = self.options["growthYear"]
-            self.startDay = self.options["startDay"]
 
-        # load in weather data for this simulation
-        self.weatherData = loadWeatherData(self.weatherDataDir, self.location, self.dataSource, self.growthYear, self.startDay, self.seasonLength, self.predHorizon, self.h, self.nd)
-        # self.actions = np.zeros((self.nu,))
-
-        # compute days since 01-01-0001
-        # as time indicator by the model
-        timeInDays = self._getTimeInDays()
-
-        # initialize the model in C, set the crop state to mature crop
-        self.GLModel = GL(self.weatherData, self.h, self.nx, self.nu, self.nd, self.noLamps, self.ledLamps, self.hpsLamps, self.intLamps, self.solverSteps, timeInDays)
+        # set crop state to start of the season
         self.GLModel.setCropState(self.cLeaf, self.cStem, self.cFruit, self.tCanSum)
 
-        # max reward for fruit growth
-        self.rmax = 1e-6*self.GLModel.maxHarvest/self.dmfm * self.timeinterval * self.tomatoPrice   # [€ kg^-1 [FM] m^-2]
-        self.rmin = - 1e-6 * self.GLModel.maxco2rate * self.co2Price                                # [€ kg^-1 m^2]'
-
-        self.penmax = 9e6                                                                           # max penalty on CO2 bound
-        self.penmin = 0                                                                             # min penalty on CO2 bound
-
-        self.terminated = False
+        # max reward for fruit harvest minus the costs
+        self.rmax = 1e-6*self.GLModel.maxHarvest/self.dmfm * self.timeinterval*self.tomatoPrice # [€ kg^-1 [FM] m^-2]
+        self.rmin = - 1e-6*self.GLModel.maxco2rate*self.co2Price                                # [€ kg^-1 m^-2]
 
         return self._getObs(), {}
 
-class GreenLightHarvest(GreenLightBase):
+class GreenLightHeatCO2(GreenLightBase):
     """
-    Child class of GreenLightBase. This class also models the greenhouse crop production process.
-    But starts with a fully mature crop that is ready for harvest.
+    Child class of GreenLightBase.
+    Starts with a fully mature crop that is ready for harvest.
     The start dates are early year, (January and Februari), which reflects the start of the harvest season.
     """
     def __init__(self,
@@ -279,11 +306,10 @@ class GreenLightHarvest(GreenLightBase):
                  tomatoPrice: float = 1.2,
                  co2Price: float = 0.19,
                  gasPrice: float = 0.35,
-                 electricityPrice: float = 0.1,
                  energyContentGas: float  = 31.65,
                  **kwargs,
                  ) -> None:
-        super(GreenLightHarvest, self).__init__(**kwargs)
+        super(GreenLightHeatCO2, self).__init__(**kwargs)
         self.cLeaf = cLeaf
         self.cStem = cStem
         self.cFruit = cFruit
@@ -291,58 +317,109 @@ class GreenLightHarvest(GreenLightBase):
         self.tomatoPrice = tomatoPrice
         self.co2Price = co2Price
         self.gasPrice = gasPrice
-        self.electricityPrice = electricityPrice
         self.energyContentGas = energyContentGas
 
-    def _getObs(self) -> np.ndarray:
-        modelObs = self.GLModel.getHarvestObs()
-        weatherIdx = [self.GLModel.timestep*self.solverSteps] + [(ts + self.GLModel.timestep)*self.solverSteps for ts in range(1, self.Np)]
-        weatherObs = self.weatherData[weatherIdx, :self.weatherObsVars].flatten()
-        return np.concatenate([modelObs, weatherObs], axis=0)
-
     def _reward(self, obs: np.ndarray, action: np.ndarray) -> float:
-        """
-        Compute the reward given the harvest of the model.
-        """
-        harvest = obs[4] / self.dmfm                                                # [kg [FM] m^-2]
-        co2resource = obs[8] * self.timeinterval * 1e-6                             # [kg m^-2 900s^-1]
-        electricityResource = obs[9] * (self.timeinterval/3600) * 1e-3              # [kWh m^-2]
-        heatResource = (obs[10] * self.timeinterval* 1e-6)/self.energyContentGas    # [MJ m^-2 900s^-1]
-        
-        reward = harvest*self.tomatoPrice - co2resource*self.co2Price -\
-         electricityResource*self.electricityPrice - heatResource*self.gasPrice     # [euro m^-2]
-        penalty = np.dot(self._computePenalty(obs), self.penaltyCoefficients)        # penalty for constraint violations
-        return reward - penalty
+        harvest = obs[4] / self.dmfm                                            # [kg [FM] m^-2]
+        co2resource = self.GLModel.co2InjectionRate * self.timeinterval * 1e-6  # [kg m^-2 900s^-1]
+        heatResource = (obs[8] * self.timeinterval* 1e-6)/self.energyContentGas # [MJ m^-2 900s^-1]
+        reward = harvest*self.tomatoPrice - co2resource*self.co2Price           # [€ m^-2]
+        - heatResource*self.gasPrice
+        abs_penalty = self._computePenalty(obs)
+
+        return self._scale(reward, self.rmin, self.rmax) -\
+            np.average(self._scale(abs_penalty, self.penmin, self.penmax)[1:])
 
     def reset(self, seed: Optional[int] = None) -> Tuple[np.ndarray, Dict[str, Any]]:
-        """
-        Reset the environment to a random initial state.
-        Randomness is introduced by the growth year and start day.
-        Which affect the weather data observed.
-        """
         super().reset(seed=seed)
-        if self.training:
-            self.growthYear = np.random.choice([year for year in range(2012, 2020)])
-            self.startDay = np.random.choice([day for day in range(0, 200)])
-        else:
-            self.growthYear = self.options["growthYear"]
-            self.startDay = self.options["startDay"]
 
-        # load in weather data for this simulation
-        self.weatherData = loadWeatherData(self.weatherDataDir, self.location, self.dataSource, self.growthYear, self.startDay, self.seasonLength, self.predHorizon, self.h, self.nd)
-        # self.actions = np.zeros((self.nu,))
-
-        # compute days since 01-01-0001
-        # as time indicator by the model
-        timeInDays = self._getTimeInDays()
-        
-        # initialize the model in C, set the crop state to mature crop
-        self.GLModel = GL(self.weatherData, self.h, self.nx, self.nu, self.nd, self.noLamps, self.ledLamps, self.hpsLamps, self.intLamps, self.solverSteps, timeInDays)
+        # set crop state to start of the season
         self.GLModel.setCropState(self.cLeaf, self.cStem, self.cFruit, self.tCanSum)
 
-        self.terminated = False
-        
+        self.rmax = 1e-6*self.GLModel.maxHarvest/self.dmfm * self.timeinterval * self.tomatoPrice   # [€ m^-2]
+        self.rmin = - (1e-6*self.GLModel.maxco2rate * self.co2Price) -\
+            (1e-6*self.GLModel.maxHeatCap * self.timeinterval)/self.energyContentGas                # [€ m^-2]
+
         return self._getObs(), {}
+
+# class GreenLightHarvest(GreenLightBase):
+#     """
+#     Child class of GreenLightBase. This class also models the greenhouse crop production process.
+#     But starts with a fully mature crop that is ready for harvest.
+#     The start dates are early year, (January and Februari), which reflects the start of the harvest season.
+#     """
+#     def __init__(self,
+#                  cLeaf: float = 2.5e5,
+#                  cStem: float = 0.9e5,
+#                  cFruit: float = 2.8e5,
+#                  tCanSum: float  = 1035,
+#                  tomatoPrice: float = 1.2,
+#                  co2Price: float = 0.19,
+#                  gasPrice: float = 0.35,
+#                  electricityPrice: float = 0.1,
+                #  energyContentGas: float  = 31.65,
+#                  **kwargs,
+#                  ) -> None:
+#         super(GreenLightHarvest, self).__init__(**kwargs)
+#         self.cLeaf = cLeaf
+#         self.cStem = cStem
+#         self.cFruit = cFruit
+#         self.tCanSum = tCanSum
+#         self.tomatoPrice = tomatoPrice
+#         self.co2Price = co2Price
+#         self.gasPrice = gasPrice
+#         self.electricityPrice = electricityPrice
+#         self.energyContentGas = energyContentGas
+
+#     def _getObs(self) -> np.ndarray:
+#         modelObs = self.GLModel.getHarvestObs()
+#         weatherIdx = [self.GLModel.timestep*self.solverSteps] + [(ts + self.GLModel.timestep)*self.solverSteps for ts in range(1, self.Np)]
+#         weatherObs = self.weatherData[weatherIdx, :self.weatherObsVars].flatten()
+#         return np.concatenate([modelObs, weatherObs], axis=0)
+
+#     def _reward(self, obs: np.ndarray, action: np.ndarray) -> float:
+#         """
+#         Compute the reward given the harvest of the model.
+#         """
+#         harvest = obs[4] / self.dmfm                                                # [kg [FM] m^-2]
+#         co2resource = obs[8] * self.timeinterval * 1e-6                             # [kg m^-2 900s^-1]
+#         electricityResource = obs[9] * (self.timeinterval/3600) * 1e-3              # [kWh m^-2]
+#         heatResource = (obs[10] * self.timeinterval* 1e-6)/self.energyContentGas    # [MJ m^-2 900s^-1]
+        
+#         reward = harvest*self.tomatoPrice - co2resource*self.co2Price -\
+#          electricityResource*self.electricityPrice - heatResource*self.gasPrice     # [euro m^-2]
+#         penalty = np.dot(self._computePenalty(obs), self.penaltyCoefficients)        # penalty for constraint violations
+#         return reward - penalty
+
+#     def reset(self, seed: Optional[int] = None) -> Tuple[np.ndarray, Dict[str, Any]]:
+#         """
+#         Reset the environment to a random initial state.
+#         Randomness is introduced by the growth year and start day.
+#         Which affect the weather data observed.
+#         """
+#         super(GreenLightBase, self).reset(seed=seed)
+#         if self.training:
+#             self.growthYear = np.random.choice([year for year in range(2012, 2020)])
+#             self.startDay = np.random.choice([day for day in range(0, 200)])
+#         else:
+#             self.growthYear = self.options["growthYear"]
+#             self.startDay = self.options["startDay"]
+
+#         # load in weather data for this simulation
+#         self.weatherData = loadWeatherData(self.weatherDataDir, self.location, self.dataSource, self.growthYear, self.startDay, self.seasonLength, self.predHorizon, self.h, self.nd)
+#         # self.actions = np.zeros((self.nu,))
+
+#         # compute days since 01-01-0001
+#         # as time indicator by the model
+#         timeInDays = self._getTimeInDays()
+        
+#         # initialize the model in C, set the crop state to mature crop
+#         self.GLModel = GL(self.weatherData, self.h, self.nx, self.nu, self.nd, self.noLamps, self.ledLamps, self.hpsLamps, self.intLamps, self.solverSteps, timeInDays)
+#         self.GLModel.setCropState(self.cLeaf, self.cStem, self.cFruit, self.tCanSum)
+
+#         self.terminated = False
+        
+#         return self._getObs(), {}
 
 
 

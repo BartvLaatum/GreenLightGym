@@ -142,7 +142,7 @@ cdef packed struct Parameters:
     double phiPipeE         # External diameter of pipes
     double phiPipeI         # Internal diameter of pipes
     double lPipe            # Length of heating pipes per gh floor area
-    int pBoil               # Capacity of the heating system
+    int pBoil               # Capacity of the heating system [W]
 
     int phiExtCo2           # Capacity of external CO2 source
     double capPipe          # Heat capacity of heating pipes
