@@ -1,4 +1,4 @@
-import seaborn as sns
+import seaborn as sns#; sns.set()
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -27,7 +27,7 @@ def createStatesFig(states2plot: list):
     """
     Function to plot variables simulated by GL model.
     """
-    fig = plt.figure()
+    fig = plt.figure(dpi=120)
     nplots = len(states2plot)
 
     if nplots % 2 == 0:
@@ -38,7 +38,7 @@ def createStatesFig(states2plot: list):
         cols = nplots//2 + 1
     # add subplot for each state
     axes = [fig.add_subplot(rows, cols, i+1) for i in range(nplots)]
-    
+
     # set the xlabel for the final row of plots
     # remove xticks for all but the bottom row
     xlabel = "Time (days)"
@@ -49,9 +49,18 @@ def createStatesFig(states2plot: list):
     # set the ylabel for each plot
     for i, ax in enumerate(axes):
         ax.set_ylabel(states2plot[i])
-    # fig.tight_layout()
+    fig.tight_layout()
     # plt.show()
     return fig, axes
+
+def setStateBounds(ax, lowerBound, upperBound):
+    """
+    Function to set the bounds of the state axes.
+    """
+    # plot line for upper and lower bound
+    ax.axhline(lowerBound, color="grey", linestyle="--", alpha=0.5, linewidth=3)
+    ax.axhline(upperBound, color="grey", linestyle="--", alpha=0.5, linewidth=3)
+    return ax
 
 def plotVariables(fig, axes: list, states: pd.DataFrame, states2plot: list, label: str, color: str):
     """
@@ -62,7 +71,7 @@ def plotVariables(fig, axes: list, states: pd.DataFrame, states2plot: list, labe
     # rotate xticks
     for ax in axes:
         # ax.tick_params(axis='x', rotation=45)
-        ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
     fig.autofmt_xdate()
     return fig, axes
 
@@ -96,6 +105,8 @@ def plotDistributions(fig, axes: list, states: pd.DataFrame, states2plot: list, 
         sns.histplot(states[states2plot[i]], ax=ax, label=label, color=color)
     return fig, axes
 
+# def createBarPlot(states2plot: list):
+    # """
 
     # axes = states.plot(x="Time", y=states2plot, subplots=True, linewidth=3, alpha=0.8, color=color, label=[label]*len(states2plot))
 

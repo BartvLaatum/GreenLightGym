@@ -14,13 +14,13 @@ from wandb.integration.sb3 import WandbCallback
 from stable_baselines3.common.vec_env import SubprocVecEnv, VecNormalize, VecMonitor, VecEnv
 from stable_baselines3.common.utils import set_random_seed
 
-from RLGreenLight.environments.GreenLight import GreenLightBase, GreenLightCO2, GreenLightHarvest
+from RLGreenLight.environments.GreenLight import GreenLightBase, GreenLightCO2, GreenLightHeatCO2
 from RLGreenLight.callbacks.customCallback import TensorboardCallback, SaveVecNormalizeCallback, BaseCallback
 
 ACTIVATION_FN = {"ReLU": ReLU, "SiLU": SiLU, "Tanh":Tanh}
 OPTIMIZER = {"ADAM": Adam}
 
-envs = {"GreenLightBase": GreenLightBase, "GreenLightCO2": GreenLightCO2, "GreenLightHarvest": GreenLightHarvest}
+envs = {"GreenLightBase": GreenLightBase, "GreenLightCO2": GreenLightCO2, "GreenLightHeatCO2": GreenLightHeatCO2}
 
 def make_env(env_id, rank, seed, kwargs, kwargsSpecific, options, eval_env):
     """
