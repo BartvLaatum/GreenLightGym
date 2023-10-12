@@ -1,4 +1,4 @@
-import seaborn as sns
+import seaborn as sns; sns.set()
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -27,7 +27,7 @@ def createStatesFig(states2plot: list):
     """
     Function to plot variables simulated by GL model.
     """
-    fig = plt.figure()
+    fig = plt.figure(dpi=120)
     nplots = len(states2plot)
 
     if nplots % 2 == 0:
