@@ -97,7 +97,7 @@ def evaluate_policy(
     states = None
     episode_starts = np.ones((env.num_envs,), dtype=bool)
 
-    timevec[0] =  env.env_method("getTime", indices=0)[0]
+    timevec[0] =  env.env_method("_getTime", indices=0)[0]
     episode_obs[:, 0, :] = env.unnormalize_obs(observations)[:, :]
 
     while (episode_counts < episode_count_targets).any():
@@ -112,7 +112,7 @@ def evaluate_policy(
         current_rewards += rewards
         current_lengths += 1
 
-        timevec[timestep+1] =  env.env_method("getTime", indices=0)[0]
+        timevec[timestep+1] =  env.env_method("_getTime", indices=0)[0]
         episode_obs[:, timestep+1, :] = env.unnormalize_obs(new_observations)[:, :]
 
         for i in range(n_envs):

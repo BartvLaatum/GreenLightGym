@@ -100,15 +100,13 @@ def runExperiment(
                 callback=callbacks)
     run.finish()
 
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--env_id", type=str, default="GreenLightBase")
     parser.add_argument("--project", type=str, default="TestVecLoadSave")
     parser.add_argument("--group", type=str, default="testing-evaluation")
     parser.add_argument("--HPfolder", type=str, default="GLBase/ppo")
-    parser.add_argument("--HPfilename", type=str, default="balance-rew-no-constraints.yml")
+    parser.add_argument("--HPfilename", type=str, default="ppo.yml")
     parser.add_argument("--total_timesteps", type=int, default=500_000)
     parser.add_argument("--n_eval_episodes", type=int, default=1)
     parser.add_argument("--numCpus", type=int, default=4)
@@ -140,6 +138,8 @@ if __name__ == "__main__":
                     args.group,
                     args.total_timesteps,
                     args.n_evals,
+                    state_columns,
+                    action_columns,
                     states2plot=states2plot,
                     actions2plot=actions2plot,
                     runname=None
