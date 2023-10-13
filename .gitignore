@@ -5,6 +5,7 @@ trainData/
 wandb/
 unused/
 figures/
+.vscode/
 wandb/
 *.so
 *.c
