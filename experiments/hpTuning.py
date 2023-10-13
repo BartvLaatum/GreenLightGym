@@ -7,6 +7,7 @@ from pprint import pprint
 import wandb
 import numpy as np
 from stable_baselines3 import PPO
+from wandb.integration.sb3 import WandbCallback
 
 from RLGreenLight.callbacks.customCallback import TensorboardCallback
 from RLGreenLight.experiments.utils import loadParameters, make_vec_env, create_callbacks, set_model_params, make_env
@@ -63,95 +64,65 @@ def run_hp_experiment(
             vec_norm_kwargs=vec_norm_kwargs
             )
 
-    # callbacks = TensorboardCallback(eval_env,
-    #                                     n_eval_episodes=n_eval_episodes,
-    #                                     eval_freq=eval_freq,
-    #                                     best_model_save_path=model_log_dir,
-    #                                     name_vec_env=save_name,
-    #                                     path_vec_env=env_log_dir,
-    #                                     deterministic=True,
-    #                                     callback_on_new_best=None,
-    #                                     run=None,
-    #                                     action_columns=action_columns,
-    #                                     state_columns=state_columns,
-    #                                     states2plot=None,
-    #                                     actions2plot=None,
-    #                                     verbose=1)
-                                        
+    callbacks = [TensorboardCallback(
+                                eval_env,
+                                n_eval_episodes=n_eval_episodes,
+                                eval_freq=eval_freq,
+                                best_model_save_path=model_log_dir,
+                                name_vec_env=save_name,
+                                path_vec_env=env_log_dir,
+                                deterministic=True,
+                                callback_on_new_best=None,
+                                run=None,
+                                action_columns=action_columns,
+                                state_columns=state_columns,
+                                states2plot=None,
+                                actions2plot=None,
+                                verbose=0),
+                                WandbCallback(verbose=1)
+                                ]
 
     tensorboard_log = f"trainData/{project}/logs/{run.name}"
-    print(modelParams)
+
     model = PPO(
         env=env,
         seed=SEED,
-        verbose=1,
+        verbose=0,
         **modelParams,
         tensorboard_log=tensorboard_log
         )
-    print(model)
 
-    print("whut")
-    model.learn(total_timesteps=1)
-    print("erreur")
-    return
-    # model.learn(total_timesteps=args.total_timesteps, 
-    #             callback=[])
-    # run.fin
+    model.learn(
+        total_timesteps=args.total_timesteps,
+        callback=callbacks
+        )
+
+    wandb.log({"best_eval_reward": callbacks[0].best_mean_reward})
 
 def train(config=None):
     SEED = 666
-    with wandb.init(config=config):
+    with wandb.init(config=config, sync_tensorboard=True):
         config = wandb.config
         config =  set_model_params(config)
-        monitor_filename = None
-        vec_norm_kwargs = {"norm_obs": True, "norm_reward": True, "clip_obs": 50_000}
 
-        # env = make_vec_env(
-        #     args.env_id,
-        #     envBaseParams,
-        #     envSpecificParams,
-        #     options,
-        #     seed=SEED,
-        #     numCpus=args.numCpus,
-        #     monitor_filename=monitor_filename,
-        #     vec_norm_kwargs=vec_norm_kwargs
-        #     )
-        env_fn = make_env(
+        run_hp_experiment(
             args.env_id,
-            SEED,
-            SEED,
             envBaseParams,
             envSpecificParams,
             options,
-            eval_env=False)
-        model = PPO(
-        env=env_fn(),
-        seed=SEED,
-        verbose=1,
-        **config,
-        )
-        model.learn(total_timesteps=1)
-
-        wandb.log({"eval/mean_reward": 10})
-
-        # run_hp_experiment(
-        #     args.env_id,
-        #     envBaseParams,
-        #     envSpecificParams,
-        #     options,
-        #     config,
-        #     SEED,
-        #     args.n_eval_episodes,
-        #     args.numCpus,
-        #     args.project,
-        #     total_timesteps=10_000,
-        #     n_evals=1,
-        #     state_columns=state_columns,
-        #     action_columns=action_columns,
-        #     states2plot=None,
-        #     actions2plot=None,
-        #     run=wandb.run,
-        #     )
+            config,
+            SEED,
+            args.n_eval_episodes,
+            args.numCpus,
+            args.project,
+            total_timesteps=10_000,
+            n_evals=1,
+            state_columns=state_columns,
+            action_columns=action_columns,
+            states2plot=None,
+            actions2plot=None,
+            run=wandb.run,
+            )
  
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -163,27 +134,19 @@ if __name__ == "__main__":
     parser.add_argument("--total_timesteps", type=int, default=500_000)
     parser.add_argument("--n_eval_episodes", type=int, default=1)
     parser.add_argument("--numCpus", type=int, default=4)
-    parser.add_argument("--n_evals", type=int, default=10)
+    parser.add_argument("--n_evals", type=int, default=1)
     args = parser.parse_args()
 
     sweep_config = {
         'method': 'random'
         }
 
-    # metric = {
-    #     'name': 'eval/mean_reward',
-    #     'goal': 'maximize'   
-    #     }
+    metric = {
+        'name': 'best_eval_reward',
+        'goal': 'maximize'
+        }
 
-    # sweep_config['metric'] = metric
-
-    parameter_dict = {
-        "learning_rate": {
-            "distribution": "log_uniform_values",
-            "min": 1e-6,
-            "max": 1e-3,
-            }
-    }
+    sweep_config['metric'] = metric
 
     hpPath = f"hyperparameters/{args.HPfolder}/"
     states2plot = ["Air Temperature","CO2 concentration", "Humidity", "Fruit harvest", "PAR", "Cumulative harvest"]
@@ -195,13 +158,7 @@ if __name__ == "__main__":
                             loadParameters(args.env_id, hpPath, args.HPfilename, algorithm)
 
     sweep_config['parameters'] = modelParams
-    # sweep_config['envBaseParams'] = envBaseParams
-    # sweep_config['envSpecificParams'] = envSpecificParams
-    # sweep_config['options'] = options
-    # sweep_config['state_columns'] = state_columns
-    # sweep_config['action_columns'] = action_columns
 
-    modelParams.update(parameter_dict)
     fixed_model_params = {
         'policy': {
             'value': 'MlpPolicy'
@@ -243,9 +200,8 @@ if __name__ == "__main__":
             'value': -1
             },
         'target_kl':{
-            'value': 'null'
+            'value': None
             },
-
         'policy_kwargs':{ 
             'value': {
                 'net_arch': {
@@ -257,8 +213,28 @@ if __name__ == "__main__":
                 }
             },
     }
+    parameter_dict = {
+        "learning_rate": {
+            "distribution": "log_uniform_values",
+            "min": 1e-6,
+            "max": 1e-2,
+            },
+        "batch_size": {
+            "distribution": "q_log_uniform_values",
+            "q": 8,
+            "min": 32,
+            "max": 512,
+            },
+        "n_epochs": {
+            "distribution": "q_uniform",
+            "q": 1,
+            "min": 1,
+            "max": 20,
+        }
+    }
 
     modelParams.update(fixed_model_params)
+    modelParams.update(parameter_dict)
     sweep_id = wandb.sweep(sweep_config, project=args.project)
 
-    wandb.agent(sweep_id, train, count=1)
+    wandb.agent(sweep_id, train, count=5)

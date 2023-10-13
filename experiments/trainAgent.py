@@ -99,6 +99,7 @@ def runExperiment(
         **config["modelParams"],
         tensorboard_log=tensorboard_log
         )
+
     model.learn(total_timesteps=config["total_timesteps"], 
                 callback=callbacks)
     run.finish()
