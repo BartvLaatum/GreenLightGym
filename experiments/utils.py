@@ -65,6 +65,12 @@ def loadParameters(env_id: str, path: str, filename: str, algorithm: str = None)
         modelParams = None
     return envBaseParams, envSpecificParams, modelParams, options, state_columns, action_columns
 
+def set_model_params(modelParams):
+    modelParams["policy_kwargs"]["activation_fn"] = ACTIVATION_FN[modelParams["policy_kwargs"]["activation_fn"]]
+    modelParams["policy_kwargs"]["optimizer_class"] = OPTIMIZER[modelParams["policy_kwargs"]["optimizer_class"]]
+    return modelParams
+
+
 def wandb_init(modelParams: Dict[str, Any],
                envParams: Dict[str, Any],
                envSpecificParams: Dict[str, Any],
@@ -82,7 +88,6 @@ def wandb_init(modelParams: Dict[str, Any],
         "policy": modelParams["policy"],
         "total_timesteps": timesteps,
         "seed": SEED,
-        "note": "testing co2 control, daily balance",
         "modelParams": {**modelParams},
         "envParams": {**envSpecificParams, **envParams}
     }

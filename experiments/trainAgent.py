@@ -4,6 +4,9 @@ from multiprocessing import cpu_count
 import matplotlib.pyplot as plt
 import wandb
 import argparse
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
 
 def runExperiment(
     env_id,

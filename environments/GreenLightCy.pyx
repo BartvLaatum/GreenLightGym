@@ -337,8 +337,8 @@ cdef class GreenLight:
         # np_obs[7] = self.a.dayOfYear                        # day of the year [d]
         np_obs[6] = self.a.mcExtAir                         # CO2 injection rate [mg m^-2 s^-1]
         np_obs[7] = self.a.qLampIn                          # electrical power of lamps [W m^-2]
-        np_obs[8] = self.a.hBoilPipe                       # heat demand of greenhouse [W m^-2]
-        np_obs[9] = self.x[9]                              # pipe temperature [deg C]
+        np_obs[8] = self.a.hBoilPipe                        # heat demand of greenhouse [W m^-2]
+        np_obs[9] = self.x[9]                               # pipe temperature [deg C]
         return np_obs
 
     @property

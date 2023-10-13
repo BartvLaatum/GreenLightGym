@@ -194,9 +194,9 @@ class GreenLightBase(gym.Env):
         super().reset(seed=seed)
         # determine the growth year and start day based on whether we are training or testing
         if self.training:
-            self.growthYear = np.random.choice([year for year in range(2012, 2020)])
+            self.growthYear = np.random.choice(range(2012, 2020))
             # from Januari to November
-            self.startDay = np.random.choice([day for day in range(0, 305)])
+            self.startDay = np.random.choice(range(0, 305))
         else:
             self.growthYear = self.options["growthYear"]
             self.startDay = self.options["startDay"]
