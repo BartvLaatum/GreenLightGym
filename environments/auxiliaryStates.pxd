@@ -435,7 +435,7 @@ cdef inline double airMc(double f12, double c1, double c2):
     return fabs(f12)*(c1-c2)
 
 cdef inline void initAuxStates(AuxiliaryStates* a, double* x):
-    
+
     a.co2InPpm = co2dens2ppm(x[2], 1e-6*x[0])
     a.rhIn = 100*x[15]/satVp(x[2])
 
@@ -445,7 +445,7 @@ cdef inline void initAuxStates(AuxiliaryStates* a, double* x):
 
     a.timeOfDay = 24*(x[27] - floor(x[27])) # hours since midnight time of day [h]
     a.dayOfYear = x[27] % 365.2425    
-   
+
     a.mcExtAir = 0
     a.qLampIn = 0  
     a.hBoilPipe = 0    

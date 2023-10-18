@@ -84,7 +84,6 @@ class GreenLightBase(gym.Env):
         self.obsLow = np.array(obsLow)
         self.obsHigh = np.array(obsHigh)
 
-
     def step(self, action: np.ndarray) -> Tuple[np.ndarray, float, bool, Dict[str, Any]]:
         """
         Given an action we simulate the next state of the system.
@@ -102,7 +101,6 @@ class GreenLightBase(gym.Env):
             reward = 0
         else:
             reward = self._reward(obs, action)
-
         self.prevYield = obs[3]
 
         # additional information to return
@@ -136,7 +134,7 @@ class GreenLightBase(gym.Env):
         lowerbound[lowerbound < 0] = 0
         upperbound = obs[:Npen] - self.obsHigh[:]
         upperbound[upperbound < 0] = 0
-        return lowerbound**2 + upperbound**2
+        return lowerbound + upperbound
 
     def _getObs(self) -> np.ndarray:
         """
@@ -194,9 +192,9 @@ class GreenLightBase(gym.Env):
         super().reset(seed=seed)
         # determine the growth year and start day based on whether we are training or testing
         if self.training:
-            self.growthYear = np.random.choice(range(2012, 2020))
+            self.growthYear = self.np_random.choice(range(2012, 2020))
             # from Januari to November
-            self.startDay = np.random.choice(range(0, 305))
+            self.startDay = self.np_random.choice(range(59, 305))
         else:
             self.growthYear = self.options["growthYear"]
             self.startDay = self.options["startDay"]
@@ -234,7 +232,7 @@ class GreenLightBase(gym.Env):
         self.terminated = False
 
         # max and min penalty for constraint violations
-        self.penmax = np.array([225, 9e6, 900])         # max penalty
+        self.penmax = np.array([10, 3e5, 60])         # max penalty
         self.penmin = np.zeros(self.obsLow.shape[0])    # min penalty
 
         return self._getObs(), {}
@@ -288,7 +286,7 @@ class GreenLightCO2(GreenLightBase):
 
         # max reward for fruit harvest minus the costs
         self.rmax = 1e-6*self.GLModel.maxHarvest/self.dmfm * self.timeinterval*self.tomatoPrice # [€ kg^-1 [FM] m^-2]
-        self.rmin = - 1e-6*self.GLModel.maxco2rate*self.co2Price                                # [€ kg^-1 m^-2]
+        self.rmin = - 1e-6*self.GLModel.maxco2rate*self.timeinterval*self.co2Price                                # [€ kg^-1 m^-2]
 
         return self._getObs(), {}
 
@@ -309,6 +307,7 @@ class GreenLightHeatCO2(GreenLightBase):
                  energyContentGas: float  = 31.65,
                  **kwargs,
                  ) -> None:
+
         super(GreenLightHeatCO2, self).__init__(**kwargs)
         self.cLeaf = cLeaf
         self.cStem = cStem
@@ -321,14 +320,16 @@ class GreenLightHeatCO2(GreenLightBase):
 
     def _reward(self, obs: np.ndarray, action: np.ndarray) -> float:
         harvest = obs[4] / self.dmfm                                            # [kg [FM] m^-2]
-        co2resource = self.GLModel.co2InjectionRate * self.timeinterval * 1e-6  # [kg m^-2 900s^-1]
-        heatResource = (obs[8] * self.timeinterval* 1e-6)/self.energyContentGas # [MJ m^-2 900s^-1]
-        reward = harvest*self.tomatoPrice - co2resource*self.co2Price           # [€ m^-2]
-        - heatResource*self.gasPrice
+        co2resource = 1e-6*self.GLModel.co2InjectionRate * self.timeinterval    # [kg m^-2 900 s^-1]
+        heatResource = (1e-6*self.GLModel.heatDemand * self.timeinterval)\
+            / self.energyContentGas                                             # [m^3 m^-2 900 s^-1]
+        reward = harvest*self.tomatoPrice - co2resource*self.co2Price\
+            - heatResource*self.gasPrice                                        # [€ m^-2]
         abs_penalty = self._computePenalty(obs)
+        return self._scale(reward, self.rmin, self.rmax)
 
-        return self._scale(reward, self.rmin, self.rmax) -\
-            np.average(self._scale(abs_penalty, self.penmin, self.penmax)[1:])
+        # return self._scale(reward, self.rmin, self.rmax) -\
+        #     np.sum(self._scale(abs_penalty, self.penmin, self.penmax)[:2])
 
     def reset(self, seed: Optional[int] = None) -> Tuple[np.ndarray, Dict[str, Any]]:
         super().reset(seed=seed)
@@ -337,8 +338,8 @@ class GreenLightHeatCO2(GreenLightBase):
         self.GLModel.setCropState(self.cLeaf, self.cStem, self.cFruit, self.tCanSum)
 
         self.rmax = 1e-6*self.GLModel.maxHarvest/self.dmfm * self.timeinterval * self.tomatoPrice   # [€ m^-2]
-        self.rmin = - (1e-6*self.GLModel.maxco2rate * self.co2Price) -\
-            (1e-6*self.GLModel.maxHeatCap * self.timeinterval)/self.energyContentGas                # [€ m^-2]
+        self.rmin = - (1e-6*self.GLModel.maxco2rate*self.timeinterval*self.co2Price) -\
+            (1e-6*self.GLModel.maxHeatCap*self.timeinterval)/self.energyContentGas*self.gasPrice # [€ m^-2]
 
         return self._getObs(), {}
 
