@@ -110,7 +110,6 @@ class TensorboardCallback(EvalCallback):
             meanActions = np.mean(episode_actions, axis=0)
             meanObs = np.mean(episode_obs, axis=0)
 
-
             mean_ep_length, std_ep_length = np.mean(episode_lengths), np.std(episode_lengths)
             self.last_mean_reward = mean_reward
 
