@@ -11,10 +11,10 @@ GreenLightBase:
     intLamps: 0             # whether int lamps are used
     dmfm: 0.0627            # dry matter fresh matter ratio
     h: 1                    # stepsize for the RK4 solver
-    seasonLength: 1        # number of growing days
-    predHorizon: 0       # prediction horizon in days.
+    seasonLength: 1         # number of growing days
+    predHorizon: 0          # prediction horizon in days.
     timeinterval: 900       # [s] time interval at what rate do we observe and control the environment
-    controlSignals: ["uBoil", "uCO2"]   # list with all control inputs we aim to control/learn
+    controlSignals: ["uBoil", "uCO2"] # list with all control inputs we aim to control/learn
     modelObsVars: 6         # number of variables we observe from the model
     weatherObsVars: 5       # number of weather variables we observe
     obsLow:  [15, 300, 60]  # lower bound for the observation space
@@ -33,21 +33,20 @@ GreenLightHeatCO2:
     energyContentGas: 31.65     # MJ/m3
 
 options:                    # Options for the the evaluation date 
-    startDay: 0             # day since 01-feb for starting the episode
+    startDay: 59             # day since 01-feb for starting the episode
     growthYear: 2011        # year in which we start growing season
 
 state_columns: ["Air Temperature", "CO2 concentration", "Humidity", "Fruit weight", "Fruit harvest", "PAR"]
 action_columns: ["uBoil", "uCO2", "uThScr", "uVent", "uLamp", "uIntLamp", "uGroPipe", "uBlScr"]
 
-
 PPO:
   policy: MlpPolicy
-  learning_rate: !!float 3e-5
-  n_steps: 128                  # we update after n_steps calls of step() function. in the case of 10 envs --> 1280 timesteps are taken (equals to 10 days)
+  learning_rate: !!float 3e-4 # 
+  n_steps: 160                      # we update after n_steps calls of step() function. in the case of 10 envs --> 1280 timesteps are taken (equals to 10 days)
   batch_size: 64
-  n_epochs: 10
-  gamma: 0.99
-  gae_lambda: 0.95
+  n_epochs: 10                      # 
+  gamma: 0.99         # 
+  gae_lambda: 0.99    # 
   clip_range: 0.2
   normalize_advantage: True
   ent_coef: 0.0

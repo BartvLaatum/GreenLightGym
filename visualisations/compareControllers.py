@@ -50,7 +50,7 @@ if __name__ == "__main__":
 
     ppoStatesResults = []
     ppoControlResults = []
-    labels = []
+    labels = ["PPO"]
 
     if args.runname == "all":
         # extract all runnames from ppo folder
@@ -98,7 +98,7 @@ if __name__ == "__main__":
 
     # plot the data
     fig, axes = createFigs.createStatesFig(ylabels)
-    # fig, axes = createFigs.plotVariables(fig, axes, baselineStates, states2plot, "Rule-based controller", cmc.grayCS(0))
+    fig, axes = createFigs.plotVariables(fig, axes, baselineStates, states2plot, "Rule-based controller", cmc.grayCS(2))
 
     createFigs.setStateBounds(axes[0], 14, 34)
     createFigs.setStateBounds(axes[1], 300, 1200)
@@ -110,7 +110,7 @@ if __name__ == "__main__":
     plt.show()
 
     fig, axes = createFigs.createStatesFig(controls2plot)
-    # fig, axes = createFigs.plotVariables(fig, axes, baselineControls, controls2plot, "Rule-based controller", cmc.grayCS(0))
+    fig, axes = createFigs.plotVariables(fig, axes, baselineControls, controls2plot, "Rule-based controller", cmc.grayCS(2))
     for i, ppoControls in enumerate(ppoControlResults):
         fig, axes = createFigs.plotVariables(fig, axes, ppoControls, controls2plot, labels[i], cmc.grayCS(i+1))
 

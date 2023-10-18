@@ -15,29 +15,28 @@ GreenLightBase:
     predHorizon: 0          # prediction horizon in days.
     timeinterval: 900       # [s] time interval at what rate do we observe and control the environment
     controlSignals: []   # list with all control inputs we aim to control/learn
-    modelObsVars: 12        # number of variables we observe from the model
+    modelObsVars: 6        # number of variables we observe from the model
     weatherObsVars: 5       # number of weather variables we observe
     obsLow:  [15, 300, 60]  # lower bound for the observation space
     obsHigh: [35, 1200, 90] # upper bound for the observation space
     rewardCoefficients: []  # coefficients for the costs function
     penaltyCoefficients: [!!float 1e-5, !!float 1e-9, !!float 1e-6] # coefficients for the penalty function
 
-GreenLightHarvest:
-    cLeaf: !!float 2.5e5
-    cStem: !!float 0.9e5
-    cFruit: !!float 2.8e5
-    tCanSum: 1035
-    tomatoPrice: 1.2
-    co2Price: 0.19
-    gasPrice: 0.35
-    electricityPrice: 0.1
-    energyContentGas: 31.65
+
+GreenLightHeatCO2:
+    cLeaf: !!float 2.5e5        # [DW] mg/m2
+    cStem: !!float 0.9e5        # [DW] mg/m2
+    cFruit: !!float 2.8e5       # [DW] mg/m2
+    tCanSum: 1035               # Temperature sum for canopy development
+    tomatoPrice: 1.2            # €/[FW] kg
+    co2Price: 0.1               # €/kg
+    gasPrice: 0.35              # €/m3
+    energyContentGas: 31.65     # MJ/m3
 
 options:                    # Options for the the evaluation date 
-    startDay: 0             # day since 01-feb for starting the episode
+    startDay: 59             # day since 01-feb for starting the episode
     growthYear: 2011        # year in which we start growing season
 
-state_columns: [Air Temperature, CO2 concentration, Humidity, Fruit weight, Fruit harvest, PAR, \
-                    Hour of Day, Day of the Year, CO2 injection, Power input lamp, Heat demand, Pipe temperature]
+state_columns: [Air Temperature, CO2 concentration, Humidity, Fruit weight, Fruit harvest, PAR]
 action_columns: [uBoil, uCO2, uThScr, uVent, uLamp, uIntLamp, uGroPipe, uBlScr]
 

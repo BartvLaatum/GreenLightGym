@@ -45,14 +45,14 @@ if __name__ == "__main__":
     dones = [False]
 
     states[0, :] = obs[0, :envParams["modelObsVars"]]             # get initial states
-    timevec[0] = env.env_method("getTimeInDays")[0]
+    timevec[0] = env.env_method("_getTimeInDays")[0]
     i=0
 
-    episode_rewards, episode_lengths, episode_actions, episode_obs, timevec = \
+    episode_rewards, episode_lengths, episode_actions, model_actions, episode_obs, timevec = \
                                                         evaluate_policy(
                                                             model,
                                                             env,
-                                                            n_eval_episodes:= 1,
+                                                            n_eval_episodes= 1,
                                                             deterministic = True,
                                                             render= False,
                                                             callback = None,
