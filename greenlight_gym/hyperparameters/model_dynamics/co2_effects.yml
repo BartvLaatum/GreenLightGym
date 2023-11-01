@@ -1,5 +1,5 @@
 GreenLight:
-    weatherDataDir: "environments/data/" # path to the weather data file
+    weatherDataDir: "envs/data/" # path to the weather data file
     location: "Amsterdam"   # location of the weatherdata
     dataSource: "KNMI"      # which data source we use
     nx: 28                  # Number of states
