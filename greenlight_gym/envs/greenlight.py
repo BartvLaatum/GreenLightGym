@@ -100,7 +100,7 @@ class GreenLightBase(gym.Env):
             self.terminated = True
             reward = 0
         else:
-            reward = self._reward(obs, action)
+            reward = self._reward(obs)
         self.prevYield = obs[3]
 
         # additional information to return
@@ -114,7 +114,7 @@ class GreenLightBase(gym.Env):
             info
             )
 
-    def _reward(self, obs: np.ndarray, action: np.ndarray) -> float:
+    def _reward(self, obs: np.ndarray) -> float:
         raise NotImplementedError
 
     def _compute_penalty(self, obs: np.ndarray) -> float:
@@ -271,7 +271,7 @@ class GreenLightCO2(GreenLightBase):
         self.tomatoPrice = tomatoPrice
         self.co2Price = co2Price
 
-    def _reward(self, obs: np.ndarray, action: np.ndarray) -> float:
+    def _reward(self, obs: np.ndarray) -> float:
         """
         Function that computes the reward for a given observation.
         Reward consists of the harvest over the past time step minus the costs of the control inputs.
@@ -333,9 +333,9 @@ class GreenLightHeatCO2(GreenLightBase):
         self.k = np.array(k)
         self.pbands = np.array([pbands])
 
-    def _reward(self, obs: np.ndarray, action: np.ndarray) -> float:
-        harvest = obs[4] / self.dmfm                                            # [kg [FM] m^-2]
-        co2resource = 1e-6*self.GLModel.co2InjectionRate*self.timeinterval    # [kg m^-2 900 s^-1]
+    def _reward(self, obs: np.ndarray) -> float:
+        harvest = obs[4] / self.dmfm                                                                # [kg [FM] m^-2]
+        co2resource = 1e-6*self.GLModel.co2InjectionRate*self.timeinterval                          # [kg m^-2 900 s^-1]
         heatResource = (1e-6*self.GLModel.heatDemand * self.timeinterval)/self.energyContentGas     # [m^3 m^-2 900 s^-1]
         reward = harvest*self.tomatoPrice - co2resource*self.co2Price - heatResource*self.gasPrice  # [€ m^-2]
 
@@ -350,91 +350,9 @@ class GreenLightHeatCO2(GreenLightBase):
 
         self.rmax = 1e-6*self.GLModel.maxHarvest/self.dmfm * self.timeinterval * self.tomatoPrice   # [€ m^-2]
         self.rmin = -(1e-6*self.GLModel.maxco2rate*self.timeinterval*self.co2Price) -\
-            (1e-6*self.GLModel.maxHeatCap*self.timeinterval)/self.energyContentGas*self.gasPrice # [€ m^-2]
+            (1e-6*self.GLModel.maxHeatCap*self.timeinterval)/self.energyContentGas*self.gasPrice    # [€ m^-2]
 
-        # self.min_exp_pen = self._exp_penalty(np.zeros(self.obsLow.shape[0]))
         return self._getObs(), {}
-
-# class GreenLightHarvest(GreenLightBase):
-#     """
-#     Child class of GreenLightBase. This class also models the greenhouse crop production process.
-#     But starts with a fully mature crop that is ready for harvest.
-#     The start dates are early year, (January and Februari), which reflects the start of the harvest season.
-#     """
-#     def __init__(self,
-#                  cLeaf: float = 2.5e5,
-#                  cStem: float = 0.9e5,
-#                  cFruit: float = 2.8e5,
-#                  tCanSum: float  = 1035,
-#                  tomatoPrice: float = 1.2,
-#                  co2Price: float = 0.19,
-#                  gasPrice: float = 0.35,
-#                  electricityPrice: float = 0.1,
-                #  energyContentGas: float  = 31.65,
-#                  **kwargs,
-#                  ) -> None:
-#         super(GreenLightHarvest, self).__init__(**kwargs)
-#         self.cLeaf = cLeaf
-#         self.cStem = cStem
-#         self.cFruit = cFruit
-#         self.tCanSum = tCanSum
-#         self.tomatoPrice = tomatoPrice
-#         self.co2Price = co2Price
-#         self.gasPrice = gasPrice
-#         self.electricityPrice = electricityPrice
-#         self.energyContentGas = energyContentGas
-
-#     def _getObs(self) -> np.ndarray:
-#         modelObs = self.GLModel.getHarvestObs()
-#         weatherIdx = [self.GLModel.timestep*self.solverSteps] + [(ts + self.GLModel.timestep)*self.solverSteps for ts in range(1, self.Np)]
-#         weatherObs = self.weatherData[weatherIdx, :self.weatherObsVars].flatten()
-#         return np.concatenate([modelObs, weatherObs], axis=0)
-
-#     def _reward(self, obs: np.ndarray, action: np.ndarray) -> float:
-#         """
-#         Compute the reward given the harvest of the model.
-#         """
-#         harvest = obs[4] / self.dmfm                                                # [kg [FM] m^-2]
-#         co2resource = obs[8] * self.timeinterval * 1e-6                             # [kg m^-2 900s^-1]
-#         electricityResource = obs[9] * (self.timeinterval/3600) * 1e-3              # [kWh m^-2]
-#         heatResource = (obs[10] * self.timeinterval* 1e-6)/self.energyContentGas    # [MJ m^-2 900s^-1]
-        
-#         reward = harvest*self.tomatoPrice - co2resource*self.co2Price -\
-#          electricityResource*self.electricityPrice - heatResource*self.gasPrice     # [euro m^-2]
-#         penalty = np.dot(self._compute_penalty(obs), self.penaltyCoefficients)        # penalty for constraint violations
-#         return reward - penalty
-
-#     def reset(self, seed: Optional[int] = None) -> Tuple[np.ndarray, Dict[str, Any]]:
-#         """
-#         Reset the environment to a random initial state.
-#         Randomness is introduced by the growth year and start day.
-#         Which affect the weather data observed.
-#         """
-#         super(GreenLightBase, self).reset(seed=seed)
-#         if self.training:
-#             self.growthYear = np.random.choice([year for year in range(2012, 2020)])
-#             self.startDay = np.random.choice([day for day in range(0, 200)])
-#         else:
-#             self.growthYear = self.options["growthYear"]
-#             self.startDay = self.options["startDay"]
-
-#         # load in weather data for this simulation
-#         self.weatherData = loadWeatherData(self.weatherDataDir, self.location, self.dataSource, self.growthYear, self.startDay, self.seasonLength, self.predHorizon, self.h, self.nd)
-#         # self.actions = np.zeros((self.nu,))
-
-#         # compute days since 01-01-0001
-#         # as time indicator by the model
-#         timeInDays = self._getTimeInDays()
-        
-#         # initialize the model in C, set the crop state to mature crop
-#         self.GLModel = GL(self.weatherData, self.h, self.nx, self.nu, self.nd, self.noLamps, self.ledLamps, self.hpsLamps, self.intLamps, self.solverSteps, timeInDays)
-#         self.GLModel.setCropState(self.cLeaf, self.cStem, self.cFruit, self.tCanSum)
-
-#         self.terminated = False
-        
-#         return self._getObs(), {}
-
-
 
 if __name__ == "__main__":
     pass
