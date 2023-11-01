@@ -1,8 +1,7 @@
 __pycache__/
 build/
 data/
-trainData/
-wandb/
+train_data/
 unused/
 figures/
 .vscode/
