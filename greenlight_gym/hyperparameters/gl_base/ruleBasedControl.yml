@@ -1,0 +1,30 @@
+GreenLightBase:
+    weatherDataDir: "envs/data/" # path to the weather data file
+    location: "Amsterdam"   # location of the weatherdata
+    dataSource: "KNMI"      # which data source we use
+    nx: 28                  # Number of states
+    nu: 8                  # number of control variables for GreenLight
+    nd: 10                  # weather variables
+    noLamps: 0              # whether lamps are used
+    ledLamps: 1             # whether led lamps are used
+    hpsLamps: 0             # whether hps lamps are used
+    intLamps: 0             # whether int lamps are used
+    dmfm: 0.0627            # dry matter fresh matter ratio
+    h: 1                    # stepsize for the RK4 solver
+    seasonLength: 10       # number of growing days
+    predHorizon: 3          # prediction horizon in days.
+    timeinterval: 900       # [s] time interval at what rate do we observe and control the environment
+    controlSignals: []      # list with all control signal we aim to learn, (empty for rule based controller)
+    modelObsVars: 6         # number of variables we observe from the model
+    weatherObsVars: 5       # number of weather variables we observe
+    obsLow:  [15, 300, 60]   # lower bound for the observation space
+    obsHigh: [35, 1200, 90]  # upper bound for the observation space
+    rewardCoefficients: [1]  # coefficients reward function
+    penaltyCoefficients: [.1, .01, .1] # coefficients for the penalty function
+
+options:
+    startDay: 273           # day since 01-january for starting the episode
+    growthYear: 2011        # year in which we start growing season
+
+state_columns: ["Time", "Air Temperature", "CO2 concentration", "Humidity", "Fruit weight", "Fruit harvest", "PAR"]
+action_columns: ["uBoil", "uCO2", "uThScr", "uVent", "uLamp", "uIntLamp", "uGroPipe", "uBlScr"]
