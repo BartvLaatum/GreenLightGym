@@ -5,6 +5,26 @@ import pandas as pd
 from copy import deepcopy
 from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
+import cmcrameri.cm as cmc
+from matplotlib.lines import Line2D
+import matplotlib as mpl
+### Latex font in plots
+plt.rcParams['font.serif'] = "cmr10"
+plt.rcParams['font.family'] = "serif"
+plt.rcParams['font.size'] = 24
+
+plt.rcParams['legend.fontsize'] = 20
+plt.rcParams['legend.loc'] = 'upper right'
+plt.rcParams['axes.labelsize'] = 20
+plt.rcParams['axes.formatter.use_mathtext'] = True
+plt.rcParams['xtick.labelsize'] = 18
+plt.rcParams['ytick.labelsize'] = 18
+plt.rcParams['text.usetex'] = False
+plt.rcParams['mathtext.fontset'] = 'cm'
+plt.rc('axes', unicode_minus=False)
+# show grid
+plt.rcParams['axes.grid'] = True
+
 
 def loadMatlabData(stepSize,date, stateNames):
     matlabStates = pd.read_csv(f"data/matlab/{date}/{stepSize}StepSizeStates.csv", sep=",", header=None)
@@ -384,39 +404,72 @@ def rh2vaporDens(temp, rh):
     
     return pascals*Mw/(R*(temp+C2K))
 
+def arctan(a, x):
+    return 2/np.pi*np.arctan(-a*(x)) 
+
+def exppen(a, x):
+    return 1/(1+np.exp(-a*(x)))-0.5
+
+def exppenpband(a, x, pband):
+    return 1/(1+np.exp(-a*(x-pband)))-0.5# - 1/(1+np.exp(-a*(0-pband)))
+
+def proportional(x, pband):
+    return 1/(1+np.exp(-2/pband*np.log(100)*(x - pband/2)))
+
 if __name__ == "__main__":    
-    # stateNames = ["co2Air", "co2Top", "tAir", "tTop", "tCan", "tCovIn", "tCovE", "tThScr", \
-    #             "tFlr", "tPipe", "tSo1", "tSo2", "tSo3", "tSo4", "tSo5", "vpAir", "vpTop", "tLamp", \
-    #             "tIntLamp", "tGroPipe", "tBlScr", "tCan24", "cBuf", "cLeaf", "cStem", "cFruit", "tCanSum", "Time"]
+    xs = [np.linspace(0,10,1000), np.linspace(0,1000, 30000), np.linspace(0,100,1000)]
 
-    params = {
-        "timeinterval": 300,
-        "startDay": 364,
-        "growthYear": 2011
-    }
+    pbands = np.array([0.5, 100, 2])
+    labels = [r"Temperature [$^\circ$C]" , "CO2 [ppm]", "RH [%]"]
+    N = 13
+    a_co2 = np.logspace(-5, -3, N)
+    print(a_co2)
+    print(a_co2[-6])
+    k = np.zeros((N, 3))
+    k[:, 0] = a_co2*200
+    k[:, 1] = a_co2
+    k[:, 2] = a_co2*50
+    linestyles = ['-', '--', '-.']
+    colors = cmc.batlow(np.linspace(0,1, N))
+    k_labels = [r"k$_{CO_2}=$"+ f"{k:.1e}" for k in a_co2]
+    fig = plt.figure(dpi=120)
+    ax = fig.add_subplot(111)
 
-    # dates = {
-    #     0: "1Januari",
-    #     99: "9April"
-    # }
+    # Define discrete boundaries for the colors
+    boundaries = np.linspace(-5, -3, N+1)
+    norm = mpl.colors.BoundaryNorm(boundaries, cmc.batlow.N, clip=True)
 
-    # matlabStates, matlabControls, matlabWeather = loadMatlabData(stepSize=str(params["timeinterval"]) + "s", date=dates[params["startDay"]], stateNames=stateNames)
-    # x = np.arange(0, matlabWeather.shape[0])*params["timeinterval"]/3600
+    # Create a scalar mappable object
+    sm = plt.cm.ScalarMappable(cmap=cmc.batlow, norm=norm)
+    sm.set_array([])  # Dummy array for the ScalarMappable
 
-    weatherDataResampled, Np = loadWeatherData(f"environments/data/", location="Amsterdam", source="KNMI", growthYear=params["growthYear"], startDay=params["startDay"], nDays=2, predHorizon=0.01, h=3, nd=10)
-    xres = np.arange(0, weatherDataResampled.shape[0])*3/3600
+    print(2/np.pi*np.arctan(0))
 
-    # plot all weather variables in subplots 5,2
-    fig, axs = plt.subplots(5, 2)
-    axs = axs.flatten()
-    for i, ax in enumerate(axs):
-        # ax.step(x, matlabWeather.iloc[:, i])
-        # ax.set_title(matlabWeather.columns[i])
-        ax.step(xres, weatherDataResampled[:, i])
 
-    # plt.plot(x, matlabWeather.iloc[:,0], label="iGlob")
-    # plt.plot(x, matlabWeather.iloc[:,9], label="isDay")
+    for j, ki in enumerate(k):
+        for i in range(3):
+            ax.plot(xs[i], arctan(ki[i], xs[i]), label=labels[i], linestyle=linestyles[i], linewidth=3, color=colors[j])
+            # ax.plot(xs[i], exppen(ki[i], xs[i]), label=labels[i], linestyle=linestyles[i], linewidth=3, color=colors[j])
+            # ax.plot(xs[i], exppenpband(ki[i], xs[i], pband=pbands[i]), label=labels[i], linestyle="--", linewidth=3, color=colors[j])
+            
+            # ax.axvline(pbands[i], linestyle='--', linewidth=3, color="grey", alpha=0.5, label="P-band")
+    
 
-    # plt.plot(xres, weatherDataResampled[:,0], "--", label="iGlob resampled")
-    # plt.plot(xres, weatherDataResampled[:,9], "--", label="isDay resampled")
+    # legend_elements = [Line2D([0], [0], color='grey', linestyle=linestyles[i], label=label) for i, label in enumerate(["Sigmoid P-band", "Regular sigmoid"])]
+    # Add the colorbar
+    cbar = fig.colorbar(sm, ticks=boundaries, ax=ax)
+    cbar.set_label(r'$k_{CO_2}$')
+    cbar.ax.set_yticklabels([f"{10**val:.1e}" for val in boundaries])
+
+    # ax.legend(handles=legend_elements, loc='upper left')
+    ax.set_xlabel(r"$c_i$")
+    ax.set_ylabel(r"$\sigma(c_i, k_i)$")
+    plt.xscale("log")
     plt.show()
+
+
+    # plt.vlines(pbands, linestyles='--', ymax=1, ymin=0, color='grey', alpha=0.5)#, exppen(a, abs_pens, limit=pbands), "x")
+    # plt.xlabel("Absolute penalty")
+    # plt.ylabel("Relative penalty")
+    # plt.legend(loc='upper left')
+    # plt.show()
