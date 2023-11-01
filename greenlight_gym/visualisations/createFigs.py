@@ -5,9 +5,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import matplotlib.dates as mdates
-from matplotlib.ticker import ScalarFormatter
-
-from RLGreenLight.environments.pyutils import days2date
 
 ### Latex font in plots
 plt.rcParams['font.serif'] = "cmr10"
@@ -145,16 +142,3 @@ def plot_aggregated_trajectories(ax: plt.Axes, aggregated_df: pd.DataFrame, uniq
         ax.plot(subset["Time"], subset[state + " mean"], label=r"k$_{CO_2}$"+f" = {labels[i]:.1e}", color=colors[i])
     return ax
 
-
-# def createBarPlot(states2plot: list):
-    # """
-
-    # axes = states.plot(x="Time", y=states2plot, subplots=True, linewidth=3, alpha=0.8, color=color, label=[label]*len(states2plot))
-
-    # for ax in axes[1:]:
-    #     ax.legend().remove()
-    # # set set ylabels to column names
-    # for i, ax in enumerate(axes):
-    #     ax.set_ylabel(states2plot[i])
-    # axes.title(title)
-    # return axes
