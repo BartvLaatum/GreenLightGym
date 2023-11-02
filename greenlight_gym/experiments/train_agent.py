@@ -17,7 +17,7 @@ def runExperiment(
     envSpecificParams,
     options,
     modelParams,
-    SEED,
+    seed,
     n_eval_episodes,
     numCpus, 
     project,
@@ -29,6 +29,7 @@ def runExperiment(
     states2plot=None,
     actions2plot=None,
     runname = None,
+    job_type="train",
     save_model=True,
     save_env=True
     ):
@@ -38,11 +39,11 @@ def runExperiment(
             envBaseParams,
             envSpecificParams,
             total_timesteps,
-            SEED,
+            seed,
             project=project,
             group=group,
             runname=runname,
-            job_type="train",
+            job_type=job_type,
             save_code=True
             )
 
@@ -54,7 +55,7 @@ def runExperiment(
         envBaseParams,
         envSpecificParams,
         options,
-        seed=SEED,
+        seed=seed,
         numCpus=numCpus,
         monitor_filename=monitor_filename,
         vec_norm_kwargs=vec_norm_kwargs
@@ -65,7 +66,7 @@ def runExperiment(
         envBaseParams,
         envSpecificParams,
         options,
-        seed=SEED,
+        seed=seed,
         numCpus=1,
         monitor_filename=monitor_filename,
         vec_norm_kwargs=vec_norm_kwargs,
@@ -110,14 +111,12 @@ def runExperiment(
 
     model = PPO(
         env=env,
-        seed=SEED,
+        seed=seed,
         verbose=0,
         **config["modelParams"],
         tensorboard_log=tensorboard_log
         )
 
-    # print("",
-    #       model.policy.action_net.weight)
     # run.log
     model.learn(total_timesteps=config["total_timesteps"], 
                 callback=callbacks)
@@ -135,12 +134,13 @@ if __name__ == "__main__":
     parser.add_argument("--env_id", type=str, default="GreenLightHeatCO2")
     parser.add_argument("--project", type=str, default="TestVecLoadSave")
     parser.add_argument("--group", type=str, default="group1")
-    parser.add_argument("--HPfolder", type=str, default="GLHeatCO2")
-    parser.add_argument("--HPfilename", type=str, default="ppo.yml")
+    parser.add_argument("--HPfolder", type=str, default="gl_heat_co2")
+    parser.add_argument("--HPfilename", type=str, default="ppo_4_controls.yml")
     parser.add_argument("--total_timesteps", type=int, default=500_000)
     parser.add_argument("--n_eval_episodes", type=int, default=1)
     parser.add_argument("--numCpus", type=int, default=12)
     parser.add_argument("--n_evals", type=int, default=10)
+    parser.add_argument("--seed", type=int, default=666)
     args = parser.parse_args()
 
     # check cpus available
@@ -151,17 +151,17 @@ if __name__ == "__main__":
     states2plot = ["Air Temperature","CO2 concentration", "Humidity", "Fruit harvest", "PAR", "Cumulative harvest"]
     actions2plot = ["uBoil", "uCO2", "uThScr", "uVent", "uLamp"]
 
-    SEED = 667
     algorithm = "PPO"
     envBaseParams, envSpecificParams, modelParams, options, state_columns, action_columns =\
                             loadParameters(args.env_id, hpPath, args.HPfilename, algorithm)
 
+    job_type = f"seed-{args.seed}"
     runExperiment(args.env_id,
                     envBaseParams,
                     envSpecificParams, 
                     options,
                     modelParams,
-                    SEED,
+                    args.seed,
                     args.n_eval_episodes,
                     args.numCpus, 
                     args.project,
@@ -172,5 +172,6 @@ if __name__ == "__main__":
                     action_columns,
                     states2plot=states2plot,
                     actions2plot=actions2plot,
-                    runname=None
+                    runname=None,
+                    job_type=job_type
                     )
