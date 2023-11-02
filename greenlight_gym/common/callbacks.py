@@ -152,8 +152,8 @@ class TensorboardCallback(EvalCallback):
 
                     states = pd.DataFrame(data=meanObs[:, :obsVars], columns=self.state_columns)
                     actions = pd.DataFrame(data=meanActions, columns=self.action_columns)
-                    actions["Time"] = pd.to_datetime(days2date(time_vec[1:], "01-01-0001")).dt.tz_localize("Europe/Amsterdam")
-                    states["Time"] = pd.to_datetime(days2date(time_vec[:], "01-01-0001")).dt.tz_localize("Europe/Amsterdam")
+                    actions["Time"] = pd.to_datetime(days2date(time_vec[1:], "01-01-0001")).tz_localize("Europe/Amsterdam")
+                    states["Time"] = pd.to_datetime(days2date(time_vec[:], "01-01-0001")).tz_localize("Europe/Amsterdam")
                     states["Cumulative harvest"] = states["Fruit harvest"].cumsum()
 
                     tableActions = wandb.Table(dataframe=actions)
