@@ -136,10 +136,10 @@ if __name__ == "__main__":
     parser.add_argument("--group", type=str, default="testing-evaluation")
     parser.add_argument("--HPfolder", type=str, default="gl_heat_co2")
     parser.add_argument("--HPfilename", type=str, default="ppo_4_controls.yml")
-    parser.add_argument("--total_timesteps", type=int, default=10_000)
+    parser.add_argument("--total_timesteps", type=int, default=1_000_000)
     parser.add_argument("--n_eval_episodes", type=int, default=1)
     parser.add_argument("--numCpus", type=int, default=12)
-    parser.add_argument("--n_evals", type=int, default=2)
+    parser.add_argument("--n_evals", type=int, default=10)
     args = parser.parse_args()
 
     sweep_config = {
@@ -174,4 +174,5 @@ if __name__ == "__main__":
     # modelParams.update(parameter_dict)
     sweep_id = wandb.sweep(sweep_config, project=args.project)
 
-    wandb.agent(sweep_id, train, count=5)
+    wandb.agent(sweep_id, train, count=100)
+

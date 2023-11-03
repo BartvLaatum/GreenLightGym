@@ -9,14 +9,14 @@ import numpy as np
 import pandas as pd
 
 from torch.optim import Adam
-from torch.nn.modules.activation import ReLU, SiLU, Tanh
+from torch.nn.modules.activation import ReLU, SiLU, Tanh, ELU
 from wandb.integration.sb3 import WandbCallback
 from stable_baselines3.common.vec_env import SubprocVecEnv, VecNormalize, VecMonitor, VecEnv
 
 from greenlight_gym.envs.greenlight import GreenLightBase, GreenLightCO2, GreenLightHeatCO2
 from greenlight_gym.common.callbacks import TensorboardCallback, SaveVecNormalizeCallback, BaseCallback
 
-ACTIVATION_FN = {"ReLU": ReLU, "SiLU": SiLU, "Tanh":Tanh}
+ACTIVATION_FN = {"ReLU": ReLU, "SiLU": SiLU, "Tanh":Tanh, "ELU": ELU}
 OPTIMIZER = {"ADAM": Adam}
 
 envs = {"GreenLightBase": GreenLightBase, "GreenLightCO2": GreenLightCO2, "GreenLightHeatCO2": GreenLightHeatCO2}
@@ -69,9 +69,33 @@ def loadParameters(env_id: str, path: str, filename: str, algorithm: str = None)
         modelParams = None
     return envBaseParams, envSpecificParams, modelParams, options, state_columns, action_columns
 
-def set_model_params(modelParams):
-    modelParams["policy_kwargs"]["activation_fn"] = ACTIVATION_FN[modelParams["policy_kwargs"]["activation_fn"]]
-    modelParams["policy_kwargs"]["optimizer_class"] = OPTIMIZER[modelParams["policy_kwargs"]["optimizer_class"]]
+def set_model_params(config):
+    modelParams = {}
+    policy_kwargs = {}
+    policy_kwargs['activation_fn'] = ACTIVATION_FN[config['activation_fn']]
+    policy_kwargs['activation_fn'] = ACTIVATION_FN[config['activation_fn']]
+    policy_kwargs['net_arch'] = {"pi": [config["pi_size"]]*2, "vf": [config["vf_size"]]*2}
+    policy_kwargs['optimizer_class'] = OPTIMIZER[config["optimizer_class"]]
+    policy_kwargs['optimizer_kwargs'] = config['optimizer_kwargs']
+    policy_kwargs['log_std_init'] = np.log(config['std_init'])
+
+    modelParams["policy_kwargs"] = policy_kwargs
+
+    modelParams['batch_size'] = config['batch_size']
+    modelParams['n_steps'] = config['n_steps']
+    modelParams['n_epochs'] = config['n_epochs']
+    modelParams['learning_rate'] = config['learning_rate']
+    modelParams['gamma'] = config['gamma']
+    modelParams['gae_lambda'] = config['gae_lambda']
+    modelParams['policy'] = config['policy']
+    modelParams['normalize_advantage'] = config['normalize_advantage']
+    modelParams['ent_coef'] = config['ent_coef']
+    modelParams['vf_coef'] = config['vf_coef']
+    modelParams['max_grad_norm'] = config['max_grad_norm']
+    modelParams['use_sde'] = config['use_sde']
+    modelParams['sde_sample_freq'] = config['sde_sample_freq']
+    modelParams['target_kl'] = None
+
     return modelParams
 
 
@@ -95,13 +119,14 @@ def wandb_init(modelParams: Dict[str, Any],
         "modelParams": {**modelParams},
         "envParams": {**envSpecificParams, **envParams}
     }
-
+    config_exclude_keys = []
     run = wandb.init(
         project=project,
         config=config,
         group=group,
         name=runname,
         sync_tensorboard=True,
+        config_exclude_keys=config_exclude_keys,
         job_type=job_type,
         save_code=save_code,
         resume=resume,

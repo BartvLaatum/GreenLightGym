@@ -46,7 +46,7 @@ def runExperiment(
             job_type=job_type,
             save_code=True
             )
-
+    # print(cofig)
     monitor_filename = None
     vec_norm_kwargs = {"norm_obs": True, "norm_reward": True, "clip_obs": 50_000}
 
@@ -79,12 +79,12 @@ def runExperiment(
 
 
     if save_model:
-        model_log_dir = f"trainData/{project}/models/{runname}/"
+        model_log_dir = f"train_data/{project}/models/{runname}/"
     else:
         model_log_dir = None
 
     if save_env:
-        env_log_dir = f"trainData/{project}/envs/{runname}/"
+        env_log_dir = f"train_data/{project}/envs/{runname}/"
     else:
         env_log_dir =None
 
@@ -107,7 +107,7 @@ def runExperiment(
         verbose=1
         )
 
-    tensorboard_log = f"trainData/{project}/logs/{runname}"
+    tensorboard_log = f"train_data/{project}/logs/{runname}"
 
     model = PPO(
         env=env,
