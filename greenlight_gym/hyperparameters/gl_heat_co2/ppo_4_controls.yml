@@ -12,15 +12,16 @@ GreenLightBase:
     dmfm: 0.0627            # dry matter fresh matter ratio
     h: 1                    # stepsize for the RK4 solver
     seasonLength: 1         # number of growing days
-    predHorizon: 0          # prediction horizon in days.
+    predHorizon: !!float 0          # prediction horizon in days.
     timeinterval: 900       # [s] time interval at what rate do we observe and control the environment
     controlSignals: ["uBoil", "uCO2", "uThScr", "uVent"] # list with all control inputs we aim to control/learn
     modelObsVars: 6         # number of variables we observe from the model
     weatherObsVars: 5       # number of weather variables we observe
     obsLow:  [15, 300, 60]  # lower bound for the observation space
     obsHigh: [35, 1000, 85] # upper bound for the observation space
-    rewardCoefficients: []  # coefficients for the costs function
-    penaltyCoefficients: [] # coefficients for the penalty function
+    training: True
+    # rewardCoefficients: []  # coefficients for the costs function
+    # penaltyCoefficients: [] # coefficients for the penalty function
 
 GreenLightHeatCO2:
     cLeaf: !!float 2.5e5        # [DW] mg/m2
@@ -62,5 +63,5 @@ PPO:
                   optimizer_class: ADAM,
                   optimizer_kwargs: {amsgrad: True},
                   activation_fn: Tanh,
-                  log_std_init: np.log(0.5) # Results in standard deviation of 1.0 since exp(0)=1
+                  log_std_init: np.log(0.5) # Results in standard deviation of 0.5 since exp(log(0.5)) = 0.5
           }

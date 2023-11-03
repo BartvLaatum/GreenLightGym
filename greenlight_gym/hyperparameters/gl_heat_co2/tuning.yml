@@ -1,0 +1,66 @@
+fixed_model_params:
+    policy: 
+        value: MlpPolicy
+    normalize_advantage:
+        value: True
+    ent_coef:
+        value: 0.0
+    vf_coef:
+        value: 0.5
+    max_grad_norm:
+        value: 0.5
+    use_sde:
+        value: False
+    sde_sample_freq:
+        value: -1
+    target_kl:
+        value: None
+    optimizer_class:
+        value: ADAM
+    optimizer_kwargs: 
+        value: 
+            amsgrad: True
+
+parameters:
+    n_steps: 
+        distribution: categorical
+        values: [96, 192, 288, 384, 480]
+    batch_size:
+        distribution: categorical
+        values: [32, 64, 128, 256, 512]
+    n_epochs:
+        distribution: q_uniform
+        q: 1
+        min: 1
+        max: 10
+    learning_rate: 
+            distribution: log_uniform_values
+            min: 1e-6
+            max: 1e-3
+    gamma: 
+        distribution: log_uniform_values
+        min: .9
+        max: 1.
+    gae_lambda: 
+        distribution: uniform
+        min: .9
+        max: 1.
+    clip_range:
+        distribution: categorical
+        values: [.1, .15, .2, .25, .3, .35, .4, .45, .5]
+    vf_size:
+        distribution: categorical
+        values: [16, 32, 64, 128, 256, 512]
+    pi_size:
+        distribution: categorical
+        values: [16, 32, 64, 128, 256, 512]
+    activation_fn:
+        distribution: categorical
+        values: [Tanh, SiLU, ELU]
+    std_init:
+        distribution: categorical
+        values: [.1, .5, 1., 2.]
+    predHorizon:
+        distribution: uniform
+        min: 0
+        max: 1
