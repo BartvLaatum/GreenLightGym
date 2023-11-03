@@ -2,7 +2,6 @@ import gymnasium as gym
 from gymnasium.spaces import Box
 
 import numpy as np
-import pandas as pd
 from typing import Optional, Tuple, Any, List, Dict
 from greenlight_gym.envs.greenlight_cy import GreenLight as GL
 from greenlight_gym.common.utils import loadWeatherData
@@ -35,8 +34,8 @@ class GreenLightBase(gym.Env):
                  weatherObsVars: int,        # number of variables we observe from the weather data
                  obsLow: List[float],       # lower bound for the observation space
                  obsHigh: List[float],      # upper bound for the observation space
-                 rewardCoefficients: List[float], # coefficients for the reward function
-                 penaltyCoefficients: List[float], # coefficients for the penalty function
+                #  rewardCoefficients: List[float], # coefficients for the reward function
+                #  penaltyCoefficients: List[float], # coefficients for the penalty function
                  options: Optional[Dict[str, Any]] = None, # options for the environment (e.g. specify starting date)
                  training: bool = True,     # whether we are training or testing
                  ) -> None:
@@ -67,8 +66,8 @@ class GreenLightBase(gym.Env):
         self.Np = int(predHorizon*c/timeinterval)           # the prediction horizon in timesteps for our weather predictions
         self.modelObsVars = modelObsVars
         self.weatherObsVars = weatherObsVars
-        self.rewardCoefficients = rewardCoefficients
-        self.penaltyCoefficients = penaltyCoefficients
+        # self.rewardCoefficients = rewardCoefficients
+        # self.penaltyCoefficients = penaltyCoefficients
         self.options = options
         self.training = training
 
@@ -155,7 +154,7 @@ class GreenLightBase(gym.Env):
             obs (np.ndarray): observation of the system variables
         """
         modelObs = self.GLModel.getObs()
-        weatherIdx = [self.GLModel.timestep*self.solverSteps] + [(ts + self.GLModel.timestep)*self.solverSteps for ts in range(1, self.Np)]
+        weatherIdx = [self.GLModel.timestep*self.solverSteps] + [(ts + self.GLModel.timestep)*self.solverSteps for ts in range(1, self.Np+1)]
         weatherObs = self.weatherData[weatherIdx, :self.weatherObsVars].flatten()
         return np.concatenate([modelObs, weatherObs], axis=0)
 
@@ -243,8 +242,8 @@ class GreenLightBase(gym.Env):
         self.terminated = False
 
         # max and min penalty for constraint violations
-        self.penmax = np.array([10, 3e5, 60])         # max penalty
-        self.penmin = np.zeros(self.obsLow.shape[0])    # min penalty
+        # self.penmax = np.array([10, 3e5, 60])         # max penalty
+        # self.penmin = np.zeros(self.obsLow.shape[0])    # min penalty
 
         return self._getObs(), {}
 
@@ -344,7 +343,7 @@ class GreenLightHeatCO2(GreenLightBase):
 
     def reset(self, seed: Optional[int] = None) -> Tuple[np.ndarray, Dict[str, Any]]:
         super().reset(seed=seed)
-
+        # print(self.startDay, self.growthYear)
         # set crop state to start of the season
         self.GLModel.setCropState(self.cLeaf, self.cStem, self.cFruit, self.tCanSum)
 

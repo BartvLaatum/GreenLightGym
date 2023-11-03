@@ -1,7 +1,9 @@
 import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-
+import yaml
 import argparse
+from copy import copy
+from os.path import join
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import wandb
 import numpy as np
@@ -30,7 +32,7 @@ def run_hp_experiment(
     actions2plot=None,
     run=None
     ):
-
+    print(modelParams)
     monitor_filename = None
     vec_norm_kwargs = {"norm_obs": True, "norm_reward": True, "clip_obs": 50_000}
 
@@ -76,7 +78,7 @@ def run_hp_experiment(
                                 state_columns=state_columns,
                                 states2plot=None,
                                 actions2plot=None,
-                                verbose=0),
+                                verbose=1),
                                 WandbCallback(verbose=1)
                                 ]
 
@@ -95,21 +97,25 @@ def run_hp_experiment(
         callback=callbacks
         )
 
-    # wandb.log({"eval/mean_reward": callbacks[0].best_mean_reward})
+    wandb.log({"eval/best_reward": callbacks[0].best_mean_reward})
+    print(callbacks[0].best_mean_reward)
 
 def train(config=None):
-    SEED = 666
-    with wandb.init(config=config, sync_tensorboard=True):
-
+    with wandb.init(config=config, sync_tensorboard=True) as run:
         config = wandb.config
-        config =  set_model_params(config)
+        modelParams =  set_model_params(config)
+        def_config = copy(modelParams)
+        def_config['predHorizon'] = config["predHorizon"]
+        envBaseParams["predHorizon"] = config["predHorizon"]
+
+        run.config.setdefaults(def_config)    
 
         run_hp_experiment(
             args.env_id,
             envBaseParams,
             envSpecificParams,
             options,
-            config,
+            modelParams,
             SEED,
             args.n_eval_episodes,
             args.numCpus,
@@ -120,28 +126,28 @@ def train(config=None):
             action_columns=action_columns,
             states2plot=None,
             actions2plot=None,
-            run=wandb.run,
+            run=run,
             )
  
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--env_id", type=str, default="GreenLightBase")
+    parser.add_argument("--env_id", type=str, default="GreenLightHeatCO2")
     parser.add_argument("--project", type=str, default="TestVecLoadSave")
     parser.add_argument("--group", type=str, default="testing-evaluation")
-    parser.add_argument("--HPfolder", type=str, default="GLBase/ppo")
-    parser.add_argument("--HPfilename", type=str, default="ppo.yml")
-    parser.add_argument("--total_timesteps", type=int, default=500_000)
+    parser.add_argument("--HPfolder", type=str, default="gl_heat_co2")
+    parser.add_argument("--HPfilename", type=str, default="ppo_4_controls.yml")
+    parser.add_argument("--total_timesteps", type=int, default=10_000)
     parser.add_argument("--n_eval_episodes", type=int, default=1)
-    parser.add_argument("--numCpus", type=int, default=4)
-    parser.add_argument("--n_evals", type=int, default=1)
+    parser.add_argument("--numCpus", type=int, default=12)
+    parser.add_argument("--n_evals", type=int, default=2)
     args = parser.parse_args()
 
     sweep_config = {
-        'method': 'bayes'
+        'method': 'random'
         }
 
     metric = {
-        'name': 'eval/mean_reward',
+        'name': 'eval/best_reward',
         'goal': 'maximize'
         }
 
@@ -155,95 +161,17 @@ if __name__ == "__main__":
     algorithm = "PPO"
     envBaseParams, envSpecificParams, modelParams, options, state_columns, action_columns =\
                             loadParameters(args.env_id, hpPath, args.HPfilename, algorithm)
+    
+    with open(join(hpPath, "tuning.yml"), "r") as f:
+        params = yaml.load(f, Loader=yaml.FullLoader)
 
-    sweep_config['parameters'] = modelParams
-    # sweep_config["early_terminate"] = {"type": "hyperband", "max_iter": args.total_timesteps, "s": 3}
+    parameters = params["fixed_model_params"]
+    parameters.update(params["parameters"])
 
-    fixed_model_params = {
-        'policy': {
-            'value': 'MlpPolicy'
-            },
-        'n_steps': {
-            'value': 128
-            },
-        'batch_size':{
-            'value': 64
-            },
-        'n_epochs':{
-            'value': 10
-            },
-        'gamma':{
-            'value': 0.99
-            },
-        'gae_lambda':{
-            'value': 0.95
-            },
-        'clip_range':{
-            'value': 0.2
-            },
-        'normalize_advantage':{
-            'value': True
-            },
-        'ent_coef':{
-            'value': 0.0
-            },
-        'vf_coef':{
-            'value': 0.5
-            },
-        'max_grad_norm':{
-            'value': 0.5
-            },
-        'use_sde':{
-            'value': False
-            },
-        'sde_sample_freq':{
-            'value': -1
-            },
-        'target_kl':{
-            'value': None
-            },
-        'policy_kwargs':{ 
-            'value': {
-                'net_arch': {
-                    'pi': [32, 32], 'vf': [256, 256]
-                    },
-                'optimizer_class': 'ADAM',
-                'optimizer_kwargs': {'amsgrad': True},
-                'activation_fn': 'Tanh'
-                }
-            },
-    }
+    sweep_config['parameters'] = parameters
 
-    parameter_dict = {
-        "learning_rate": {
-            "distribution": "log_uniform_values",
-            "min": 1e-6,
-            "max": 1e-3,
-            },
-        "gamma": {
-            "distribution": "log_uniform_values",
-            "min": 0.9,
-            "max": 1.0,
-        },
-        "gae_lambda": {
-            "distribution": "uniform",
-            "min": 0.9,
-            "max": 1.0,
-        },
-        'n_steps': {
-            "distribution": "q_log_uniform_values",
-            "q": 32,
-            "min": 64,
-            "max": 256,
-            },
-        'clip_range':{
-            "distribution": "categorical",
-            'values': [0.0, 0.1, 0.2, 0.3, 0.4, 0.5]
-            },
-    }
-
-    modelParams.update(fixed_model_params)
-    modelParams.update(parameter_dict)
+    # modelParams.update(fixed_model_params)
+    # modelParams.update(parameter_dict)
     sweep_id = wandb.sweep(sweep_config, project=args.project)
 
-    wandb.agent(sweep_id, train, count=30)
+    wandb.agent(sweep_id, train, count=5)
