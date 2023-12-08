@@ -14,8 +14,7 @@ from greenlight_gym.common.utils import days2date
 
 class Results(BaseCallback):
     def __init__(self,):
-        # self.actions_columns
-        # self.state_columns
+        # self.df = pd.DataFrame(columns=['time', 'co2 resource', ''])
         raise NotImplementedError
 
 class TensorboardCallback(EvalCallback):
@@ -82,7 +81,7 @@ class TensorboardCallback(EvalCallback):
 
             # Reset success rate buffer
             self._is_success_buffer = []
-            episode_rewards, episode_lengths, episode_actions, model_actions, episode_obs, time_vec = evaluate_policy(
+            episode_rewards, episode_lengths, episode_actions, model_actions, episode_obs, time_vec, episode_profits, episode_violations = evaluate_policy(
                 self.model,
                 self.eval_env,
                 n_eval_episodes=self.n_eval_episodes,
@@ -111,10 +110,12 @@ class TensorboardCallback(EvalCallback):
                     ep_lengths=self.evaluations_length,
                     **kwargs,
                 )
-
             mean_reward, std_reward = np.mean(episode_rewards), np.std(episode_rewards)
             meanActions = np.mean(episode_actions, axis=0)
-            meanObs = np.mean(episode_obs, axis=0)
+            # we cutoff the last observations because that already belongs to the reset of the next env.
+            meanObs = np.mean(episode_obs[:], axis=0)[:-1]
+            sum_violations = np.sum(episode_violations, axis=(1,2))
+            sum_profits = np.sum(episode_profits, axis=1)
 
             mean_ep_length, std_ep_length = np.mean(episode_lengths), np.std(episode_lengths)
             self.last_mean_reward = mean_reward
@@ -124,7 +125,8 @@ class TensorboardCallback(EvalCallback):
                 print(f"Episode length: {mean_ep_length:.2f} +/- {std_ep_length:.2f}")
             # Add to current Logger
             self.logger.record("eval/mean_reward", float(mean_reward))
-            self.logger.record("eval/mean_ep_length", mean_ep_length)
+            self.logger.record("eval/mean_profit", float(np.mean(sum_profits)))
+            self.logger.record("eval/violations", np.mean(sum_violations))
 
             if len(self._is_success_buffer) > 0:
                 success_rate = np.mean(self._is_success_buffer)
@@ -152,9 +154,13 @@ class TensorboardCallback(EvalCallback):
 
                     states = pd.DataFrame(data=meanObs[:, :obsVars], columns=self.state_columns)
                     actions = pd.DataFrame(data=meanActions, columns=self.action_columns)
-                    actions["Time"] = pd.to_datetime(days2date(time_vec[1:], "01-01-0001")).tz_localize("Europe/Amsterdam")
-                    states["Time"] = pd.to_datetime(days2date(time_vec[:], "01-01-0001")).tz_localize("Europe/Amsterdam")
+                    actions["Time"] = pd.to_datetime(days2date(time_vec[0, 1:], "01-01-0001")).tz_localize("Europe/Amsterdam")
+                    states["Time"] = pd.to_datetime(days2date(time_vec[0, :-1], "01-01-0001")).tz_localize("Europe/Amsterdam")
                     states["Cumulative harvest"] = states["Fruit harvest"].cumsum()
+                    states["Cumulative CO2"] = states["CO2 resource"].cumsum()
+                    states["Cumulative gas"] = states["Gas resource"].cumsum()
+                    states["Cumulative profit"] = episode_profits[0, :].cumsum()
+                    states["Cumulative violations"] = np.sum(episode_violations, axis=2).cumsum(axis=1)[0] # total penalty score over complete course
 
                     tableActions = wandb.Table(dataframe=actions)
                     tableStates = wandb.Table(dataframe=states)

@@ -1,4 +1,3 @@
-
 import warnings
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
@@ -87,16 +86,19 @@ def evaluate_policy(
     N = env.get_attr("N", [0])[0]
     nu = env.get_attr("nu", [0])[0]
 
+    episode_profits = np.zeros((n_envs, N))
+    episode_violations = np.zeros((n_envs, N, 3))
     episode_actions = np.zeros((n_envs, N, nu))
     episode_obs = np.zeros((n_envs, N+1, env.observation_space.shape[0]))
-    time_vec = np.zeros((N+1,))  # array to save time
+    time_vec = np.zeros((n_envs, N+1))  # array to save time
     model_actions = np.zeros((n_envs, N, env.action_space.shape[0]))
+    # metrics = np.zeros((n_envs, N, 10))
 
     observations = env.reset()
     states = None
     episode_starts = np.ones((env.num_envs,), dtype=bool)
 
-    time_vec[0] =  env.env_method("_getTime", indices=0)[0]
+    time_vec[:, 0] =  env.env_method("_getTime")
     episode_obs[:, 0, :] = env.unnormalize_obs(observations)[:, :]
 
     while (episode_counts < episode_count_targets).any():
@@ -111,7 +113,7 @@ def evaluate_policy(
         current_rewards += rewards
         current_lengths += 1
 
-        time_vec[timestep+1] =  env.env_method("_getTime", indices=0)[0]
+        time_vec[:, timestep+1] =  env.env_method("_getTime")
         episode_obs[:, timestep+1, :] = env.unnormalize_obs(new_observations)[:, :]
 
         for i in range(n_envs):
@@ -123,7 +125,9 @@ def evaluate_policy(
                 episode_starts[i] = done
 
                 episode_actions[i, timestep, :] += info["controls"]
-                
+                episode_profits[i, timestep] += info["profit"]
+                episode_violations[i, timestep] += info["penalty"]
+
                 if callback is not None:
                     callback(locals(), globals())
 
@@ -157,5 +161,5 @@ def evaluate_policy(
     if reward_threshold is not None:
         assert mean_reward > reward_threshold, "Mean reward below threshold: " f"{mean_reward:.2f} < {reward_threshold:.2f}"
     if return_episode_rewards:
-        return episode_rewards, episode_lengths, episode_actions, model_actions, episode_obs, time_vec
-    return mean_reward, std_reward, np.mean(episode_actions, axis=0), np.mean(model_actions, axis=0), np.mean(episode_obs, axis=0), time_vec
+        return episode_rewards, episode_lengths, episode_actions, model_actions, episode_obs, time_vec, episode_profits, episode_violations
+    return mean_reward, std_reward, np.mean(episode_actions, axis=0), np.mean(model_actions, axis=0), np.mean(episode_obs, axis=0), time_vec, episode_profits, episode_violations
