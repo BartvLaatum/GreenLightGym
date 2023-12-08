@@ -13,13 +13,13 @@ from torch.nn.modules.activation import ReLU, SiLU, Tanh, ELU
 from wandb.integration.sb3 import WandbCallback
 from stable_baselines3.common.vec_env import SubprocVecEnv, VecNormalize, VecMonitor, VecEnv
 
-from greenlight_gym.envs.greenlight import GreenLightBase, GreenLightCO2, GreenLightHeatCO2
+from greenlight_gym.envs.greenlight import GreenLightEnv, GreenLightCO2, GreenLightHeatCO2
 from greenlight_gym.common.callbacks import TensorboardCallback, SaveVecNormalizeCallback, BaseCallback
 
 ACTIVATION_FN = {"ReLU": ReLU, "SiLU": SiLU, "Tanh":Tanh, "ELU": ELU}
 OPTIMIZER = {"ADAM": Adam}
 
-envs = {"GreenLightBase": GreenLightBase, "GreenLightCO2": GreenLightCO2, "GreenLightHeatCO2": GreenLightHeatCO2}
+envs = {"GreenLightEnv": GreenLightEnv, "GreenLightCO2": GreenLightCO2, "GreenLightHeatCO2": GreenLightHeatCO2}
 
 def make_env(env_id, rank, seed, kwargs, kwargsSpecific, options, eval_env):
     """
@@ -39,16 +39,56 @@ def make_env(env_id, rank, seed, kwargs, kwargsSpecific, options, eval_env):
         return env
     return _init
 
+def load_model_params(algorithm: str, path: str, env_name: str) -> Dict[str, Any]:
+
+    with open(join(path, algorithm + ".yml"), "r") as f:
+        params = yaml.load(f, Loader=yaml.FullLoader)
+
+    model_params = params[env_name]
+
+    if "policy_kwargs" in model_params.keys():
+        model_params["policy_kwargs"]["activation_fn"] = \
+            ACTIVATION_FN[model_params["policy_kwargs"]["activation_fn"]]
+        model_params["policy_kwargs"]["optimizer_class"] = \
+            OPTIMIZER[model_params["policy_kwargs"]["optimizer_class"]]
+        model_params["policy_kwargs"]["log_std_init"] = \
+            eval(model_params["policy_kwargs"]["log_std_init"])
+    return model_params
+
+def load_env_params(env_id: str, path: str, filename: str) -> Tuple[Dict, Dict, Dict, Dict, Dict]:
+    """"
+    Function that loads in the environment variables. 
+    Returns the variables for the general parent GreenLightEnv class,
+    if one aims to use specified environment these are also returned.
+    Also, options, action and state columns are returned.
+    """
+    with open(join(path, filename + ".yml"), "r") as f:
+        params = yaml.load(f, Loader=yaml.FullLoader)
+    if env_id != "GreenLightEnv":
+        env_specific_params = params[env_id]
+    else:
+        env_specific_params = {}
+
+    env_base_params = params["GreenLightEnv"]
+
+    # options dictionary specifying the evaluation environment 
+    options = params["options"]
+
+    # state and action column names used for plotting and saving data
+    state_columns = params["state_columns"]
+    action_columns = params["action_columns"]
+    return env_base_params, env_specific_params, options, state_columns, action_columns
+
 def loadParameters(env_id: str, path: str, filename: str, algorithm: str = None):
     with open(join(path, filename), "r") as f:
         params = yaml.load(f, Loader=yaml.FullLoader)
     
-    if env_id != "GreenLightBase":
+    if env_id != "GreenLightEnv":
         envSpecificParams = params[env_id]
     else:
         envSpecificParams = {}
 
-    envBaseParams = params["GreenLightBase"]
+    envBaseParams = params["GreenLightEnv"]
     options = params["options"]
 
     state_columns = params["state_columns"]
@@ -56,21 +96,21 @@ def loadParameters(env_id: str, path: str, filename: str, algorithm: str = None)
 
     
     if algorithm is not None:
-        modelParams = params[algorithm]
+        model_params = params[algorithm]
 
-        if "policy_kwargs" in modelParams.keys():
-            modelParams["policy_kwargs"]["activation_fn"] = \
-                ACTIVATION_FN[modelParams["policy_kwargs"]["activation_fn"]]
-            modelParams["policy_kwargs"]["optimizer_class"] = \
-                OPTIMIZER[modelParams["policy_kwargs"]["optimizer_class"]]
-            modelParams["policy_kwargs"]["log_std_init"] = \
-                eval(modelParams["policy_kwargs"]["log_std_init"])
+        if "policy_kwargs" in model_params.keys():
+            model_params["policy_kwargs"]["activation_fn"] = \
+                ACTIVATION_FN[model_params["policy_kwargs"]["activation_fn"]]
+            model_params["policy_kwargs"]["optimizer_class"] = \
+                OPTIMIZER[model_params["policy_kwargs"]["optimizer_class"]]
+            model_params["policy_kwargs"]["log_std_init"] = \
+                eval(model_params["policy_kwargs"]["log_std_init"])
     else:
-        modelParams = None
-    return envBaseParams, envSpecificParams, modelParams, options, state_columns, action_columns
+        model_params = None
+    return envBaseParams, envSpecificParams, model_params, options, state_columns, action_columns
 
 def set_model_params(config):
-    modelParams = {}
+    model_params = {}
     policy_kwargs = {}
     policy_kwargs['activation_fn'] = ACTIVATION_FN[config['activation_fn']]
     policy_kwargs['activation_fn'] = ACTIVATION_FN[config['activation_fn']]
@@ -79,27 +119,27 @@ def set_model_params(config):
     policy_kwargs['optimizer_kwargs'] = config['optimizer_kwargs']
     policy_kwargs['log_std_init'] = np.log(config['std_init'])
 
-    modelParams["policy_kwargs"] = policy_kwargs
+    model_params["policy_kwargs"] = policy_kwargs
 
-    modelParams['batch_size'] = config['batch_size']
-    modelParams['n_steps'] = config['n_steps']
-    modelParams['n_epochs'] = config['n_epochs']
-    modelParams['learning_rate'] = config['learning_rate']
-    modelParams['gamma'] = config['gamma']
-    modelParams['gae_lambda'] = config['gae_lambda']
-    modelParams['policy'] = config['policy']
-    modelParams['normalize_advantage'] = config['normalize_advantage']
-    modelParams['ent_coef'] = config['ent_coef']
-    modelParams['vf_coef'] = config['vf_coef']
-    modelParams['max_grad_norm'] = config['max_grad_norm']
-    modelParams['use_sde'] = config['use_sde']
-    modelParams['sde_sample_freq'] = config['sde_sample_freq']
-    modelParams['target_kl'] = None
+    model_params['batch_size'] = config['batch_size']
+    model_params['n_steps'] = config['n_steps']
+    model_params['n_epochs'] = config['n_epochs']
+    model_params['learning_rate'] = config['learning_rate']
+    model_params['gamma'] = config['gamma']
+    model_params['gae_lambda'] = config['gae_lambda']
+    model_params['policy'] = config['policy']
+    model_params['normalize_advantage'] = config['normalize_advantage']
+    model_params['ent_coef'] = config['ent_coef']
+    model_params['vf_coef'] = config['vf_coef']
+    model_params['max_grad_norm'] = config['max_grad_norm']
+    model_params['use_sde'] = config['use_sde']
+    model_params['sde_sample_freq'] = config['sde_sample_freq']
+    model_params['target_kl'] = None
 
-    return modelParams
+    return model_params
 
 
-def wandb_init(modelParams: Dict[str, Any],
+def wandb_init(model_params: Dict[str, Any],
                envParams: Dict[str, Any],
                envSpecificParams: Dict[str, Any],
                timesteps: int,
@@ -113,10 +153,10 @@ def wandb_init(modelParams: Dict[str, Any],
                ):
 
     config= {
-        "policy": modelParams["policy"],
+        "policy": model_params["policy"],
         "total_timesteps": timesteps,
         "seed": SEED,
-        "modelParams": {**modelParams},
+        "model_params": {**model_params},
         "envParams": {**envSpecificParams, **envParams}
     }
     config_exclude_keys = []
@@ -138,7 +178,7 @@ def make_vec_env(env_id: str,
                  envSpecificParams: Dict[str, Any],
                  options: Dict[str, Any],
                  seed: int,
-                 numCpus: int,
+                 num_cpus: int,
                  monitor_filename: str | None = None,
                  vec_norm_kwargs: Dict[str, Any] | None = None,
                  eval_env: bool = False) -> VecEnv:
@@ -149,7 +189,7 @@ def make_vec_env(env_id: str,
     if monitor_filename is not None and not os.path.exists(os.path.dirname(monitor_filename)):
         os.makedirs(os.path.dirname(monitor_filename), exist_ok=True)
 
-    env = SubprocVecEnv([make_env(env_id, rank, seed, envParams, envSpecificParams, options, eval_env=eval_env) for rank in range(numCpus)])
+    env = SubprocVecEnv([make_env(env_id, rank, seed, envParams, envSpecificParams, options, eval_env=eval_env) for rank in range(num_cpus)])
     env = VecMonitor(env, filename=monitor_filename)
     env = VecNormalize(env, **vec_norm_kwargs)
     env.seed(seed=seed)

@@ -9,17 +9,17 @@ import numpy as np
 import matplotlib.pyplot as plt
 from stable_baselines3 import PPO
 
-from greenlight_gym.experiments.utils import loadParameters, wandb_init, make_vec_env, create_callbacks
+from greenlight_gym.experiments.utils import load_env_params, load_model_params, wandb_init, make_vec_env, create_callbacks
 
 def runExperiment(
     env_id,
-    envBaseParams,
-    envSpecificParams,
+    env_base_params,
+    env_specific_params,
     options,
-    modelParams,
+    model_params,
     seed,
     n_eval_episodes,
-    numCpus, 
+    num_cpus, 
     project,
     group,
     total_timesteps,
@@ -35,9 +35,9 @@ def runExperiment(
     ):
 
     run, config = wandb_init(
-            modelParams,
-            envBaseParams,
-            envSpecificParams,
+            model_params,
+            env_base_params,
+            env_specific_params,
             total_timesteps,
             seed,
             project=project,
@@ -52,22 +52,22 @@ def runExperiment(
 
     env = make_vec_env(
         env_id,
-        envBaseParams,
-        envSpecificParams,
+        env_base_params,
+        env_specific_params,
         options,
         seed=seed,
-        numCpus=numCpus,
+        num_cpus=num_cpus,
         monitor_filename=monitor_filename,
         vec_norm_kwargs=vec_norm_kwargs
         )
 
     eval_env = make_vec_env(
         env_id,
-        envBaseParams,
-        envSpecificParams,
+        env_base_params,
+        env_specific_params,
         options,
         seed=seed,
-        numCpus=1,
+        num_cpus=1,
         monitor_filename=monitor_filename,
         vec_norm_kwargs=vec_norm_kwargs,
         eval_env=True,
@@ -76,7 +76,6 @@ def runExperiment(
     if not runname:
         runname = run.name
     # exit()
-
 
     if save_model:
         model_log_dir = f"train_data/{project}/models/{runname}/"
@@ -88,7 +87,7 @@ def runExperiment(
     else:
         env_log_dir =None
 
-    eval_freq = total_timesteps//n_evals//numCpus
+    eval_freq = total_timesteps//n_evals//num_cpus
     save_name = "vec_norm"
 
     callbacks = create_callbacks(
@@ -113,7 +112,7 @@ def runExperiment(
         env=env,
         seed=seed,
         verbose=0,
-        **config["modelParams"],
+        **config["model_params"],
         tensorboard_log=tensorboard_log
         )
 
@@ -132,38 +131,39 @@ def runExperiment(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--env_id", type=str, default="GreenLightHeatCO2")
-    parser.add_argument("--project", type=str, default="TestVecLoadSave")
+    parser.add_argument("--project", type=str, default="testing")
     parser.add_argument("--group", type=str, default="group1")
-    parser.add_argument("--HPfolder", type=str, default="gl_heat_co2")
-    parser.add_argument("--HPfilename", type=str, default="ppo_4_controls.yml")
+    parser.add_argument("--config_name", type=str, default="four_controls")
     parser.add_argument("--total_timesteps", type=int, default=500_000)
     parser.add_argument("--n_eval_episodes", type=int, default=1)
-    parser.add_argument("--numCpus", type=int, default=12)
-    parser.add_argument("--n_evals", type=int, default=10)
+    parser.add_argument("--num_cpus", type=int, default=12)
+    parser.add_argument("--n_evals", type=int, default=1000)
     parser.add_argument("--seed", type=int, default=666)
     args = parser.parse_args()
 
     # check cpus available
-    assert args.numCpus <= cpu_count(), \
-        f"Number of CPUs requested ({args.numCpus}) is greater than available ({cpu_count()})"
+    assert args.num_cpus <= cpu_count(), \
+        f"Number of CPUs requested ({args.num_cpus}) is greater than available ({cpu_count()})"
 
-    hpPath = f"hyperparameters/{args.HPfolder}/"
-    states2plot = ["Air Temperature","CO2 concentration", "Humidity", "Fruit harvest", "PAR", "Cumulative harvest"]
+    env_config_path = f"configs/envs/"
+    model_config_path = f"configs/algorithms/"
+
+    states2plot = ["Air Temperature","CO2 concentration", "Humidity", "Fruit harvest", "PAR", "Cumulative harvest", "Cumulative CO2", "Cumulative gas", "Cumulative profit", "Cumulative violations"]
     actions2plot = ["uBoil", "uCO2", "uThScr", "uVent", "uLamp"]
 
-    algorithm = "PPO"
-    envBaseParams, envSpecificParams, modelParams, options, state_columns, action_columns =\
-                            loadParameters(args.env_id, hpPath, args.HPfilename, algorithm)
+    algorithm = "ppo"
+    env_base_params, env_specific_params, options, state_columns, action_columns = load_env_params(args.env_id, env_config_path, args.config_name)
+    model_params = load_model_params(algorithm, model_config_path, args.config_name)
 
     job_type = f"seed-{args.seed}"
     runExperiment(args.env_id,
-                    envBaseParams,
-                    envSpecificParams, 
+                    env_base_params,
+                    env_specific_params, 
                     options,
-                    modelParams,
+                    model_params,
                     args.seed,
                     args.n_eval_episodes,
-                    args.numCpus, 
+                    args.num_cpus, 
                     args.project,
                     args.group,
                     args.total_timesteps,

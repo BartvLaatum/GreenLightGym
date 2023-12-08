@@ -1,10 +1,10 @@
 import argparse
 import pandas as pd
 import matplotlib.pyplot as plt
-from RLGreenLight.visualisations.createFigs import createDistFig, plotDistributions
+from greenlight_gym.visualisations.createFigs import createDistFig, plotDistributions
 from stable_baselines3.common.vec_env import VecNormalize
-from RLGreenLight.experiments.utils import loadParameters, make_vec_env
-from RLGreenLight.environments.GreenLight import GreenLightBase
+from greenlight_gym.experiments.utils import loadParameters, make_vec_env
+from greenlight_gym.envs.greenlight import GreenLightBase
 import numpy as np
 
 def load_env(envParams, options):

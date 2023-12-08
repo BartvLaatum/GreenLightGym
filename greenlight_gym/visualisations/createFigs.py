@@ -136,7 +136,6 @@ def create_state_fig(time: np.datetime64, states2plot: str,
     return fig, axes 
 
 def plot_aggregated_trajectories(ax: plt.Axes, aggregated_df: pd.DataFrame, unique_groups: np.ndarray, state: str, labels: List, colors: np.ndarray) -> plt.Axes:
-
     for i, group in enumerate(unique_groups):
         subset = aggregated_df[aggregated_df["Group"] == group]
         ax.plot(subset["Time"], subset[state + " mean"], label=r"k$_{CO_2}$"+f" = {labels[i]:.1e}", color=colors[i])

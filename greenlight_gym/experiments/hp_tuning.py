@@ -22,7 +22,7 @@ def run_hp_experiment(
     modelParams,
     SEED,
     n_eval_episodes,
-    numCpus,
+    n_envs,
     project,
     total_timesteps,
     n_evals,
@@ -32,7 +32,7 @@ def run_hp_experiment(
     actions2plot=None,
     run=None
     ):
-    print(modelParams)
+
     monitor_filename = None
     vec_norm_kwargs = {"norm_obs": True, "norm_reward": True, "clip_obs": 50_000}
 
@@ -42,15 +42,15 @@ def run_hp_experiment(
         envSpecificParams,
         options,
         seed=SEED,
-        numCpus=2,
+        numCpus=1,
         monitor_filename=monitor_filename,
         vec_norm_kwargs=vec_norm_kwargs,
         eval_env=True,
         )
 
-    env_log_dir = f"trainData/{project}/envs/{run.name}/"
-    model_log_dir = f"trainData/{project}/models/{run.name}/"
-    eval_freq = total_timesteps//n_evals//numCpus
+    env_log_dir = f"train_data/{project}/envs/{run.name}/"
+    model_log_dir = f"train_data/{project}/models/{run.name}/"
+    eval_freq = total_timesteps//n_evals//n_envs
 
     save_name = "vec_norm"
     env = make_vec_env(
@@ -59,7 +59,7 @@ def run_hp_experiment(
             envSpecificParams,
             options,
             seed=SEED,
-            numCpus=args.numCpus,
+            numCpus=n_envs,
             monitor_filename=monitor_filename,
             vec_norm_kwargs=vec_norm_kwargs
             )
@@ -82,7 +82,7 @@ def run_hp_experiment(
                                 WandbCallback(verbose=1)
                                 ]
 
-    tensorboard_log = f"trainData/{project}/logs/{run.name}"
+    tensorboard_log = f"train_data/{project}/logs/{run.name}"
 
     model = PPO(
         env=env,
@@ -96,9 +96,6 @@ def run_hp_experiment(
         total_timesteps=total_timesteps,
         callback=callbacks
         )
-
-    wandb.log({"eval/best_reward": callbacks[0].best_mean_reward})
-    print(callbacks[0].best_mean_reward)
 
 def train(config=None):
     with wandb.init(config=config, sync_tensorboard=True) as run:
@@ -118,7 +115,7 @@ def train(config=None):
             modelParams,
             SEED,
             args.n_eval_episodes,
-            args.numCpus,
+            config["n_envs"],
             args.project,
             total_timesteps=args.total_timesteps,
             n_evals=args.n_evals,
@@ -136,22 +133,28 @@ if __name__ == "__main__":
     parser.add_argument("--group", type=str, default="testing-evaluation")
     parser.add_argument("--HPfolder", type=str, default="gl_heat_co2")
     parser.add_argument("--HPfilename", type=str, default="ppo_4_controls.yml")
+    parser.add_argument("--tuning_file", type=str, default="tuning.yml")
     parser.add_argument("--total_timesteps", type=int, default=1_000_000)
     parser.add_argument("--n_eval_episodes", type=int, default=1)
-    parser.add_argument("--numCpus", type=int, default=12)
     parser.add_argument("--n_evals", type=int, default=10)
     args = parser.parse_args()
 
     sweep_config = {
-        'method': 'random'
+        'method': 'bayes'
         }
 
     metric = {
-        'name': 'eval/best_reward',
+        'name': 'rollout/ep_rew_mean',
         'goal': 'maximize'
         }
 
+    early_terminate = {
+        "type": "hyperband",
+        "min_iter": 50,
+        "eta": 3,
+        }
     sweep_config['metric'] = metric
+    sweep_config["early_terminate"] = early_terminate
 
     hpPath = f"hyperparameters/{args.HPfolder}/"
     states2plot = ["Air Temperature","CO2 concentration", "Humidity", "Fruit harvest", "PAR", "Cumulative harvest"]
@@ -161,18 +164,13 @@ if __name__ == "__main__":
     algorithm = "PPO"
     envBaseParams, envSpecificParams, modelParams, options, state_columns, action_columns =\
                             loadParameters(args.env_id, hpPath, args.HPfilename, algorithm)
-    
-    with open(join(hpPath, "tuning.yml"), "r") as f:
+
+    with open(join(hpPath, args.tuning_file), "r") as f:
         params = yaml.load(f, Loader=yaml.FullLoader)
 
-    parameters = params["fixed_model_params"]
-    parameters.update(params["parameters"])
+    parameters = params["parameters"]
 
     sweep_config['parameters'] = parameters
 
-    # modelParams.update(fixed_model_params)
-    # modelParams.update(parameter_dict)
     sweep_id = wandb.sweep(sweep_config, project=args.project)
-
     wandb.agent(sweep_id, train, count=100)
-

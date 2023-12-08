@@ -1,5 +1,5 @@
 import pandas as pd
-from RLGreenLight.visualisations import createFigs
+from greenlight_gym.visualisations import createFigs
 from matplotlib import pyplot as plt
 import argparse
 import os

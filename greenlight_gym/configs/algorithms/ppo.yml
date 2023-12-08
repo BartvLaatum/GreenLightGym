@@ -1,0 +1,25 @@
+# tuned
+four_controls:
+  policy: MlpPolicy
+  learning_rate: !!float 2.231e-4   
+  n_steps: 480      # we update after n_steps calls of step() function. in the case of 10 envs --> 1280 timesteps are taken (equals to 10 days)
+  batch_size: 64
+  n_epochs: 7 
+  gamma: 0.95
+  gae_lambda: 0.95
+  gae_lambda: 0.95
+  clip_range: 0.3
+  normalize_advantage: True
+  ent_coef: 0.01
+  vf_coef: 0.5
+  max_grad_norm: 0.5
+  use_sde: False
+  sde_sample_freq: -1
+  target_kl: null
+
+  policy_kwargs: {net_arch: {pi: [256, 256], vf: [256, 256]},
+                  optimizer_class: ADAM,
+                  optimizer_kwargs: {amsgrad: True},
+                  activation_fn: ELU,
+                  log_std_init: np.log(0.5) # Results in standard deviation of 0.5 since exp(log(0.5)) = 0.5
+          }
