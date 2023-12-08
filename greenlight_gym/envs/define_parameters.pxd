@@ -278,18 +278,20 @@ cdef packed struct Parameters:
     char etaIntLampPar    # fraction of interlight lamp input converted to PAR
     char etaIntLampNir    # fraction of interlight lamp input converted to NIR
     char aIntLamp         # interlight lamp area
-    char epsIntLamp      # emissivity of interlight lamp
-    char thetaIntLampMax  # Maximum intensity of interlight lamps
-    char zetaIntLampPar   # J to umol conversion of PAR output of interlight lamp
-    char cHecIntLampAir   # heat exchange coefficient of interlight lamp
-    char tauIntLampFir    # transmissivity of interlight lamp later to FIR
-    double k1IntPar           # PAR extinction coefficient of the canopy
-    double k2IntPar           # PAR extinction coefficient of the canopy for light reflected from the floor
-    double kIntNir            # NIR extinction coefficient of the canopy
-    double kIntFir            # FIR extinction coefficient of the canopy
+    char epsIntLamp     # emissivity of interlight lamp
+    char thetaIntLampMax    # Maximum intensity of interlight lamps
+    char zetaIntLampPar # J to umol conversion of PAR output of interlight lamp
+    char cHecIntLampAir # heat exchange coefficient of interlight lamp
+    char tauIntLampFir  # transmissivity of interlight lamp later to FIR
+    double k1IntPar     # PAR extinction coefficient of the canopy
+    double k2IntPar     # PAR extinction coefficient of the canopy for light reflected from the floor
+    double kIntNir      # NIR extinction coefficient of the canopy
+    double kIntFir      # FIR extinction coefficient of the canopy
 
-    float cLeakTop          # Fraction of leakage ventilation going from the top 
-    double minWind          #  wind speed where the effect of wind on leakage begins
+    float cLeakTop      # Fraction of leakage ventilation going from the top 
+    double minWind      #  wind speed where the effect of wind on leakage begins
+
+    double dmfm         # Dry matter to Fresh matter conversion rate
 
 # Initialize the values of a Parameters struct
 cdef inline void initParameters(Parameters* p, char noLamps, char ledLamps, char hpsLamps, char intLamps):
@@ -671,4 +673,4 @@ cdef inline void initParameters(Parameters* p, char noLamps, char ledLamps, char
     p.cLeakTop = 0.5
     p.minWind = 0.25
 
-    # p.dmfm = 0.0627
+    p.dmfm = 0.0627

@@ -330,11 +330,11 @@ cdef class GreenLight:
         np_obs[0] = self.x[2]                               # Air temperature in main compartment [deg C]
         np_obs[1] = self.a.co2InPpm                         # CO2 concentration in main air compartment [ppm]
         np_obs[2] = self.a.rhIn                             # Relative humidity in main air compartment [%]
-        np_obs[3] = self.x[25]*1e-6                         # Fruit dry matter weight [kg{CH20} m^{-2}]
-        np_obs[4] = self.a.mcFruitHarSum*1e-6               # Harvested fruit in dry matter weight [kg{CH20} m^{-2}]
+        np_obs[3] = self.x[25] * 1e-6                       # Fruit dry matter weight [kg{CH20} m^{-2}]
+        np_obs[4] = self.a.mcFruitHarSum * 1e-6             # Harvested fruit in dry matter weight [kg{CH20} m^{-2}]
         np_obs[5] = self.a.rParGhSun + self.a.rParGhLamp    # PAR radiation above the canopy [W m^{-2}]
-        # np_obs[6] = self.a.timeOfDay                        # Time of day [h]
-        # np_obs[7] = self.a.dayOfYear                        # day of the year [d]
+        # np_obs[6] = self.a.timeOfDay                      # Time of day [h]
+        # np_obs[7] = self.a.dayOfYear                      # day of the year [d]
         np_obs[6] = self.a.mcExtAir                         # CO2 injection rate [mg m^-2 s^-1]
         np_obs[7] = self.a.qLampIn                          # electrical power of lamps [W m^-2]
         np_obs[8] = self.a.hBoilPipe                        # heat demand of greenhouse [W m^-2]
@@ -358,7 +358,7 @@ cdef class GreenLight:
 
     @property
     def maxHarvest(self):
-        # returns the maximum fruit harvest rate [mg m^-2 s^-1]
+        # returns the maximum fruit DM harvest rate [mg m^-2 s^-1]
         return self.p.rgFruit
 
     @property
