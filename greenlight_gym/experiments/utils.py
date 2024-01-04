@@ -13,13 +13,13 @@ from torch.nn.modules.activation import ReLU, SiLU, Tanh, ELU
 from wandb.integration.sb3 import WandbCallback
 from stable_baselines3.common.vec_env import SubprocVecEnv, VecNormalize, VecMonitor, VecEnv
 
-from greenlight_gym.envs.greenlight import GreenLightEnv, GreenLightCO2, GreenLightHeatCO2
+from greenlight_gym.envs.greenlight import GreenLightEnv, GreenLightHeatCO2
 from greenlight_gym.common.callbacks import TensorboardCallback, SaveVecNormalizeCallback, BaseCallback
 
 ACTIVATION_FN = {"ReLU": ReLU, "SiLU": SiLU, "Tanh":Tanh, "ELU": ELU}
 OPTIMIZER = {"ADAM": Adam}
 
-envs = {"GreenLightEnv": GreenLightEnv, "GreenLightCO2": GreenLightCO2, "GreenLightHeatCO2": GreenLightHeatCO2}
+envs = {"GreenLightEnv": GreenLightEnv, "GreenLightHeatCO2": GreenLightHeatCO2}
 
 def make_env(env_id, rank, seed, kwargs, kwargsSpecific, options, eval_env):
     """

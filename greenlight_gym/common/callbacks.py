@@ -150,9 +150,9 @@ class TensorboardCallback(EvalCallback):
 
                 # plot if new best
                 if self.run:
-                    obsVars = self.eval_env.get_attr("modelObsVars", [0])[0]
-
-                    states = pd.DataFrame(data=meanObs[:, :obsVars], columns=self.state_columns)
+                    observer = self.eval_env.get_attr("observations", [0])[0]
+                    n_obs_model_vars = len(observer.model_obs_vars)
+                    states = pd.DataFrame(data=meanObs[:, :n_obs_model_vars], columns=self.state_columns)
                     actions = pd.DataFrame(data=meanActions, columns=self.action_columns)
                     actions["Time"] = pd.to_datetime(days2date(time_vec[0, 1:], "01-01-0001")).tz_localize("Europe/Amsterdam")
                     states["Time"] = pd.to_datetime(days2date(time_vec[0, :-1], "01-01-0001")).tz_localize("Europe/Amsterdam")

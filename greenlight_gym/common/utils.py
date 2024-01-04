@@ -259,7 +259,7 @@ def vaporDens2pres(temp, vaporDens):
     rh = vaporDens/rh2vaporDens(temp, 100) # relative humidity [0-1]
         
     satP = p[0]*np.exp(p[2]*temp/(temp+p[1]))
-        # Saturation vapor pressure of air in given temperature [Pa]
+    # Saturation vapor pressure of air in given temperature [Pa]
     
     return satP*rh
 

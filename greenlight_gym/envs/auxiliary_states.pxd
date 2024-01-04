@@ -395,46 +395,60 @@ cdef inline double rhoDn(double tau2, double rho1Dn, double rho2Up, double rho2D
     return rho2Dn + (tau2**2*rho1Dn)/(1-rho1Dn*rho2Up)
 
 cdef inline double rad2degrees(double degrees):
+    """
+    Convert radian to degrees.
+    """
     return degrees*M_PI / 180.0
 
 cdef inline double fir(double a1, double eps1, double eps2, double f12, double t1, double t2, double sigma):
-    # Net far infrared flux from 1 to 2 [W m^{-2}]
-    # Equation 37 [1]
-    
-    # sigma = 5.67e-8 we have this one in the defineParameters.pxd file
-    # kelvin = 273.15
-
+    """
+    Net far infrared flux from 1 to 2 [W m^{-2}]
+    Equation 37 [1]
+    sigma = 5.67e-8 we have this one in the defineParameters.pxd file
+    kelvin = 273.15
+    """
     return a1 * eps1 * eps2 * f12 * sigma * ((t1+273.15)**4 - (t2+273.15)**4)
 
 cdef inline double sensible(double hec, double t1, double t2):
-    # Sensible heat flux from 1 to 2 [W m^{-2}]
-    # Equation 38 [1]
+    """
+    Sensible heat flux from 1 to 2 [W m^{-2}]
+    Equation 38 [1]
+    """
     return fabs(hec) * (t1 - t2)
 
 cdef inline double airMv(double f12, double vp1, double vp2, double t1, double t2):
-# Vapor flux accompanying an air flux [kg m^{-2} s^{-1}]
-# Equation 44 [1]
-    # mWater = 18
-    # r = 8.314e3
-	# kelvin = 273.15
-
- return (18/8.314e3)*fabs(f12) * (vp1/(t1+273.15) - vp2/(t2+273.15))
+    """
+    Vapor flux accompanying an air flux [kg m^{-2} s^{-1}]
+    Equation 44 [1]
+    mWater = 18
+    r = 8.314e3
+	kelvin = 273.15
+    """
+    return (18/8.314e3)*fabs(f12) * (vp1/(t1+273.15) - vp2/(t2+273.15))
 
 cdef inline double smoothHar(double processVar, double cutOff, double smooth, double maxRate):
-    # Define a smooth function for harvesting (leaves, fruit, etc)
-    # processVar - the DynamicElement to be controlled
-    # cutoff     - the value at which the processVar should be harvested
-    # smooth     - smoothing factor. The rate will go from 0 to max at
-    #              a range with approximately this width
-    # maxRate    - the maximum harvest rate
+    """
+    Define a smooth function for harvesting (leaves, fruit, etc)
+    processVar - the DynamicElement to be controlled
+    cutoff     - the value at which the processVar should be harvested
+    smooth     - smoothing factor. The rate will go from 0 to max at
+                 a range with approximately this width
+    maxRate    - the maximum harvest rate
+    """
     return maxRate / (1 + exp(-(processVar-cutOff)*2 * log(100)/smooth))
 
 cdef inline double airMc(double f12, double c1, double c2):
-    # Co2 flux accompanying an air flux [kg m^{-2} s^{-1}]
-    # Equation 45 [1]
+    """
+    Co2 flux accompanying an air flux [kg m^{-2} s^{-1}]
+    Equation 45 [1]
+    """
     return fabs(f12)*(c1-c2)
 
 cdef inline void initAuxStates(AuxiliaryStates* a, double* x):
+    """
+    Function that initialises the auxiliary states,
+    which we require the observe during initialising the environment.
+    """
 
     a.timeOfDay = 24*(x[27] - floor(x[27]))     # hours since midnight time of day [h]
     a.dayOfYear = x[27] % 365.2425              # days since start of the year [d]

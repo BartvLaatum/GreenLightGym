@@ -62,37 +62,37 @@ cdef packed struct Parameters:
     char hElevation         # Altitude of greenhouse
 
     short aRoof             # Roof ventilation area
-    double hVent             # Vertical dimension of single ventilation opening
+    double hVent            # Vertical dimension of single ventilation opening
     char etaInsScr          # Porosity of the insect screen
     char aSide              # Side ventilation area
     float cDgh              # Ventilation discharge coefficient
-    double cLeakage          # Greenhouse leakage coefficient
-    double cWgh              # Ventilation global wind pressure coefficient
+    double cLeakage         # Greenhouse leakage coefficient
+    double cWgh             # Ventilation global wind pressure coefficient
     char hSideRoof          # Vertical distance between mid points of side wall and roof ventilation opening
 
-    double epsRfFir          # FIR emission coefficient of the roof
+    double epsRfFir         # FIR emission coefficient of the roof
     short rhoRf             # Density of the roof layer
-    double rhoRfNir          # NIR reflection coefficient of the roof
-    double rhoRfPar          # PAR reflection coefficient of the roof
-    double rhoRfFir          # FIR reflection coefficient of the roof
-    double tauRfNir          # NIR transmission coefficient of the roof
-    double tauRfPar          # PAR transmission coefficient of the roof
-    double tauRfFir          # FIR transmission coefficient of the roof
-    double lambdaRf          # Thermal heat conductivity of the roof
+    double rhoRfNir         # NIR reflection coefficient of the roof
+    double rhoRfPar         # PAR reflection coefficient of the roof
+    double rhoRfFir         # FIR reflection coefficient of the roof
+    double tauRfNir         # NIR transmission coefficient of the roof
+    double tauRfPar         # PAR transmission coefficient of the roof
+    double tauRfFir         # FIR transmission coefficient of the roof
+    double lambdaRf         # Thermal heat conductivity of the roof
     short cPRf              # Specific heat capacity of roof layer
-    double hRf               # Thickness of roof layer
+    double hRf              # Thickness of roof layer
 
-    # char epsPerFir      # FIR emission coefficient of the whitewash
-    # char rhoShScrPer         # Density of the whitewash
-    # char rhoShScrPerNir      # NIR reflection coefficient of whitewash
-    # char rhoShScrPerPar      # PAR reflection coefficient of whitewash
-    # char rhoShScrPerFir      # FIR reflection coefficient of whitewash
-    # char tauShScrPerNir      # NIR transmission coefficient of whitewash
-    # char tauShScrPerPar      # PAR transmission coefficient of whitewash
-    # char tauShScrPerFir      # FIR transmission coefficient of whitewash
-    # double lambdaShScrPer    # Thermal heat conductivity of the whitewash
-    # char cPShScrPer          # Specific heat capacity of the whitewash
-    # char hShScrPer           # Thickness of the whitewash
+    # char epsPerFir        # FIR emission coefficient of the whitewash
+    # char rhoShScrPer      # Density of the whitewash
+    # char rhoShScrPerNir   # NIR reflection coefficient of whitewash
+    # char rhoShScrPerPar   # PAR reflection coefficient of whitewash
+    # char rhoShScrPerFir   # FIR reflection coefficient of whitewash
+    # char tauShScrPerNir   # NIR transmission coefficient of whitewash
+    # char tauShScrPerPar   # PAR transmission coefficient of whitewash
+    # char tauShScrPerFir   # FIR transmission coefficient of whitewash
+    # double lambdaShScrPer # Thermal heat conductivity of the whitewash
+    # char cPShScrPer       # Specific heat capacity of the whitewash
+    # char hShScrPer        # Thickness of the whitewash
 
     # char rhoShScrShScrNir         # NIR reflection coefficient of shadow screen
     # char rhoShScrPar         # PAR reflection coefficient of shadow screen
@@ -165,43 +165,45 @@ cdef packed struct Parameters:
     double aPipe            # Surface of pipes for floor area
     double fCanFlr          # View factor from canopy to floor
     double pressure         # Absolute air pressure at given elevation
+    double energyContentGas  # Energy content of fossil gas
 
-    double globJtoUmol          # Conversion factor from global radiation to PAR
-    unsigned char j25LeafMax    # Maximal rate of electron transport at 25�C of the leaf
-    double cGamma               # Effect of canopy temperature on CO2 compensation point
-    double etaCo2AirStom        # Conversion from greenhouse air co2 concentration and stomatal co2 concentration
-    unsigned short eJ           # Activation energy for Jpot calcualtion
-    double t25k                 # Reference temperature for Jpot calculation
-    short S                     # Enthropy term for Jpot calculation
-    int H                       # Deactivation energy for Jpot calculation
-    double theta                # Degree of curvature of the electron transport rate
-    double alpha                # Conversion factor from photons to electrons including efficiency term
-    double mCh2o                # Molar mass of CH2O
-    double mCo2                 # Molar mass of CO2
 
-    double parJtoUmolSun        # Conversion factor of sun's PAR from J to umol{photons} J^{-1}
-    char laiMax                 # Max leaf area index
-    double sla                  # Specific leaf area
-    double rgr                  # Relative growth rate
-    double cLeafMax             # Maximum leaf size
+    double globJtoUmol       # Conversion factor from global radiation to PAR
+    unsigned char j25LeafMax # Maximal rate of electron transport at 25�C of the leaf
+    double cGamma            # Effect of canopy temperature on CO2 compensation point
+    double etaCo2AirStom     # Conversion from greenhouse air co2 concentration and stomatal co2 concentration
+    unsigned short eJ        # Activation energy for Jpot calcualtion
+    double t25k              # Reference temperature for Jpot calculation
+    short S                  # Enthropy term for Jpot calculation
+    int H                    # Deactivation energy for Jpot calculation
+    double theta             # Degree of curvature of the electron transport rate
+    double alpha             # Conversion factor from photons to electrons including efficiency term
+    double mCh2o             # Molar mass of CH2O
+    double mCo2              # Molar mass of CO2
 
-    int cFruitMax               # Maximum fruit size
-    double cFruitG              # Fruit growth respiration coefficient
-    double cLeafG               # Leaf growth respiration coefficient
-    double cStemG               # Stem growth respiration coefficient
-    int cRgr                    # Regression coefficient in maintenance respiration function
-    char q10m                   # Q10 value of temperature effect on maintenance respiration
-    double cFruitM              # Fruit maintenance respiration coefficient
-    double cLeafM               # Leaf maintenance respiration coefficient
-    double cStemM               # Stem maintenance respiration coefficient
+    double parJtoUmolSun    # Conversion factor of sun's PAR from J to umol{photons} J^{-1}
+    char laiMax             # Max leaf area index
+    double sla              # Specific leaf area
+    double rgr              # Relative growth rate
+    double cLeafMax         # Maximum leaf size
+
+    int cFruitMax           # Maximum fruit size
+    double cFruitG          # Fruit growth respiration coefficient
+    double cLeafG           # Leaf growth respiration coefficient
+    double cStemG           # Stem growth respiration coefficient
+    int cRgr                # Regression coefficient in maintenance respiration function
+    char q10m               # Q10 value of temperature effect on maintenance respiration
+    double cFruitM          # Fruit maintenance respiration coefficient
+    double cLeafM           # Leaf maintenance respiration coefficient
+    double cStemM           # Stem maintenance respiration coefficient
     
-    double rgFruit              # Potential fruit growth coefficient
-    double rgLeaf               # Potential leaf growth coefficient
-    double rgStem               # Potential stem growth coefficient
+    double rgFruit          # Potential fruit growth coefficient
+    double rgLeaf           # Potential leaf growth coefficient
+    double rgStem           # Potential stem growth coefficient
 
     short cBufMax           # Maximum capacity of carbohydrate buffer
     short cBufMin           # Minimum capacity of carbohydrate buffer
-    double tCan24Max         # Inhibition of carbohydrate flow because of high temperatures
+    double tCan24Max        # Inhibition of carbohydrate flow because of high temperatures
     char tCan24Min          # Inhibition of carbohydrate flow because of low temperatures
     char tCanMax            # Inhibition of carbohydrate flow because of high instantenous temperatures
     char tCanMin            # Inhibition of carbohydrate flow because of low instantenous temperatures
@@ -209,24 +211,24 @@ cdef packed struct Parameters:
 
     char rhMax              # Upper bound on relative humidity
     char dayThresh          # Threshold to consider switch from night to day
-    float tSpDay           # Heat is on below this point in day
+    float tSpDay            # Heat is on below this point in day
     double tSpNight         # Heat is on below this point in night
-    char tHeatBand        # P-band for heating
-    char tVentOff         # Distance from heating setpoint where ventilation stops (even if humidity is too high)
-    char tScreenOn        # Distance from screen setpoint where screen is on (even if humidity is too high)
-    char thScrSpDay       # Screen is closed at day when outdoor is below this temperature
-    char thScrSpNight     # Screen is closed at night when outdoor is below this temperature
-    char thScrPband       # P-band for thermal screen
-    short co2SpNight
-    short co2SpDay         # Co2 is supplied if co2 is below this point during day
-    char co2Band          # P-band for co2 supply
-    char heatDeadZone     # Zone between heating setpoint and ventilation setpoint
-    char ventHeatPband    # P-band for ventilation due to excess heat
-    char ventColdPband    # P-band for ventilation due to low indoor temperature
-    char ventRhPband      # P-band for ventilation due to relative humidity
-    char thScrRh          # Relative humidity where thermal screen is forced to open, with respect to rhMax
-    char thScrRhPband     # P-band for thermal screen opening due to excess relative humidity
-    char thScrDeadZone    # Zone between heating setpoint and point where screen opens
+    char tHeatBand          # P-band for heating
+    char tVentOff           # Distance from heating setpoint where ventilation stops (even if humidity is too high)
+    char tScreenOn          # Distance from screen setpoint where screen is on (even if humidity is too high)
+    char thScrSpDay         # Screen is closed at day when outdoor is below this temperature
+    char thScrSpNight       # Screen is closed at night when outdoor is below this temperature
+    char thScrPband         # P-band for thermal screen
+    short co2SpNight        # Co2 is supplied if co2 is below this point during night
+    short co2SpDay          # Co2 is supplied if co2 is below this point during day
+    char co2Band            # P-band for co2 supply
+    char heatDeadZone       # Zone between heating setpoint and ventilation setpoint
+    char ventHeatPband      # P-band for ventilation due to excess heat
+    char ventColdPband      # P-band for ventilation due to low indoor temperature
+    char ventRhPband        # P-band for ventilation due to relative humidity
+    char thScrRh            # Relative humidity where thermal screen is forced to open, with respect to rhMax
+    char thScrRhPband       # P-band for thermal screen opening due to excess relative humidity
+    char thScrDeadZone      # Zone between heating setpoint and point where screen opens
 
     char lampsOn          # Time of day to switch on lamps
     char lampsOff         # Time of day to switch off lamps
@@ -485,6 +487,8 @@ cdef inline void initParameters(Parameters* p, char noLamps, char ledLamps, char
     # Absolute air pressure at given elevation [Pa]
     # See https://www.engineeringtoolbox.com/air-altitude-pressure-d_462.html
     p.pressure = 101325*(1 - 2.5577e-5*p.hElevation)**5.25588
+
+    p.energyContentGas = 31.65  # MJ/m3
 
     ## Canopy photosynthesis
     p.globJtoUmol = 2.3

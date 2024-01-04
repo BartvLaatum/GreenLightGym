@@ -31,9 +31,9 @@ cdef class GreenLight:
     cdef char nu            # number of control signals
     cdef char nd            # number of disturbances
     cdef unsigned short solverSteps # number of steps to take by solver between time interval for observing the env
+    cdef float time_interval
 
     def __cinit__(self,
-                cnp.ndarray[cnp.double_t, ndim=2] weather,
                 float h,
                 char nx,
                 char nu,
@@ -43,7 +43,7 @@ cdef class GreenLight:
                 char hpsLamps,
                 char intLamps,
                 unsigned short solverSteps,
-                unsigned int timeInDays):
+                ):
 
         self.p = <Parameters*>malloc(sizeof(Parameters))
         self.a = <AuxiliaryStates*>malloc(sizeof(AuxiliaryStates))
@@ -55,12 +55,7 @@ cdef class GreenLight:
         self.nd = nd
         self.timestep = 0
         self.solverSteps = solverSteps
-        self.initWeather(weather)
-        self.initStates(self.d[0], timeInDays)
-
-        # compute auxiliary states once before start of simulation
-        # update(self.a, self.p, self.u, self.x, self.d[0])
-        initAuxStates(self.a, self.x)
+        self.time_interval = solverSteps * h
 
     def __dealloc__(self):
         free(self.a)
@@ -68,13 +63,18 @@ cdef class GreenLight:
         free(self.d)
         free(self.x)
         free(self.u)
+    
+                
+    cpdef void reset(self, 
+                    cnp.ndarray[cnp.double_t, ndim=2] weather,
+                    unsigned int timeInDays
+                    ):
+        self.initWeather(weather)
+        self.initStates(self.d[0], timeInDays)
+        # compute auxiliary states once before start of simulation
+        initAuxStates(self.a, self.x)
+        self.timestep = 0
 
-    # def setTimestep(self, int timestep):
-    #     self.timestep = timestep
-
-    # def reset(self, unsigned int timeInDays):
-    #     self.timestep = 0
-    #     self.initStates(self.d[0], timeInDays)
 
     @cython.boundscheck(False) # turn off bounds-checking for entire function
     @cython.wraparound(False)  # turn off negative index wrapping for entire function
@@ -283,7 +283,7 @@ cdef class GreenLight:
         """
         cdef int n = 105121
         cdef unsigned char m = self.nd
-        cdef  cnp.ndarray[cnp.double_t, ndim=1] np_d = np.zeros((m), dtype=np.double)
+        cdef cnp.ndarray[cnp.double_t, ndim=1] np_d = np.zeros((m), dtype=np.double)
         for i in range(n):
             for j in range(m):
                 np_d[i, j] = self.d[i][j]
@@ -295,7 +295,7 @@ cdef class GreenLight:
         Such that we can acces the control signals in the python environment.
         """
         cdef unsigned char i
-        cdef  cnp.ndarray[cnp.double_t, ndim=1] np_u = np.zeros(self.nu, dtype=np.double)
+        cdef cnp.ndarray[cnp.double_t, ndim=1] np_u = np.zeros(self.nu, dtype=np.double)
         for i in range(self.nu):
             np_u[i] = self.u[i]
         return np_u
@@ -306,105 +306,122 @@ cdef class GreenLight:
         Such that we can acces the states in the python environment.
         """
         cdef unsigned char i
-        cdef  cnp.ndarray[cnp.double_t, ndim=1] np_x = np.zeros(self.nx, dtype=np.double)
+        cdef cnp.ndarray[cnp.double_t, ndim=1] np_x = np.zeros(self.nx, dtype=np.double)
         for i in range(self.nx):
             np_x[i] = self.x[i]
         return np_x
 
-    cpdef getObs(self):
-        """
-        Function that copies the observations from the cython module to a numpy array.
-        Such that we can acces the observations in the python environment.
-        """
-        cdef  cnp.ndarray[cnp.double_t, ndim=1] np_obs = np.zeros(6, dtype=np.double)
-        np_obs[0] = self.x[2]                               # Air temperature in main compartment [deg C]
-        np_obs[1] = self.a.co2InPpm                         # CO2 concentration in main air compartment [ppm]
-        np_obs[2] = self.a.rhIn                             # Relative humidity in main air compartment [%]
-        np_obs[3] = self.x[25]*1e-6                         # Fruit dry matter weight [kg{CH20} m^{-2}]
-        np_obs[4] = self.a.mcFruitHarSum*1e-6               # Harvested fruit in dry matter weight [kg{CH20} m^{-2}]
-        np_obs[5] = self.a.rParGhSun + self.a.rParGhLamp    # PAR radiation above the canopy [W m^{-2}]
-        return np_obs
+    # cpdef getObs(self):
+    #     """
+    #     Function that copies the observations from the cython module to a numpy array.
+    #     Such that we can acces the observations in the python environment.
+    #     """
+    #     cdef cnp.ndarray[cnp.double_t, ndim=1] np_obs = np.zeros(6, dtype=np.double)
+    #     np_obs[0] = self.x[2]                               # Air temperature in main compartment [deg C]
+    #     np_obs[1] = self.a.co2InPpm                         # CO2 concentration in main air compartment [ppm]
+    #     np_obs[2] = self.a.rhIn                             # Relative humidity in main air compartment [%]
+    #     np_obs[3] = self.x[25]*1e-6                         # Fruit dry matter weight [kg{CH20} m^{-2}]
+    #     np_obs[4] = self.a.mcFruitHarSum*1e-6               # Harvested fruit in dry matter weight [kg{CH20} m^{-2}]
+    #     np_obs[5] = self.a.rParGhSun + self.a.rParGhLamp    # PAR radiation above the canopy [W m^{-2}]
+    #     return np_obs
 
-    cpdef getHarvestObs(self):
-        cdef  cnp.ndarray[cnp.double_t, ndim=1] np_obs = np.zeros(10, dtype=np.double)
-        np_obs[0] = self.x[2]                               # Air temperature in main compartment [deg C]
-        np_obs[1] = self.a.co2InPpm                         # CO2 concentration in main air compartment [ppm]
-        np_obs[2] = self.a.rhIn                             # Relative humidity in main air compartment [%]
-        np_obs[3] = self.x[25] * 1e-6                       # Fruit dry matter weight [kg{CH20} m^{-2}]
-        np_obs[4] = self.a.mcFruitHarSum * 1e-6             # Harvested fruit in dry matter weight [kg{CH20} m^{-2}]
-        np_obs[5] = self.a.rParGhSun + self.a.rParGhLamp    # PAR radiation above the canopy [W m^{-2}]
-        # np_obs[6] = self.a.timeOfDay                      # Time of day [h]
-        # np_obs[7] = self.a.dayOfYear                      # day of the year [d]
-        np_obs[6] = self.a.mcExtAir                         # CO2 injection rate [mg m^-2 s^-1]
-        np_obs[7] = self.a.qLampIn                          # electrical power of lamps [W m^-2]
-        np_obs[8] = self.a.hBoilPipe                        # heat demand of greenhouse [W m^-2]
-        np_obs[9] = self.x[9]                               # pipe temperature [deg C]
-        return np_obs
+    # cpdef getHarvestObs(self):
+    #     cdef cnp.ndarray[cnp.double_t, ndim=1] np_obs = np.zeros(10, dtype=np.double)
+    #     np_obs[0] = self.x[2]                               # Air temperature in main compartment [deg C]
+    #     np_obs[1] = self.a.co2InPpm                         # CO2 concentration in main air compartment [ppm]
+    #     np_obs[2] = self.a.rhIn                             # Relative humidity in main air compartment [%]
+    #     np_obs[3] = self.x[25] * 1e-6                       # Fruit dry matter weight [kg{CH20} m^{-2}]
+    #     np_obs[4] = self.a.mcFruitHarSum * 1e-6             # Harvested fruit in dry matter weight [kg{CH20} m^{-2}]
+    #     np_obs[5] = self.a.rParGhSun + self.a.rParGhLamp    # PAR radiation above the canopy [W m^{-2}]
+    #     # np_obs[6] = self.a.timeOfDay                      # Time of day [h]
+    #     # np_obs[7] = self.a.dayOfYear                      # day of the year [d]
+    #     np_obs[6] = self.a.mcExtAir                         # CO2 injection rate [mg m^-2 s^-1]
+    #     np_obs[7] = self.a.qLampIn                          # electrical power of lamps [W m^-2]
+    #     np_obs[8] = self.a.hBoilPipe                        # heat demand of greenhouse [W m^-2]
+    #     np_obs[9] = self.x[9]                               # pipe temperature [deg C]
+        # return np_obs
+
+    cpdef get_indoor_obs(self):
+        cdef cnp.ndarray[cnp.double_t, ndim=1] np_indoor_obs = np.zeros(3, dtype=np.double)
+        np_indoor_obs[0] = self.x[2]
+        np_indoor_obs[1] = self.a.co2InPpm
+        np_indoor_obs[2] = self.a.rhIn
+        return np_indoor_obs
+
+    @property
+    def air_temp(self) -> float:
+        # Returns the indoor air temperature
+        return self.x[2]
+
+    @property
+    def co2_conc(self):
+        # Returns the indoor co2 PPM
+        return self.a.co2InPpm
+
+    @property
+    def in_rh(self):
+        # Returs the indoor RH
+        return self.a.rhIn
+
+    @property
+    def fruit_weight(self):
+        # Returns the fruit dry matter weight [kg{CH20} m^{-2}]
+        return self.x[25] * 1e-6
+    
+    @property
+    def fruit_harvest(self):
+        # Returns the harvested fruit dry matter over past time step [kg{CH20} m^{-2} ts^{-1}]
+        return self.a.mcFruitHarSum * 1e-6
+
+    @property
+    def PAR(self):
+        # Returns the indoor PAR level just above the crop's leaves [W m^{-2}]
+        return self.a.rParGhSun + self.a.rParGhLamp
+
+    @property
+    def co2_resource(self):
+        # Returns the CO2 injection over the past time step [kg{CO2} m^{-2} ts^{-1}]
+        return self.a.mcExtAir*self.time_interval*1e-6
+
+    @property
+    def gas_resource(self):
+        # Returns the gas usages
+        return (self.a.hBoilPipe*self.time_interval*1e-6)/self.p.energyContentGas
 
     @property
     def maxHeatCap(self):
-        # returns the maximum heat capacity of the greenhouse [W m^-2]
+        # Returns the maximum heat capacity (power) of the greenhouse [W m^-2]
         return self.p.pBoil / self.p.aFlr
 
     @property
     def heatDemand(self):
-        # returns the heat demand of the greenhouse [W m^-2]
+        # Returns the heat demand (power) of the greenhouse [W m^{-2}]
         return self.a.hBoilPipe
 
     @property
     def maxco2rate(self):
-        # returns the maximum co2 injection rate [mg m^-2 s^-1]
-        return self.p.phiExtCo2/self.p.aFlr
+        # returns the maximum co2 injection rate [kg m^{-2} s^{-1}]
+        return self.p.phiExtCo2/self.p.aFlr * 1e-6
 
     @property
     def maxHarvest(self):
-        # returns the maximum fruit DM harvest rate [mg m^-2 s^-1]
-        return self.p.rgFruit
+        # returns the maximum fruit DM harvest rate [kg [DM]{CH2O} m^{-2} s^{-1}]
+        return self.p.rgFruit * 1e-6
 
     @property
     def co2InjectionRate(self):
-        # CO2 injection rate [mg m^-2 s^-1]
+        # CO2 injection rate [mg m^{-2} s^{-1}]
         return self.a.mcExtAir
 
     @property
-    def nx(self):
-        # returns the number of states
-        return self.nx
-
-    @property
-    def nu(self):
-        # returns the number of control signals
-        return self.nu
-
-    @property
-    def nd(self):
-        # returns the number of disturbances
-        return self.nd
-
-    @property
-    def rParGhSun(self):
-        # returns amount of PAR radiation above the canopy from the sun
-        return self.a.rParGhSun
-    
-    @property
-    def rParGhLamp(self):
-        # returns the amount of PAR radiation above the canopy from the lamps
-        return self.a.rParGhLamp
+    def energyContentGas(self) -> float:
+        # Returns the indoor air temperature
+        return self.p.energyContentGas
 
     @property
     def timestep(self):
         # returns the current timestep
         return self.timestep
-
-    @property
-    def co2InPpm(self):
-        # returns the co2 concentration in the air in [ppm]
-        return self.a.co2InPpm
-
-    @property
-    def rhIn(self):
-        # relative indoor humidity [%]
-        return self.a.rhIn
 
     @property
     def time(self):

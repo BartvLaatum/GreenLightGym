@@ -20,8 +20,6 @@ GreenLightBase:
     obsLow:  [15, 0, 60]  # lower bound for the observation space
     obsHigh: [35, 1000, 85] # upper bound for the observation space
     training: True
-    # rewardCoefficients: []  # coefficients for the costs function
-    # penaltyCoefficients: [] # coefficients for the penalty function
 
 GreenLightHeatCO2:
     cLeaf: !!float 2.5e5        # [DW] mg/m2
