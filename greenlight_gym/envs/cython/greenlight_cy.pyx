@@ -424,6 +424,11 @@ cdef class GreenLight:
         return self.timestep
 
     @property
+    def time_interval(self):
+        # Returns the time interval of the simulation
+        return self.time_interval
+
+    @property
     def time(self):
         # time in days since 01-01-0001
         return self.x[27]

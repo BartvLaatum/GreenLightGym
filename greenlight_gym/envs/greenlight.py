@@ -4,7 +4,7 @@ import numpy as np
 import gymnasium as gym
 from gymnasium.spaces import Box
 
-from greenlight_gym.envs.greenlight_cy import GreenLight as GL
+from greenlight_gym.envs.cython.greenlight_cy import GreenLight as GL
 from greenlight_gym.common.utils import loadWeatherData
 from greenlight_gym.envs.observations import Observations
 from greenlight_gym.envs.rewards import CombinerReward, HarvestHeatCO2Reward, ArcTanPenaltyReward
@@ -19,25 +19,24 @@ class GreenLightEnv(gym.Env):
     """
     def __init__(
                 self,
-                weather_data_dir:str,  # path to weather data
-                location: str,             # location of the recorded weather data
+                weather_data_dir:str,       # path to weather data
+                location: str,              # location of the recorded weather data
                 data_source: str,           # source of the weather data
-                h: float,                  # [s] time step for the RK4 solver
-                nx: int,                   # number of states 
-                nu: int,                   # number of control inputs
-                nd: int,                   # number of disturbances
+                h: float,                   # [s] time step for the RK4 solver
+                nx: int,                    # number of states 
+                nu: int,                    # number of control inputs
+                nd: int,                    # number of disturbances
                 no_lamps: int,              # whether lamps are used
                 led_lamps: int,             # whether led lamps are used
                 hps_lamps: int,             # whether hps lamps are used
                 int_lamps: int,             # whether interlighting lamps are used
-                dmfm: float,               # [kg [FM] m^-2] dry matter fruit mass
+                dmfm: float,                # [kg [FM] m^-2] dry matter fruit mass
                 season_length: int,         # [days] length of the growing season
                 pred_horizon: int,          # [days] number of future weather predictions
                 time_interval: int,         # [s] time interval in between observations
                 options: Optional[Dict[str, Any]] = None, # options for the environment (e.g. specify starting date)
-                training: bool = True,     # whether we are training or testing
+                training: bool = True,      # whether we are training or testing
                 ) -> None:
-
         super(GreenLightEnv, self).__init__()
 
         # number of seconds in the day
@@ -58,9 +57,8 @@ class GreenLightEnv(gym.Env):
         self.dmfm = dmfm
         self.season_length = season_length
         self.pred_horizon = pred_horizon
-        self.time_interval = time_interval
-        self.N = int(season_length*self.c/time_interval)          # number of timesteps to take for python wrapper
-        self.solverSteps = int(time_interval/self.h)    # number of steps the solver takes between time_interval
+        self.N = int(season_length*self.c/time_interval)    # number of timesteps to take for python wrapper
+        self.solver_steps = int(time_interval/self.h)       # number of steps the solver takes between time_interval
         self.options = options
         self.training = training
 
@@ -86,9 +84,8 @@ class GreenLightEnv(gym.Env):
                           self.led_lamps,
                           self.hps_lamps,
                           self.int_lamps,
-                          self.solverSteps,
+                          self.solver_steps,
                           )
-
 
     def step(self, action: np.ndarray) -> Tuple[np.ndarray, float, bool, Dict[str, Any]]:
         """
@@ -122,10 +119,21 @@ class GreenLightEnv(gym.Env):
     def _get_info(self):
         raise NotImplementedError
 
-    def _init_rewards(self):
+    def _init_rewards(self,
+                    co2_price: Optional[float] = None,
+                    gas_price: Optional[float] = None,
+                    tom_price: Optional[float] = None,
+                    k: Optional[List[float]] = None,
+                    obs_low: Optional[List[float]] = None,
+                    obs_high: Optional[List[float]] = None
+                    ) -> None:
         raise NotImplementedError
 
-    def _init_observations(self, model_obs_vars, weather_obs_vars, Np):
+    def _init_observations(self,
+                           model_obs_vars: List[str],
+                           weather_obs_vars: List[str],
+                           Np: int
+                           ) -> None:
         raise NotImplementedError
 
     def _generate_observation_space(self):
@@ -143,19 +151,16 @@ class GreenLightEnv(gym.Env):
         """
         if self.GLModel.timestep >= self.N:
             return True
-        # check for nan and inf in state values
+        # check for nan and inf in observation values
         elif np.isnan(obs).any() or np.isinf(obs).any():
             print("Nan or inf in states")
             return True
         return False
 
-    def _getTime(self) -> float:
-        """
-        Get time in days since 01-01-0001 upto the starting day of the simulation.
-        """
+    def _get_time(self) -> float:
         return self.GLModel.time
 
-    def _getTimeInDays(self) -> float:
+    def _get_time_in_days(self) -> float:
         """
         Get time in days since 01-01-0001 upto the starting day of the simulation.
         """
@@ -198,7 +203,7 @@ class GreenLightEnv(gym.Env):
             )
         # compute days since 01-01-0001
         # as time indicator by the model
-        timeInDays = self._getTimeInDays()
+        timeInDays = self._get_time_in_days()
 
         self.GLModel.reset(self.weatherData, timeInDays)
 
@@ -252,14 +257,14 @@ class GreenLightHeatCO2(GreenLightEnv):
         self.model_obs_vars = model_obs_vars
         self.weather_obs_vars = weather_obs_vars
 
-        Np = int(self.pred_horizon*self.c/self.time_interval)   # the prediction horizon in timesteps for our weather predictions
+        Np = int(self.pred_horizon*self.c/self.GLModel.time_interval)   # the prediction horizon in timesteps for our weather predictions
 
-        # intialise reward and observation functions
-        self._init_rewards(co2_price, gas_price, tom_price, k, obs_low, obs_high)
+        # intialise observation and reward functions
         self._init_observations(model_obs_vars, weather_obs_vars, Np)
-        self._generate_observation_space()
+        self._init_rewards(co2_price, gas_price, tom_price, k, obs_low, obs_high)
 
-        # initialise the action space
+        # initialise the observation and action spaces
+        self._generate_observation_space()
         self.action_space = Box(low=-1, high=1, shape=(len(control_signals),), dtype=np.float32)
         self.control_idx = np.array([self.control_indices[control_input] for control_input in control_signals], dtype=np.int8)
 
@@ -285,7 +290,7 @@ class GreenLightHeatCO2(GreenLightEnv):
                                      dtype=np.float32)
 
     def _get_obs(self) -> np.ndarray:
-        return self.observations.compute_obs(self.GLModel, self.solverSteps, self.weatherData)
+        return self.observations.compute_obs(self.GLModel, self.solver_steps, self.weatherData)
 
     def _init_rewards(self,
                     co2_price: float,
@@ -295,12 +300,11 @@ class GreenLightHeatCO2(GreenLightEnv):
                     obs_low: List[float],
                     obs_high: List[float]
                     ) -> None:
-
         self.rewards = CombinerReward([HarvestHeatCO2Reward(co2_price,
                                                             gas_price,
                                                             tom_price,
                                                             self.dmfm,
-                                                            self.time_interval,
+                                                            self.GLModel.time_interval,
                                                             self.GLModel.maxco2rate,
                                                             self.GLModel.maxHeatCap,
                                                             self.GLModel.maxHarvest,

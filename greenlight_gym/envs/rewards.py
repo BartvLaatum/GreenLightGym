@@ -2,7 +2,7 @@ from typing import SupportsFloat, List
 
 import numpy as np
 
-from greenlight_gym.envs import greenlight_cy
+from greenlight_gym.envs.cython import greenlight_cy
 
 class BaseReward(object):
     def __init__(self) -> None:

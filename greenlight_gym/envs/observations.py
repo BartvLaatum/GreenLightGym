@@ -1,7 +1,7 @@
 import numpy as np
 from typing import List
 from gymnasium.spaces import Box, Space
-from greenlight_gym.envs import greenlight_cy
+from greenlight_gym.envs.cython import greenlight_cy
 
 class Observations(object):
     """
