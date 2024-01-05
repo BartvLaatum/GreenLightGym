@@ -137,7 +137,7 @@ if __name__ == "__main__":
     parser.add_argument("--total_timesteps", type=int, default=500_000)
     parser.add_argument("--n_eval_episodes", type=int, default=1)
     parser.add_argument("--num_cpus", type=int, default=12)
-    parser.add_argument("--n_evals", type=int, default=1000)
+    parser.add_argument("--n_evals", type=int, default=10)
     parser.add_argument("--seed", type=int, default=666)
     args = parser.parse_args()
 

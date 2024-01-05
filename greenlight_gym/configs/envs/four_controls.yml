@@ -11,7 +11,7 @@ GreenLightEnv:
     int_lamps: 0             # whether int lamps are used
     dmfm: 0.0627            # dry matter fresh matter ratio
     h: 1                    # stepsize for the RK4 solver
-    season_length: 1        # number of growing days
+    season_length: 10        # number of growing days
     pred_horizon: !!float 0.011 # prediction horizon in days (corresponds to 15 minutes into the future)
     time_interval: 900       # [s] time interval at what rate do we observe and control the environment
     training: True
