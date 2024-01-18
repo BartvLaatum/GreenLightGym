@@ -6,8 +6,10 @@ The python environment will send setpoints as actions to the cython module.
 Next, cython will compute the control signals, and simulate the new state of the greenhouse.
 Finally, the new state/measurement/disturbances will be returned to the python environment.
 """
-from auxiliary_states cimport AuxiliaryStates, initAuxStates
-from define_parameters cimport Parameters, initParameters
+# from auxiliary_states cimport AuxiliaryStates, initAuxStates
+from auxiliary_states_old cimport AuxiliaryStates, initAuxStates
+# from define_parameters cimport Parameters, initParameters
+from define_parameters_old cimport Parameters, initParameters
 from difference_function cimport fRK4
 from compute_controls cimport controlSignal
 from utils cimport satVp
@@ -78,7 +80,7 @@ cdef class GreenLight:
 
     @cython.boundscheck(False) # turn off bounds-checking for entire function
     @cython.wraparound(False)  # turn off negative index wrapping for entire function
-    cpdef void step(self, cnp.ndarray[cnp.float32_t, ndim=1] controls, cnp.ndarray[char, ndim=1] learnedControlIdx):
+    cpdef void step(self, cnp.ndarray[cnp.double_t, ndim=1] controls, cnp.ndarray[char, ndim=1] learnedControlIdx):
         """
         Simulate the state of the system at the next time step using the GreenLight model.
         Inputs are the controls signals that are computed in the python environment, e.g., by an RL-agent.
@@ -311,6 +313,9 @@ cdef class GreenLight:
             np_x[i] = self.x[i]
         return np_x
 
+    cpdef update_h(self, double h):
+        self.h = h
+
     # cpdef getObs(self):
     #     """
     #     Function that copies the observations from the cython module to a numpy array.
@@ -432,3 +437,11 @@ cdef class GreenLight:
     def time(self):
         # time in days since 01-01-0001
         return self.x[27]
+
+    @property
+    def nu(self):
+        # returns the available number of control signals
+        return self.nu
+
+    def get_h(self):
+        return self.h

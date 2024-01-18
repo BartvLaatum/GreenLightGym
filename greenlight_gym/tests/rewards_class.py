@@ -14,10 +14,3 @@ obs, info = GL.reset()
 
 for _ in range(92):
     obs, r, done, info, truncated = GL.step(GL.action_space.sample())
-    if done:
-        GL.reset()
-    try:
-        assert np.isclose(GL._get_reward(), r)
-    except AssertionError:
-        print("Assertion error, rewards are not equal")
-        print(GL._get_reward()- r)

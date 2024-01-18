@@ -1,5 +1,9 @@
-from define_parameters cimport Parameters
-from auxiliary_states cimport AuxiliaryStates, update
+# from define_parameters cimport Parameters
+from define_parameters_old cimport Parameters
+# from auxiliary_states cimport AuxiliaryStates, update
+from auxiliary_states_old cimport AuxiliaryStates, update
+
+
 from compute_controls cimport controlSignal
 from ODE cimport ODE
 from libc.stdlib cimport malloc, free
@@ -21,6 +25,7 @@ cdef inline double* fRK4(AuxiliaryStates* a, Parameters* p, double* u, double* x
     cdef unsigned char j
     cdef unsigned char k
     cdef unsigned char l
+
 
     # update auxiliary states
     update(a, p, u, x, d)

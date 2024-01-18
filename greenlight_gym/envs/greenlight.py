@@ -1,6 +1,7 @@
 from typing import Optional, Tuple, Any, List, Dict
 
 import numpy as np
+import pandas as pd
 import gymnasium as gym
 from gymnasium.spaces import Box
 
@@ -47,13 +48,7 @@ class GreenLightEnv(gym.Env):
         self.location = location
         self.data_source = data_source
         self.h = h
-        self.nx = nx
-        self.nu = nu
         self.nd = nd
-        self.no_lamps = no_lamps
-        self.led_lamps = led_lamps
-        self.hps_lamps = hps_lamps
-        self.int_lamps = int_lamps
         self.dmfm = dmfm
         self.season_length = season_length
         self.pred_horizon = pred_horizon
@@ -77,13 +72,13 @@ class GreenLightEnv(gym.Env):
 
         # initialize the model in cython
         self.GLModel = GL(self.h,
-                          self.nx,
-                          self.nu,
+                          nx,
+                          nu,
                           self.nd,
-                          self.no_lamps,
-                          self.led_lamps,
-                          self.hps_lamps,
-                          self.int_lamps,
+                          no_lamps,
+                          led_lamps,
+                          hps_lamps,
+                          int_lamps,
                           self.solver_steps,
                           )
 
@@ -95,9 +90,8 @@ class GreenLightEnv(gym.Env):
         """
 
         # scale the action to the range of the control inputs, which is between [0, 1]
-        action = self._scale(action, self.action_space.low, self.action_space.high)
+        # action = self._scale(action, self.action_space.low, self.action_space.high)
         self.GLModel.step(action, self.control_idx)
-
         obs = self._get_obs()
         if self._terminalState(obs):
             self.terminated = True
@@ -134,10 +128,13 @@ class GreenLightEnv(gym.Env):
                            weather_obs_vars: List[str],
                            Np: int
                            ) -> None:
-        raise NotImplementedError
+        self.observations = Observations(model_obs_vars, weather_obs_vars, Np)
 
-    def _generate_observation_space(self):
-        raise NotImplementedError
+    def _generate_observation_space(self) -> None:
+        self.observation_space = Box(low=self.observations.low,
+                                     high=self.observations.high,
+                                     shape=(self.observations.Nobs,), 
+                                     dtype=np.float32)
 
 
     def _get_obs(self):
@@ -154,6 +151,8 @@ class GreenLightEnv(gym.Env):
         # check for nan and inf in observation values
         elif np.isnan(obs).any() or np.isinf(obs).any():
             print("Nan or inf in states")
+            print(self.GLModel.get_h())
+            print(obs)
             return True
         return False
 
@@ -189,7 +188,7 @@ class GreenLightEnv(gym.Env):
             self.growthYear = self.options["growthYear"]
             self.startDay = self.options["startDay"]
 
-        # load in weather data for this simulation
+        # load in weather data for specific simulation
         self.weatherData = loadWeatherData(
             self.weather_data_dir,
             self.location,
@@ -201,10 +200,12 @@ class GreenLightEnv(gym.Env):
             self.h,
             self.nd
             )
+
         # compute days since 01-01-0001
         # as time indicator by the model
         timeInDays = self._get_time_in_days()
-
+    
+        # reset the GreenLight model starting settings
         self.GLModel.reset(self.weatherData, timeInDays)
 
         self.terminated = False
@@ -276,19 +277,6 @@ class GreenLightHeatCO2(GreenLightEnv):
             "penalty": self.rewards.rewards_list[1].pen
             }
 
-    def _init_observations(self,
-                           model_obs_vars: List[str],
-                           weather_obs_vars: List[str],
-                           Np: int
-                           ) -> None:
-        self.observations = Observations(model_obs_vars, weather_obs_vars, Np)
-
-    def _generate_observation_space(self) -> None:
-        self.observation_space = Box(low=self.observations.low,
-                                     high=self.observations.high,
-                                     shape=(self.observations.Nobs,), 
-                                     dtype=np.float32)
-
     def _get_obs(self) -> np.ndarray:
         return self.observations.compute_obs(self.GLModel, self.solver_steps, self.weatherData)
 
@@ -322,6 +310,155 @@ class GreenLightHeatCO2(GreenLightEnv):
         # set crop state to start of the season
         self.GLModel.setCropState(self.cLeaf, self.cStem, self.cFruit, self.tCanSum)
         return self._get_obs(), {}
+
+class GreenLightRuleBased(GreenLightEnv):
+    """
+    Child class of GreenLightEnv.
+    Starts with a fully mature crop that is ready for harvest.
+    The start dates are early year, (January and Februari), which reflects the start of the harvest season.
+
+    Controls the greenhouse climate through four actuators:
+    - carbon dioxide supply
+    - heating
+    - ventialation
+    - thermal screen
+
+    Uses a reward that reflects the revenue made from harvesting tomatoes, and the costs for
+    heating the greenhouse and injecting CO2 given their resource price.
+    Also penalises violating indoor climate boundaries.
+    """
+    def __init__(self,
+                obs_low: List[float] = [0, 0, 0],
+                obs_high: List[float] = [np.inf, np.inf, np.inf],
+                control_signals: Optional[List[str]] = None,
+                model_obs_vars: Optional[List[str]] = None,
+                weather_obs_vars: Optional[List[str]] = None,
+                **kwargs,
+                ) -> None:
+
+        super(GreenLightRuleBased, self).__init__(**kwargs)
+        self.control_signals = control_signals
+        self.model_obs_vars = model_obs_vars
+        self.weather_obs_vars = weather_obs_vars
+
+        Np = int(self.pred_horizon*self.c/self.GLModel.time_interval)   # the prediction horizon in timesteps for our weather predictions
+
+        # intialise observation and reward functions
+        self._init_observations(model_obs_vars, weather_obs_vars, Np)
+
+        # initialise the observation and action spaces
+        self._generate_observation_space()
+        self.action_space = Box(low=-1, high=1, shape=(len(control_signals),), dtype=np.float32)
+        self.control_idx = np.array([self.control_indices[control_input] for control_input in control_signals], dtype=np.int8)
+
+    def _get_obs(self) -> np.ndarray:
+        return self.observations.compute_obs(self.GLModel, self.solver_steps, self.weatherData)
+
+    def _reward(self):
+        return 1
+
+    def _get_info(self):
+        return {
+            "controls": self.GLModel.getControlsArray(),
+            "Time": self.GLModel.time,
+            }
+
+    def reset(self, seed: Optional[int] = None) -> Tuple[np.ndarray, Dict[str, Any]]:
+        super().reset(seed=seed)
+        return self._get_obs(), {}
+
+
+class GreenLightStatesTest(GreenLightEnv):
+    """
+    Child class of GreenLightEnv.
+    Starts with a fully mature crop that is ready for harvest.
+    The start dates are early year, (January and Februari), which reflects the start of the harvest season.
+
+    Controls the greenhouse climate through four actuators:
+    - carbon dioxide supply
+    - heating
+    - ventialation
+    - thermal screen
+
+    Uses a reward that reflects the revenue made from harvesting tomatoes, and the costs for
+    heating the greenhouse and injecting CO2 given their resource price.
+    Also penalises violating indoor climate boundaries.
+    """
+    def __init__(self,
+                obs_low: List[float] = [0, 0, 0],
+                obs_high: List[float] = [np.inf, np.inf, np.inf],
+                control_signals: Optional[List[str]] = None,
+                model_obs_vars: Optional[List[str]] = None,
+                weather_obs_vars: Optional[List[str]] = None,
+                **kwargs,
+                ) -> None:
+
+        super(GreenLightStatesTest, self).__init__(**kwargs)
+        self.control_signals = control_signals
+        self.model_obs_vars = model_obs_vars
+        self.weather_obs_vars = weather_obs_vars
+
+        Np = int(self.pred_horizon*self.c/self.GLModel.time_interval)   # the prediction horizon in timesteps for our weather predictions
+
+        # intialise observation and reward functions
+        self._init_observations(model_obs_vars, weather_obs_vars, Np)
+
+        # initialise the observation and action spaces
+        self._generate_observation_space()
+        self.action_space = Box(low=-1, high=1, shape=(len(control_signals),), dtype=np.float32)
+        self.control_idx = np.array([self.control_indices[control_input] for control_input in control_signals], dtype=np.int8)
+
+    def _get_obs(self) -> np.ndarray:
+        return self.GLModel.getStatesArray()
+
+    def _reward(self):
+        return 1
+
+    def _get_info(self):
+        return {
+            "controls": self.GLModel.getControlsArray(),
+            "Time": self.GLModel.time,
+            }
+
+    def update_h(self, h: float):
+        self.GLModel.update_h(h)
+
+    def reset(self, 
+            seed: Optional[int] = None)\
+            -> Tuple[np.ndarray, Dict[str, Any]]:
+        """
+        Container function that resets the environment.
+        """
+        self.growthYear = self.options["growthYear"]
+        self.startDay = self.options["startDay"]
+        # print(self.startDay)
+        self.weatherData = pd.read_csv(f"data/model_comparison/matlab/varStepSizeWeather20000101.csv", sep=",", header=None).values
+        # self.weatherData = weather_data
+        # # load in weather data for specific simulation
+        # self.weatherData = loadWeatherData(
+        #     self.weather_data_dir,
+        #     self.location,
+        #     self.data_source,
+        #     self.growthYear,
+        #     self.startDay,
+        #     self.season_length,
+        #     self.pred_horizon,
+        #     self.h,
+        #     self.nd
+        #     )
+
+        # compute days since 01-01-0001
+        # as time indicator by the model
+        timeInDays = self._get_time_in_days()
+    
+        # reset the GreenLight model starting settings
+        self.GLModel.reset(self.weatherData, timeInDays)
+
+        self.terminated = False
+
+        return self._get_obs(), {}
+
+
 
 if __name__ == "__main__":
     pass

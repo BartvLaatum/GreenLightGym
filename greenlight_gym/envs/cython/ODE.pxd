@@ -1,17 +1,24 @@
-from define_parameters cimport Parameters
-from auxiliary_states cimport AuxiliaryStates, update
+# from define_parameters cimport Parameters
+from define_parameters_old cimport Parameters
+# from auxiliary_states cimport AuxiliaryStates, update
+from auxiliary_states_old cimport AuxiliaryStates, update
 from libc.stdlib cimport malloc, free
 
 
 cdef inline double* ODE(AuxiliaryStates* a, Parameters* p, double* x, double* u, double* d, char nx):
-    # cdef double *x_new = (double*)malloc(27 * sizeof(double))
     cdef double* ki = <double*>malloc(nx * sizeof(double))
 
     # Carbon concentration of greenhouse air [mg m^{-3} s^{-1}]
     ki[0] = 1/p.capCo2Air * (a.mcBlowAir+a.mcExtAir+a.mcPadAir-a.mcAirCan-a.mcAirTop-a.mcAirOut)    
-    
+    # print("mcBlowAir", a.mcBlowAir)
+    # print("mcExtAir", a.mcExtAir)
+    # print("mcPadAir", a.mcPadAir)
+    # print("mcAirCan", a.mcAirCan)
+    # print("mcAirTop", a.mcAirTop)
+    # print("mcAirOut", a.mcAirOut)
+
+
     # Carbon concentration of top compartment [mg m^{-3} s^{-1}]
-    # setOde(gl, 'co2Top', 1/p.capCo2Top*(a.mcAirTop-a.mcTopOut));
     ki[1] = 1/p.capCo2Top * (a.mcAirTop-a.mcTopOut)
 
     # % Greenhouse air temperature [�C s^{-1}]
@@ -20,6 +27,27 @@ cdef inline double* ODE(AuxiliaryStates* a, Parameters* p, double* x, double* u,
         -a.hAirTop-a.hAirOutPad-a.lAirFog-a.hAirBlScr \
         +a.hLampAir+a.rLampAir \
         +a.hGroPipeAir+a.hIntLampAir+a.rIntLampAir)
+
+    # print("a.rGlobSunAir", a.rGlobSunAir)
+    # print("a.hAirFlr", a.hAirFlr)
+    # print("a.hAirBlScr", a.hAirBlScr)
+    # print("a.hPadAir", a.hPadAir)
+    # print("a.hAirMech", a.hAirMech)
+    # print("a.hAirOutPad", a.hAirOutPad)
+    # print("a.hBlowAir", a.hBlowAir)
+    # print("a.hIntLampAir", a.hIntLampAir)
+    # print("a.rLampAir", a.rLampAir)
+    # print("a.hCanAir", a.hCanAir)
+    # print("a.hGroPipeAir", a.hGroPipeAir)
+    # print("a.rIntLampAir", a.rIntLampAir)
+    # print("a.hLampAir", a.hLampAir)
+    # print("p.capAir", p.capAir)
+    # print("a.lAirFog", a.lAirFog)
+    # print("a.hAirOut", a.hAirOut)
+    # print("a.hAirTop", a.hAirTop)
+    # print("a.hAirThScr", a.hAirThScr)
+    # print("a.hPasAir", a.hPasAir)
+    # print("a.hPipeAir", a.hPipeAir)
 
     # # % Air above screen temperature [�C s^{-1}]
     # # setOde(gl, 'tTop', 1/p.capTop*(a.hThScrTop+a.hAirTop-a.hTopCovIn-a.hTopOut+a.hBlScrTop));
