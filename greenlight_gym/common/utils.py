@@ -384,6 +384,27 @@ def rh2vaporDens(temp, rh):
     
     return pascals*Mw/(R*(temp+C2K))
 
+def compute_sky_temp(air_temp, cloud):
+    """
+    Compute sky temperature from air temperature and cloud cover.
+    Args
+        air_temp: Air temperature in °C
+        cloud: Cloud cover (0-1)
+    Returns
+        sky_temp: Sky temperature in °C
+    """
+
+    sigma = 5.67e-8 # Stefan-Boltzmann constant
+    C2K = 273.15    # Conversion of °C to K
+
+    ld_clear = 213+5.5*air_temp                      # Equation 5.26
+    eps_clear = ld_clear/(sigma*(air_temp+C2K)**4)    # Equation 5.22
+    eps_cloud = (1-0.84*cloud)*eps_clear+0.84*cloud   # Equation 5.32
+    ld_cloud = eps_cloud*sigma*(air_temp+C2K)**4      # Equation 5.22
+    sky_temp = (ld_cloud/sigma)**(0.25)-C2K           # Equation 5.22, but here assuming eps=1
+    return sky_temp
+
+
 if __name__ == "__main__":    
     # stateNames = ["co2Air", "co2Top", "tAir", "tTop", "tCan", "tCovIn", "tCovE", "tThScr", \
     #             "tFlr", "tPipe", "tSo1", "tSo2", "tSo3", "tSo4", "tSo5", "vpAir", "vpTop", "tLamp", \
