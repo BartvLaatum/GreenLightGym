@@ -1,0 +1,35 @@
+GreenLightEnv:
+    weather_data_dir: "envs/data/" # path to the weather data file
+    location: "Seljaar"   # location of the weatherdata
+    data_source: "hires"     # which data source we use
+    nx: 28                  # Number of states
+    nu: 8                   # number of control variables for GreenLight
+    nd: 10                  # weather variables
+    no_lamps: 0             # whether lamps are used
+    led_lamps: 1            # whether led lamps are used
+    hps_lamps: 0            # whether hps lamps are used
+    int_lamps: 0            # whether int lamps are used
+    dmfm: 0.0627            # dry matter fresh matter ratio
+    h: 2                    # stepsize for the RK4 solver
+    season_length: 10       # number of growing days
+    pred_horizon: 0         # prediction horizon in days (corresponds to 15 minutes into the future)
+    time_interval: 900      # [s] time interval at what rate do we observe and control the environment
+    training: False         # whether training our algorithm
+
+GreenLightRuleBased:
+    cLeaf: !!float 0.9e5    # [DW] mg/m2
+    cStem: !!float 2.5e5    # [DW] mg/m2
+    cFruit: !!float 2.8e5   # [DW] mg/m2
+    tCanSum: !!float 3e3    # Temperature sum for canopy development
+
+    control_signals: []
+    model_obs_vars: [co2_resource, gas_resource, heat_demand, electrical_resource, fruit_harvest, fruit_weight] # variable names that we want to observe from the model
+    weather_obs_vars: null # weather variable names to observe
+
+options:                    # Options for the the evaluation date 
+    startDay: 0             # day since 01-feb for starting the episode
+    growthYear: 2000        # year in which we start growing season
+
+# columns that are used for plotting
+state_columns: [Air Temperature, CO2 concentration, Humidity, Fruit weight, Fruit harvest, PAR, CO2 resource, Gas resource]
+action_columns: [uBoil, uCO2, uThScr, uVent, uLamp, uIntLamp, uGroPipe, uBlScr]

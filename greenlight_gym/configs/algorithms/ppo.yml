@@ -21,5 +21,5 @@ four_controls:
                   optimizer_class: ADAM,
                   optimizer_kwargs: {amsgrad: True},
                   activation_fn: ELU,
-                  log_std_init: np.log(0.5) # Results in standard deviation of 0.5 since exp(log(0.5)) = 0.5
+                  log_std_init: np.log(0.5) # Results in policy standard deviation of 0.5 since exp(log(0.5)) = 0.5
           }
