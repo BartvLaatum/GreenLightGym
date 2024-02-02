@@ -36,6 +36,10 @@ class GreenLightEnv(gym.Env):
                 pred_horizon: int,          # [days] number of future weather predictions
                 time_interval: int,         # [s] time interval in between observations
                 options: Optional[Dict[str, Any]] = None, # options for the environment (e.g. specify starting date)
+                start_train_year: int = 2011,  # start year for training
+                end_train_year: int = 2020,    # end year for training
+                start_train_day: int = 59,    # end year for training
+                end_train_day: int = 244,    # end year for training
                 training: bool = True,      # whether we are training or testing
                 ) -> None:
         super(GreenLightEnv, self).__init__()
@@ -56,8 +60,13 @@ class GreenLightEnv(gym.Env):
         self.pred_horizon = pred_horizon
         self.N = int(season_length*self.c/time_interval)    # number of timesteps to take for python wrapper
         self.solver_steps = int(time_interval/self.h)       # number of steps the solver takes between time_interval
-        self.options = options
+        # self.options = options
+        self.start_train_year = start_train_year
+        self.end_train_year = end_train_year
+        self.start_train_day = start_train_day
+        self.end_train_day = end_train_day
         self.training = training
+        self.eval_idx = 0
 
         self.observations = None
         self.rewards = None
@@ -170,15 +179,18 @@ class GreenLightEnv(gym.Env):
         Get time in days since 01-01-0001 upto the starting day of the simulation.
         """
         d0 = date(1, 1, 1)
-        d1 = date(self.growthYear, 1, 1)
+        d1 = date(self.growth_year, 1, 1)
         delta = d1 - d0
-        return delta.days + self.startDay
+        return delta.days + self.start_day
 
     def _scale(self, a, amin, amax):
         """
         Min-max scaler [0,1]. Used for the action space.
         """
         return (a-amin)/(amax-amin)
+
+    def _reset_eval_idx(self):
+        self.eval_idx = 0
 
     def reset(self, seed: Optional[int] = None) -> Tuple[np.ndarray, Dict[str, Any]]:
         """
@@ -188,16 +200,24 @@ class GreenLightEnv(gym.Env):
 
         # pick a random growth year and start day if we are training
         if self.training:
-            self.growthYear = self.np_random.choice(range(2011, 2020))
-            self.startDay = self.np_random.choice(range(0, 150))        # train 1st January to end of May
+            self.growth_year = self.np_random.choice(range(self.start_train_year, self.end_train_year+1))
+            self.start_day = self.np_random.choice(range(self.start_train_day, self.end_train_day))          # train 1st January to end of May
+        else:
+            # self.growth_year = self.options["growth_year"]
+            self.start_day = self.start_days[self.eval_idx]
+            print(self.eval_idx)
+            print(self.start_day)
+            print(self.growth_year)
+            self.eval_idx += 1
+
 
         # load in weather data for specific simulation
         self.weatherData = loadWeatherData(
             self.weather_data_dir,
             self.location,
             self.data_source,
-            self.growthYear,
-            self.startDay,
+            self.growth_year,
+            self.start_day,
             self.season_length,
             self.pred_horizon,
             self.h,
@@ -276,7 +296,8 @@ class GreenLightHeatCO2(GreenLightEnv):
             "controls": self.GLModel.getControlsArray(),
             "Time": self.GLModel.time,
             "profit": self.rewards.rewards_list[0].profit,
-            "penalty": self.rewards.rewards_list[1].pen
+            "penalty": self.rewards.rewards_list[1].pen,
+            "timestep": self.GLModel.timestep
             }
 
     def _get_obs(self) -> np.ndarray:
@@ -456,8 +477,8 @@ class GreenLightStatesTest(GreenLightEnv):
         """
         Container function that resets the environment.
         """
-        self.growthYear = self.options["growthYear"]
-        self.startDay = self.options["startDay"]
+        self.growth_year = self.options["growth_year"]
+        self.start_day = self.options["start_day"][0]
         self.weatherData = pd.read_csv(f"data/model_comparison/matlab/1sStepSizeWeather2000010110Ode15s.csv", sep=",", header=None).values
 
         # # # load in weather data for specific simulation
@@ -465,8 +486,8 @@ class GreenLightStatesTest(GreenLightEnv):
         #     self.weather_data_dir,
         #     self.location,
         #     self.data_source,
-        #     self.growthYear,
-        #     self.startDay,
+        #     self.growth_year,
+        #     self.start_day,
         #     self.season_length,
         #     self.pred_horizon,
         #     self.h,
