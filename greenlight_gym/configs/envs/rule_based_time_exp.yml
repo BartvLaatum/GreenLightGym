@@ -30,6 +30,3 @@ options:                    # Options for the the evaluation date
     startDay: 0             # day since 01-feb for starting the episode
     growthYear: 2000        # year in which we start growing season
 
-# columns that are used for plotting
-state_columns: [Air Temperature, CO2 concentration, Humidity, Fruit weight, Fruit harvest, PAR, CO2 resource, Gas resource]
-action_columns: [uBoil, uCO2, uThScr, uVent, uLamp, uIntLamp, uGroPipe, uBlScr]
