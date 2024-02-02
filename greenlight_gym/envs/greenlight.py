@@ -205,11 +205,7 @@ class GreenLightEnv(gym.Env):
         else:
             # self.growth_year = self.options["growth_year"]
             self.start_day = self.start_days[self.eval_idx]
-            print(self.eval_idx)
-            print(self.start_day)
-            print(self.growth_year)
             self.eval_idx += 1
-
 
         # load in weather data for specific simulation
         self.weatherData = loadWeatherData(
