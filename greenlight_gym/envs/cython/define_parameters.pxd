@@ -1,4 +1,4 @@
-from libc.math cimport exp, INFINITY, pi
+from libc.math cimport exp, INFINITY, pi, M_PI
 
 cdef packed struct Parameters:
     char alfaLeafAir        # Convective heat transfer coefficient between leaf and greenhouse air
@@ -454,8 +454,10 @@ cdef inline void initParameters(Parameters* p, char noLamps, char ledLamps, char
     p.phiExtCo2 = 72000             # Capacity of external CO2 source [mg s^{-1}]
 
     ## Heat capacity of heating pipes [J K^{-1} m^{-2}]
-    p.capPipe = 0.25*pi * p.lPipe*(( p.phiPipeE**2- p.phiPipeI**2)* p.rhoSteel*\
-          p.cPSteel+ p.phiPipeI**2* p.rhoWater* p.cPWater)
+    # p.capPipe = 0.25*pi * p.lPipe*(( p.phiPipeE**2- p.phiPipeI**2)* p.rhoSteel*\
+    #       p.cPSteel+ p.phiPipeI**2* p.rhoWater* p.cPWater)
+    p.capPipe = 16497.8591
+
 
     ## Density of air [kg m^{-3}]
     p.rhoAir =  p.rhoAir0*exp(p.g* p.mAir* p.hElevation/(293.15* p.R))
@@ -478,11 +480,13 @@ cdef inline void initParameters(Parameters* p, char noLamps, char ledLamps, char
 
     # Surface of pipes for floor area [-]
     # Table 3 [1]
-    p.aPipe = pi * p.lPipe * p.phiPipeE
+    # p.aPipe = pi * p.lPipe * p.phiPipeE
+    p.aPipe = 0.30042
 
     # View factor from canopy to floor
     # Table 3 [1]
-    p.fCanFlr = 1 - 0.49*pi * p.lPipe * p.phiPipeE
+    # p.fCanFlr = 1 - 0.49*pi * p.lPipe * p.phiPipeE
+    p.fCanFlr = 0.85279
 
     # Absolute air pressure at given elevation [Pa]
     # See https://www.engineeringtoolbox.com/air-altitude-pressure-d_462.html
@@ -509,7 +513,8 @@ cdef inline void initParameters(Parameters* p, char noLamps, char ledLamps, char
     p.laiMax = 3
     p.sla = 2.66e-5
     p.rgr = 3e-6
-    p.cLeafMax = p.laiMax/ p.sla
+    # p.cLeafMax = p.laiMax/ p.sla
+    p.cLeafMax = 112781.9549
 
     p.cFruitMax = 300_000
 

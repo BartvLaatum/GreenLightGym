@@ -6,11 +6,9 @@ The python environment will send setpoints as actions to the cython module.
 Next, cython will compute the control signals, and simulate the new state of the greenhouse.
 Finally, the new state/measurement/disturbances will be returned to the python environment.
 """
-# from auxiliary_states cimport AuxiliaryStates, initAuxStates
-from auxiliary_states_old cimport AuxiliaryStates, initAuxStates
-# from define_parameters cimport Parameters, initParameters
-from define_parameters_old cimport Parameters, initParameters
-from difference_function cimport fRK4
+from auxiliary_states cimport AuxiliaryStates, initAuxStates
+from define_parameters cimport Parameters, initParameters
+from difference_function cimport fRK4, fRK45
 from compute_controls cimport controlSignal
 from utils cimport satVp
 from libc.stdlib cimport malloc, free
@@ -80,7 +78,7 @@ cdef class GreenLight:
 
     @cython.boundscheck(False) # turn off bounds-checking for entire function
     @cython.wraparound(False)  # turn off negative index wrapping for entire function
-    cpdef void step(self, cnp.ndarray[cnp.double_t, ndim=1] controls, cnp.ndarray[char, ndim=1] learnedControlIdx):
+    cpdef void step(self, cnp.ndarray[cnp.float32_t, ndim=1] controls, cnp.ndarray[cnp.uint8_t, ndim=1] learnedControlIdx):
         """
         Simulate the state of the system at the next time step using the GreenLight model.
         Inputs are the controls signals that are computed in the python environment, e.g., by an RL-agent.
@@ -354,7 +352,7 @@ cdef class GreenLight:
         return np_indoor_obs
 
     @property
-    def air_temp(self) -> float:
+    def air_temp(self):
         # Returns the indoor air temperature
         return self.x[2]
 
@@ -390,18 +388,24 @@ cdef class GreenLight:
 
     @property
     def gas_resource(self):
-        # Returns the gas usages
+        # Returns the gas over the past time step [kg{CH4} m^{-2} ts^{-1}]
         return (self.a.hBoilPipe*self.time_interval*1e-6)/self.p.energyContentGas
+
+    @property
+    def heat_demand(self):
+        # Returns the heat demand (power) of the greenhouse [W m^{-2}]
+        return self.a.hBoilPipe
+
+    @property
+    def electrical_resource(self):
+        # Returns the electrical demand (power) of the greenhouse [W m^{-2}]
+        return self.a.qLampIn
 
     @property
     def maxHeatCap(self):
         # Returns the maximum heat capacity (power) of the greenhouse [W m^-2]
         return self.p.pBoil / self.p.aFlr
 
-    @property
-    def heatDemand(self):
-        # Returns the heat demand (power) of the greenhouse [W m^{-2}]
-        return self.a.hBoilPipe
 
     @property
     def maxco2rate(self):

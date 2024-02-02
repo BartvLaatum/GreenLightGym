@@ -1,7 +1,5 @@
-# from auxiliary_states cimport AuxiliaryStates
-from auxiliary_states_old cimport AuxiliaryStates
-# from define_parameters cimport Parameters
-from define_parameters_old cimport Parameters
+from auxiliary_states cimport AuxiliaryStates
+from define_parameters cimport Parameters
 from utils cimport satVp, co2dens2ppm
 from libc.math cimport exp, log, fmax, fmin, floor
 

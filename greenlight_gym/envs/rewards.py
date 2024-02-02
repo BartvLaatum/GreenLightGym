@@ -40,7 +40,7 @@ class HarvestHeatCO2Reward(BaseReward):
 
     def _compute_reward(self, GLModel: greenlight_cy.GreenLight) -> SupportsFloat:
         delta_harvest =  getattr(GLModel, "fruit_harvest")/self.dmfm # [kg [DM]{CH2O} m^-2]
-        self.profit = delta_harvest * self.tom_price - getattr(GLModel, "co2_resource")*self.co2_price - getattr( GLModel, "gas_resource") * self.gas_price  # [€ m^-2]
+        self.profit = delta_harvest * self.tom_price - getattr(GLModel, "co2_resource")*self.co2_price - getattr(GLModel, "gas_resource") * self.gas_price  # [€ m^-2]
         return self._scale(self.profit)
 
 class ArcTanPenaltyReward(BaseReward):

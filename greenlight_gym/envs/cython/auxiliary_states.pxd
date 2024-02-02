@@ -424,7 +424,8 @@ cdef inline double airMv(double f12, double vp1, double vp2, double t1, double t
     r = 8.314e3
 	kelvin = 273.15
     """
-    return (18/8.314e3)*fabs(f12) * (vp1/(t1+273.15) - vp2/(t2+273.15))
+    # return (18/8.314e3)*fabs(f12) * (vp1/(t1+273.15) - vp2/(t2+273.15))
+    return 0.002165*fabs(f12) * (vp1/(t1+273.15) - vp2/(t2+273.15))
 
 cdef inline double smoothHar(double processVar, double cutOff, double smooth, double maxRate):
     """
@@ -435,7 +436,8 @@ cdef inline double smoothHar(double processVar, double cutOff, double smooth, do
                  a range with approximately this width
     maxRate    - the maximum harvest rate
     """
-    return maxRate / (1 + exp(-(processVar-cutOff)*2 * log(100)/smooth))
+    # return maxRate / (1 + exp(-(processVar-cutOff)*2 * log(100)/smooth))
+    return maxRate / (1 + exp(-(processVar-cutOff)*2 * 4.6052/smooth))
 
 cdef inline double airMc(double f12, double c1, double c2):
     """
@@ -743,7 +745,7 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double* u, double* x,
     # Equation 18 [1]
     ## SINCE U[9] IS ALWAYS ZERO IF WE DONT USE PERMANENT SHADING SCREEN WE CAN EASILY CHANGE THIS TO
     # a.capCov = cos(rad2degrees(p.psi)) * (u[9] * p.hShScrPer * p.rhoShScrPer * p.cPShScrPer + p.hRf * p.rhoRf * p.cPRf)
-    a.capCov = cos(rad2degrees(p.psi)) * p.hRf * p.rhoRf * p.cPRf
+    a.capCov = cos(rad2degrees(p.psi)) * p.hRf*p.rhoRf*p.cPRf
 
     ####################################
     #### Capacities - Section 4 [1] ####
@@ -1027,13 +1029,7 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double* u, double* x,
     # addAux(gl, 'rCanFlr', fir(gl.a.aCan, p.epsCan, p.epsFlr, \
     #     p.fCanFlr, x.tCan, x.tFlr))
     a.rCanFlr = fir(a.aCan, p.epsCan, p.epsFlr, p.fCanFlr, x[4], x[8], p.sigma)
-    # print("aCan", a.aCan)
-    # print("epsCan", p.epsCan)
-    # print("epsFlr", p.epsFlr)
-    # print("fCanFlr", p.fCanFlr)
-    # print("tCan", x[4])
-    # print("tFlr", x[8])
-    # print("sigma", p.sigma)
+
     # FIR between pipes and cover [W m^{-2}]
     # addAux(gl, 'rPipeCovIn', fir(p.aPipe, p.epsPipe, gl.a.epsCovFir, \
     #     p.tauIntLampFir*p.tauLampFir*gl.a.tauThScrFirU.*gl.a.tauBlScrFirU*0.49.*\
@@ -1137,6 +1133,7 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double* u, double* x,
     #     gl.a.tauThScrFirU.*gl.a.tauBlScrFirU, x.tLamp, x.tCovIn))
     a.rLampCovIn = fir(p.aLamp, p.epsLampTop, a.epsCovFir, \
         a.tauThScrFirU*a.tauBlScrFirU, x[17], x[5], p.sigma)
+
 
     # FIR between lamps and sky [W m^{-2}]
     # addAux(gl, 'rLampSky', fir(p.aLamp, p.epsLampTop, p.epsSky, \
@@ -1418,8 +1415,6 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double* u, double* x,
     a.hCanAir = sensible(2*p.alfaLeafAir*a.lai, x[4], x[2])
 
     # # Between air in main compartment and floor [W m^{-2}]
-    # addAux(gl, 'hAirFlr', 
-    # sensible(ifElse('x.tFlr>x.tAir',1.7*nthroot(abs(x.tFlr-x.tAir),3),1.3*nthroot(abs(x.tAir-x.tFlr),4)), x.tAir,x.tFlr)
     if x[8] > x[2]:
         a.hAirFlr = sensible(1.7 * fabs(x[8] - x[2])**(1/3), x[2], x[8])
     else:
@@ -1458,8 +1453,8 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double* u, double* x,
 
     # # Between top compartment and cover [W m^{-2}]
     # addAux(gl, 'hTopCovIn', sensible(p.cHecIn*nthroot(abs(x.tTop-x.tCovIn),3)*p.aCov/p.aFlr,\
-    #     x.tTop,x.tCovIn))
-    a.hTopCovIn = sensible(p.cHecIn * p.aCov/p.aFlr * fabs(x[3] - x[5])**(1/3), \
+    #     x.tTop, x.tCovIn))
+    a.hTopCovIn = sensible(p.cHecIn*fabs(x[3] - x[5])**(1/3)*p.aCov/p.aFlr , \
         x[3], x[5])
 
     # # Between top compartment and outside air [W m^{-2}]
@@ -1481,7 +1476,7 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double* u, double* x,
     a.hPipeAir = sensible(\
         1.99 * M_PI * p.phiPipeE * p.lPipe * fabs(x[9] - x[2])**0.32,\
         x[9], x[2])
-        
+
     # # Between floor and soil layer 1 [W m^{-2}]
     # addAux(gl, 'hFlrSo1', sensible(\
     #     2/(p.hFlr/p.lambdaFlr+p.hSo1/p.lambdaSo),\
@@ -1519,24 +1514,22 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double* u, double* x,
     # a.hCovInCovE = sensible(\
     #     1/(p.hRf/p.lambdaRf + u[8]*p.hShScrPer/p.lambdaShScrPer),\
     #     x[5], x[6])
-    a.hCovInCovE = sensible(\
-        1/(p.hRf/p.lambdaRf),\
-        x[5], x[6])
+    a.hCovInCovE = sensible(1/(p.hRf/p.lambdaRf), x[5], x[6])
 
     # # Between lamps and air in main compartment [W m^{-2}]
     # # Equation A29 [5]
     # addAux(gl, 'hLampAir', sensible(p.cHecLampAir, x.tLamp, x.tAir))
     a.hLampAir = sensible(p.cHecLampAir, x[17], x[2])
-    
-    # # Between grow pipes and air in main compartment [W m^{-2}]
-    # # Equations A31, A33 [5]
+
+    # Between grow pipes and air in main compartment [W m^{-2}]
+    # Equations A31, A33 [5]
     # addAux(gl, 'hGroPipeAir', sensible(\
         # 1.99*pi*p.phiGroPipeE*p.lGroPipe*(abs(x.tGroPipe-x.tAir)).^0.32, \
     #     x.tGroPipe, x.tAir))
     a.hGroPipeAir = sensible(\
         1.99 * M_PI * p.phiGroPipeE * p.lGroPipe * fabs(x[19]-x[2])**0.32, \
         x[19], x[2])
-        
+
     # # Between interlights and air in main compartment [W m^{-2}]
     # # Equation A30 [5]
     # addAux(gl, 'hIntLampAir', sensible(p.cHecIntLampAir, x.tIntLamp, x.tAir))
@@ -1617,7 +1610,7 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double* u, double* x,
     # Table 4 [1]
     # addAux(gl, 'mvTopCovIn', cond(p.cHecIn*nthroot(abs(x.tTop-x.tCovIn),3)*p.aCov/p.aFlr,\
     #     x.vpTop, satVp(x.tCovIn)))
-    a.mvTopCovIn = cond(p.cHecIn * p.aCov/p.aFlr * fabs(x[3]-x[5])**(1/3),\
+    a.mvTopCovIn = cond(p.cHecIn*fabs(x[3]-x[5])**(1/3)*p.aCov/p.aFlr,\
         x[16], satVp(x[5]))
 
     # Vapor flux from main to top compartment [kg m^{-2} s^{-1}]
@@ -1692,6 +1685,7 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double* u, double* x,
     # # Equation 12 [2]
     # addAux(gl, 'p', gl.a.j.*(gl.a.co2Stom-gl.a.gamma)./(4*(gl.a.co2Stom+2*gl.a.gamma)))
     a.p = a.j*(a.co2Stom-a.gamma) / (4*(a.co2Stom + 2*a.gamma))
+
 
     # # Photrespiration [umol{co2} m^{-2} s^{-1}]
     # # Equation 13 [2]
@@ -1796,7 +1790,6 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double* u, double* x,
     # A new smoothing function has been applied here to avoid stiffness
     # Leaf pruning [mg{CH2O} m^{-2] s^{-1}]
     # Equation B.5 [2]
-    # addAux(gl, 'mcLeafHar', smoothHar(x.cLeaf, p.cLeafMax, 1e4, 5e4))
     a.mcLeafHar = smoothHar(x[23], p.cLeafMax, 1e4, 5e4)
 
     # Fruit harvest [mg{CH2O} m^{-2} s^{-1}]
@@ -1808,6 +1801,7 @@ cdef inline void update(AuxiliaryStates* a, Parameters* p, double* u, double* x,
     # of CO2 is taken from the air, thus the conversion uses molar masses
     # addAux(gl, 'mcAirCan', (p.mCo2/p.mCh2o)*(gl.a.mcAirBuf-gl.a.mcBufAir-gl.a.mcOrgAir))
     a.mcAirCan = (p.mCo2/p.mCh2o) * (a.mcAirBuf-a.mcBufAir-a.mcOrgAir)
+
     # Other CO2 flows [mg{CO2} m^{-2} s^{-1}]
     # Equation 45 [1]
 
