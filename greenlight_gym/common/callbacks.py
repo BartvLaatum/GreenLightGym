@@ -11,11 +11,7 @@ from stable_baselines3.common.vec_env import VecEnv, sync_envs_normalization
 
 from greenlight_gym.common.evaluation import evaluate_policy
 from greenlight_gym.common.utils import days2date
-
-class Results(BaseCallback):
-    def __init__(self,):
-        # self.df = pd.DataFrame(columns=['time', 'co2 resource', ''])
-        raise NotImplementedError
+from greenlight_gym.common.results import Results
 
 class TensorboardCallback(EvalCallback):
     """
@@ -34,11 +30,8 @@ class TensorboardCallback(EvalCallback):
         path_vec_env: Optional[str] = None,         # from where to load in VecNormalize
         name_vec_env: Optional[str] = None,         # name of the VecNormalize file
         callback_on_new_best = None,                # callback to call when a new best model is found
-        run: Optional[wandb.run] = None,
-        state_columns: Optional[List[str]] = None,
-        action_columns: Optional[List[str]] = None,
-        states2plot: Optional[List[str]] = None,
-        actions2plot: Optional[List[str]] = None,
+        run: Optional[wandb.run] = None,            # wandb run
+        results: Optional[Results] = None,          # results class where results are stored
         verbose: int = 1,
     ):
         super().__init__(
@@ -54,20 +47,14 @@ class TensorboardCallback(EvalCallback):
         self.path_vec_env = path_vec_env
         self.name_vec_env = name_vec_env
         self.run = run
-        self.state_columns = state_columns
-        self.action_columns = action_columns
-        self.states2plot = states2plot
-        self.actions2plot = actions2plot
+        self.plot = True if run is not None else False
+        self.results = results
 
     def _on_step(self) -> bool:
 
         continue_training = True
 
         if self.n_calls % self.eval_freq == 0:
-            # path = os.path.join(self.path_vec_env, f"{self.name_vec_env}_{self.num_timesteps}_steps.pkl")
-            # print(path)
-            # self.eval_env = VecNormalize.load(path, self.eval_env)
-            # print(eval_env.obs_rms[:6])
             # Sync training and eval env if there is VecNormalize
             if self.model.get_vec_normalize_env() is not None:
                 try:
@@ -78,6 +65,10 @@ class TensorboardCallback(EvalCallback):
                         "see https://stable-baselines3.readthedocs.io/en/master/guide/callbacks.html#evalcallback "
                         "and warning above."
                     ) from e
+
+
+            # reset the index of the evaluation environment
+            self.eval_env.env_method("_reset_eval_idx")
 
             # Reset success rate buffer
             self._is_success_buffer = []
@@ -91,6 +82,10 @@ class TensorboardCallback(EvalCallback):
                 warn=self.warn,
                 callback=self._log_success_callback,
             )
+
+            # we cutoff the last observations because that already belongs to the reset of the next episode
+            episode_obs = episode_obs[:, :-1, :]
+            time_vec = time_vec[:, :-1]
 
             if self.log_path is not None:
                 self.evaluations_timesteps.append(self.num_timesteps)
@@ -111,9 +106,7 @@ class TensorboardCallback(EvalCallback):
                     **kwargs,
                 )
             mean_reward, std_reward = np.mean(episode_rewards), np.std(episode_rewards)
-            meanActions = np.mean(episode_actions, axis=0)
-            # we cutoff the last observations because that already belongs to the reset of the next env.
-            meanObs = np.mean(episode_obs[:], axis=0)[:-1]
+
             sum_violations = np.sum(episode_violations, axis=(1,2))
             sum_profits = np.sum(episode_profits, axis=1)
 
@@ -148,29 +141,33 @@ class TensorboardCallback(EvalCallback):
                 if self.callback_on_new_best is not None:
                     continue_training = self.callback_on_new_best.on_step()
 
-                # plot if new best
-                if self.run:
+                # update the results class with the results of the current episode
+                if self.results is not None:
                     observer = self.eval_env.get_attr("observations", [0])[0]
-                    n_obs_model_vars = len(observer.model_obs_vars)
-                    states = pd.DataFrame(data=meanObs[:, :n_obs_model_vars], columns=self.state_columns)
-                    actions = pd.DataFrame(data=meanActions, columns=self.action_columns)
-                    actions["Time"] = pd.to_datetime(days2date(time_vec[0, 1:], "01-01-0001")).tz_localize("Europe/Amsterdam")
-                    states["Time"] = pd.to_datetime(days2date(time_vec[0, :-1], "01-01-0001")).tz_localize("Europe/Amsterdam")
-                    states["Cumulative harvest"] = states["Fruit harvest"].cumsum()
-                    states["Cumulative CO2"] = states["CO2 resource"].cumsum()
-                    states["Cumulative gas"] = states["Gas resource"].cumsum()
-                    states["Cumulative profit"] = episode_profits[0, :].cumsum()
-                    states["Cumulative violations"] = np.sum(episode_violations, axis=2).cumsum(axis=1)[0] # total penalty score over complete course
+                    model_obs = observer.obs_list[observer.model_obs_idx]
+                    times = np.array([pd.to_datetime(days2date(time_vec[i, :], "01-01-0001")).tz_localize("Europe/Amsterdam") for i in range(time_vec.shape[0])])
 
-                    tableActions = wandb.Table(dataframe=actions)
-                    tableStates = wandb.Table(dataframe=states)
+                    # add dimension to time_vec and episode_profits so that they can be concatenated to other arrays
+                    times = np.expand_dims(times, axis=-1)
+                    episode_profits = np.expand_dims(episode_profits, axis=-1)
 
-                    actionplots = [wandb.plot.line(tableActions, x="Time", y=act, title='Actions') for act in self.actions2plot]
-                    stateplots = [wandb.plot.line(tableStates, x="Time", y=state, title='States') for state in self.states2plot]
+                    # concatenate the results of the current episode to the results of the previous episodes
+                    data = np.concatenate((times, episode_obs[:,:,:model_obs.Nobs], episode_actions, episode_profits, episode_violations), axis=2)
+                    self.results.update_result(data)
 
-                    # Log the custom plot
-                    self.run.log({act: actionplots[i] for i, act in enumerate(self.actions2plot)})
-                    self.run.log({state: stateplots[i] for i, state in enumerate(self.states2plot)})
+                # plot results of a single episode (usually the first one)
+                if self.plot:
+                    plot_episode = 0
+                    table = wandb.Table(dataframe=self.results.df[self.results.df['episode'] == plot_episode])
+
+                    for col in self.results.col_names[1:-1]:
+                        wandb.log(
+                            {
+                                f"plot_{col}_id": wandb.plot.line(
+                                    table, "Time", col, title=f"Plot of {col} over Time"
+                                )
+                            }
+                        )
 
             # Trigger callback after every evaluation, if needed
             if self.callback is not None:

@@ -82,24 +82,27 @@ def evaluate_policy(
     current_lengths = np.zeros(n_envs, dtype="int")
     # get N attribute from environment
 
-    timestep = 0
+    # timestep counter for each seperate environment
+    timesteps = np.zeros(n_envs, dtype="int")
     N = env.get_attr("N", [0])[0]
     nu = env.get_attr("nu", [0])[0]
 
-    episode_profits = np.zeros((n_envs, N))
-    episode_violations = np.zeros((n_envs, N, 3))
-    episode_actions = np.zeros((n_envs, N, nu))
-    episode_obs = np.zeros((n_envs, N+1, env.observation_space.shape[0]))
-    time_vec = np.zeros((n_envs, N+1))  # array to save time
-    model_actions = np.zeros((n_envs, N, env.action_space.shape[0]))
+    episode_profits = np.zeros((n_eval_episodes, N))
+    episode_violations = np.zeros((n_eval_episodes, N, 3))
+    episode_actions = np.zeros((n_eval_episodes, N, nu))
+    episode_obs = np.zeros((n_eval_episodes, N+1, env.observation_space.shape[0]))
+    time_vec = np.zeros((n_eval_episodes, N+1))  # array to save time
+    model_actions = np.zeros((n_eval_episodes, N, env.action_space.shape[0]))
     # metrics = np.zeros((n_envs, N, 10))
 
     observations = env.reset()
     states = None
     episode_starts = np.ones((env.num_envs,), dtype=bool)
 
-    time_vec[:, 0] =  env.env_method("_get_time")
-    episode_obs[:, 0, :] = env.unnormalize_obs(observations)[:, :]
+    # set initial values for the time vector
+    for i in range(n_eval_episodes//n_envs):
+        time_vec[i*n_envs: (i+1)*n_envs , 0] =  env.env_method("_get_time")
+        episode_obs[i*n_envs: (i+1)*n_envs, 0, :] = env.unnormalize_obs(observations)
 
     while (episode_counts < episode_count_targets).any():
         actions, states = model.predict(
@@ -108,13 +111,10 @@ def evaluate_policy(
             episode_start=episode_starts,
             deterministic=deterministic,
         )
-        model_actions[:, timestep, :] += actions
+        # model_actions[:, timesteps, :] += actions
         new_observations, rewards, dones, infos = env.step(actions)
         current_rewards += rewards
         current_lengths += 1
-
-        time_vec[:, timestep+1] =  env.env_method("_get_time")
-        episode_obs[:, timestep+1, :] = env.unnormalize_obs(new_observations)[:, :]
 
         for i in range(n_envs):
             if episode_counts[i] < episode_count_targets[i]:
@@ -122,11 +122,19 @@ def evaluate_policy(
                 reward = rewards[i]
                 done = dones[i]
                 info = infos[i]
+                timestep = info["timestep"]
                 episode_starts[i] = done
 
-                episode_actions[i, timestep, :] += info["controls"]
-                episode_profits[i, timestep] += info["profit"]
-                episode_violations[i, timestep] += info["penalty"]
+                # compute which evaluation episode this is
+                i_eval_eps = episode_counts[i]*n_envs + i
+
+                time_vec[i_eval_eps, timesteps + 1] =  env.env_method("_get_time")[i]
+                episode_obs[i_eval_eps, timesteps + 1, :] = env.unnormalize_obs(new_observations[i])
+                episode_actions[i_eval_eps, timesteps[i], :] += info["controls"]
+                episode_profits[i_eval_eps, timesteps[i]] += info["profit"]
+
+                episode_violations[i_eval_eps, timesteps[i]] += info["penalty"]
+                timesteps[i] += 1
 
                 if callback is not None:
                     callback(locals(), globals())
@@ -144,15 +152,20 @@ def evaluate_policy(
                             episode_lengths.append(info["episode"]["l"])
                             # Only increment at the real end of an episode
                             episode_counts[i] += 1
+                            # set timesteps for specific environement to 0
+                            timesteps[i] = 0
                     else:
                         episode_rewards.append(current_rewards[i])
                         episode_lengths.append(current_lengths[i])
                         episode_counts[i] += 1
+                        # set 
+                        timesteps[i] = 0
                     current_rewards[i] = 0
                     current_lengths[i] = 0
+                
+
 
         observations = new_observations
-        timestep += 1
         if render:
             env.render()
 
