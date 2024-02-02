@@ -1,19 +1,23 @@
 GreenLightEnv:
     weather_data_dir: envs/data/ # path to the weather data file
-    location: Amsterdam   # location of the weatherdata
-    data_source: KNMI      # which data source we use
+    location: Amsterdam     # location of the weatherdata
+    data_source: KNMI       # which data source we use
     nx: 28                  # Number of states
     nu: 8                   # number of control variables for GreenLight
     nd: 10                  # weather variables
-    no_lamps: 0              # whether lamps are used
-    led_lamps: 1             # whether led lamps are used
-    hps_lamps: 0             # whether hps lamps are used
-    int_lamps: 0             # whether int lamps are used
+    no_lamps: 0             # whether lamps are used
+    led_lamps: 1            # whether led lamps are used
+    hps_lamps: 0            # whether hps lamps are used
+    int_lamps: 0            # whether int lamps are used
     dmfm: 0.0627            # dry matter fresh matter ratio
     h: 1                    # stepsize for the RK4 solver
-    season_length: 10        # number of growing days
+    season_length: 10       # number of growing days
     pred_horizon: !!float 0.011 # prediction horizon in days (corresponds to 15 minutes into the future)
-    time_interval: 900       # [s] time interval at what rate do we observe and control the environment
+    time_interval: 900      # [s] time interval at what rate do we observe and control the environment
+    start_train_year: 2011  # start range of years in which we start the simulation
+    end_train_year: 2020    # end range of years in which we end the simulation
+    start_train_day: 59     # day of the year that marks start range of training
+    end_train_day: 274      # day of the year that marks end range of training
     training: True
 
 GreenLightHeatCO2:
@@ -31,12 +35,14 @@ GreenLightHeatCO2:
     model_obs_vars: [air_temp, co2_conc, in_rh, fruit_weight, fruit_harvest, PAR, co2_resource, gas_resource] # number of variables we observe from the model
     weather_obs_vars: [glob_rad, out_temp, out_rh, out_co2, wind_speed]       # number of weather variables we observe
 
-options:                                                # Options for the the evaluation episodes 
-    start_days: [59, 70, 80, 90, 120, 130]              # day since 01-feb for starting the episode
-    growth_years: [2011, 2011, 2011, 2011, 2011, 2011]  # year in which we start growing season
+# Options for the the evaluation episodes
+options: 
+    start_days: [59, 90, 120, 151, 181, 212, 243]                               # which days we start the evaluation
+    growth_years: [2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010]  # which years we start the evalation
 
 # results that are stored after an evaluation episode
-results_columns: [Time, Air Temperature, CO2 concentration, Humidity, Fruit weight, Fruit harvest, PAR, CO2 resource, Gas resource,
-                                                                        uBoil, uCO2, uThScr, uVent, uLamp, uIntLamp, uGroPipe, uBlScr,
-                                                                        Profits, Temperature penalty, CO2 penalty, Humidity penalty, episode]
+results_columns: [Time, Air Temperature, CO2 concentration, Humidity, 
+                    Fruit weight, Fruit harvest, PAR, CO2 resource, Gas resource,
+                    uBoil, uCO2, uThScr, uVent, uLamp, uIntLamp, uGroPipe, uBlScr,
+                    Profits, Temperature penalty, CO2 penalty, Humidity penalty, episode]
 
