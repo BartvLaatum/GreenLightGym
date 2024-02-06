@@ -172,7 +172,7 @@ cdef inline double* controlSignal(AuxiliaryStates* a, Parameters* p, double* x, 
     u[3] = fmin(ventCold, fmax(ventHeat, ventRh))
     u[4] = lampOn
     u[5] = intLampOn * p.intLamps
-    u[6] = proportionalControl(x[2], heatSetPoint, p.tHeatBand, 0, 1)
+    u[6] = proportionalControl(x[2], heatSetPoint, p.tHeatBand, 0, 1) * p.pBoilGro
     u[7] = p.useBlScr * (1-d[9]) * fmax(lampOn, intLampOn)
 
     # UNUSED shading screen, permanent shading screen, side ventilation

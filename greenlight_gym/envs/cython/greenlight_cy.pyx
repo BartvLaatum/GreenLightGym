@@ -30,6 +30,7 @@ cdef class GreenLight:
     cdef char nx            # number of states
     cdef char nu            # number of control signals
     cdef char nd            # number of disturbances
+
     cdef unsigned short solverSteps # number of steps to take by solver between time interval for observing the env
     cdef float time_interval
 
@@ -48,30 +49,44 @@ cdef class GreenLight:
         self.p = <Parameters*>malloc(sizeof(Parameters))
         self.a = <AuxiliaryStates*>malloc(sizeof(AuxiliaryStates))
         self.u = <double*>malloc(nu * sizeof(double))
+        self.x = <double*>malloc(nx * sizeof(double))
+        self.d = NULL
         initParameters(self.p, noLamps, ledLamps, hpsLamps, intLamps)
+
         self.h = h
         self.nx = nx
         self.nu = nu
         self.nd = nd
+
         self.timestep = 0
         self.solverSteps = solverSteps
         self.time_interval = solverSteps * h
 
     def __dealloc__(self):
-        free(self.a)
-        free(self.p)
-        free(self.d)
-        free(self.x)
-        free(self.u)
-    
-                
+        if self.a is not NULL:
+            free(self.a)
+            self.a = NULL
+        if self.p is not NULL:
+            free(self.p)
+            self.p = NULL
+        if self.d is not NULL:
+            free(self.d)
+            self.d = NULL
+        if self.x is not NULL:
+            free(self.x)
+            self.x = NULL
+        if self.u is not NULL:
+            free(self.u)
+            self.u = NULL
+
     cpdef void reset(self, 
                     cnp.ndarray[cnp.double_t, ndim=2] weather,
                     unsigned int timeInDays
                     ):
+
+        # compute auxiliary states once before start of simulation
         self.initWeather(weather)
         self.initStates(self.d[0], timeInDays)
-        # compute auxiliary states once before start of simulation
         initAuxStates(self.a, self.x)
         self.timestep = 0
 
@@ -116,6 +131,9 @@ cdef class GreenLight:
         cdef cnp.ndarray[cnp.double_t, ndim=2] np_weather = np.asarray(weather, dtype=np.double)
         cdef int n = np_weather.shape[0]
         cdef char l = self.nd
+
+        if self.d is not NULL:
+            free(self.d)
         self.d = <double(*)[10]>malloc(n * sizeof(double[10]))
 
         for i in range(n):
@@ -190,10 +208,7 @@ cdef class GreenLight:
 
         x[27]: time     Time since 01-01-0001 [days]
     """
-        # self.x = <double(*)[26]>malloc(sizeof(double))
         # Air and vapor pressure are assumed to start at the night setpoints
-        # x.co2Air.val = d.co2Out.val(1,2)
-        self.x = <double*>malloc(self.nx * sizeof(double))
         self.x[0] = d0[3] # co2Air
 
         # x.co2Top.val = x.co2Air.val

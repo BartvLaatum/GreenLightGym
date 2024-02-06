@@ -51,6 +51,10 @@ class GreenLightEnv(gym.Env):
         self.nx = nx
         self.nu = nu
         self.nd = nd
+        self.no_lamps = no_lamps
+        self.led_lamps = led_lamps
+        self.hps_lamps = hps_lamps
+        self.int_lamps = int_lamps
         self.weather_data_dir = weather_data_dir
         self.location = location
         self.data_source = data_source
@@ -58,6 +62,7 @@ class GreenLightEnv(gym.Env):
         self.dmfm = dmfm
         self.season_length = season_length
         self.pred_horizon = pred_horizon
+        self.time_interval = time_interval
         self.N = int(season_length*self.c/time_interval)    # number of timesteps to take for python wrapper
         self.solver_steps = int(time_interval/self.h)       # number of steps the solver takes between time_interval
         # self.options = options
@@ -81,7 +86,7 @@ class GreenLightEnv(gym.Env):
         self.obs_low = None
         self.obs_high = None
 
-        # initialize the model in cython
+        # # initialize the model in cython
         self.GLModel = GL(self.h,
                           nx,
                           nu,
@@ -192,6 +197,9 @@ class GreenLightEnv(gym.Env):
     def _reset_eval_idx(self):
         self.eval_idx = 0
 
+    def increase_eval_idx(self):
+        self.eval_idx += 1
+
     def reset(self, seed: Optional[int] = None) -> Tuple[np.ndarray, Dict[str, Any]]:
         """
         Container function that resets the environment.
@@ -205,7 +213,7 @@ class GreenLightEnv(gym.Env):
         else:
             # self.growth_year = self.options["growth_year"]
             self.start_day = self.start_days[self.eval_idx]
-            self.eval_idx += 1
+            self.increase_eval_idx()
 
         # load in weather data for specific simulation
         self.weatherData = loadWeatherData(
@@ -223,7 +231,7 @@ class GreenLightEnv(gym.Env):
         # compute days since 01-01-0001
         # as time indicator by the model
         timeInDays = self._get_time_in_days()
-    
+
         # reset the GreenLight model starting settings
         self.GLModel.reset(self.weatherData, timeInDays)
 
@@ -276,7 +284,7 @@ class GreenLightHeatCO2(GreenLightEnv):
         self.model_obs_vars = model_obs_vars
         self.weather_obs_vars = weather_obs_vars
 
-        Np = int(self.pred_horizon*self.c/self.GLModel.time_interval)   # the prediction horizon in timesteps for our weather predictions
+        Np = int(self.pred_horizon*self.c/self.time_interval)   # the prediction horizon in timesteps for our weather predictions
 
         # intialise observation and reward functions
         self._init_observations(model_obs_vars, weather_obs_vars, Np)
@@ -311,7 +319,7 @@ class GreenLightHeatCO2(GreenLightEnv):
                                                             gas_price,
                                                             tom_price,
                                                             self.dmfm,
-                                                            self.GLModel.time_interval,
+                                                            self.time_interval,
                                                             self.GLModel.maxco2rate,
                                                             self.GLModel.maxHeatCap,
                                                             self.GLModel.maxHarvest,
@@ -369,7 +377,7 @@ class GreenLightRuleBased(GreenLightEnv):
         self.model_obs_vars = model_obs_vars
         self.weather_obs_vars = weather_obs_vars
 
-        Np = int(self.pred_horizon*self.c/self.GLModel.time_interval)   # the prediction horizon in timesteps for our weather predictions
+        Np = int(self.pred_horizon*self.c/self.time_interval)   # the prediction horizon in timesteps for our weather predictions
 
         # intialise observation and reward functions
         self._init_observations(model_obs_vars, weather_obs_vars, Np)
@@ -442,7 +450,7 @@ class GreenLightStatesTest(GreenLightEnv):
         self.model_obs_vars = model_obs_vars
         self.weather_obs_vars = weather_obs_vars
 
-        Np = int(self.pred_horizon*self.c/self.GLModel.time_interval)   # the prediction horizon in timesteps for our weather predictions
+        Np = int(self.pred_horizon*self.c/self.time_interval)   # the prediction horizon in timesteps for our weather predictions
 
         # intialise observation and reward functions
         self._init_observations(model_obs_vars, weather_obs_vars, Np)
