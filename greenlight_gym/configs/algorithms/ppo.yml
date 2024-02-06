@@ -1,7 +1,7 @@
 # tuned
 four_controls:
   policy: MlpPolicy
-  learning_rate: !!float 2.231e-4   
+  learning_rate: !!float 2.231e-4
   n_steps: 480      # we update after n_steps calls of step() function. in the case of 10 envs --> 1280 timesteps are taken (equals to 10 days)
   batch_size: 64
   n_epochs: 7 
@@ -23,3 +23,5 @@ four_controls:
                   activation_fn: ELU,
                   log_std_init: np.log(0.5) # Results in policy standard deviation of 0.5 since exp(log(0.5)) = 0.5
           }
+
+  learning_rate_scheduler: {initial_value: 2.0e-4, final_value: 3.e-5, final_progress: 0.5}
