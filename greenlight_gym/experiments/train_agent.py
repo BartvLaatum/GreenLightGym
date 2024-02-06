@@ -10,29 +10,26 @@ import matplotlib.pyplot as plt
 from stable_baselines3 import PPO
 
 from greenlight_gym.experiments.utils import load_env_params, load_model_params, wandb_init, make_vec_env, create_callbacks
+from greenlight_gym.common.results import Results
 
-def runExperiment(
-    env_id,
-    env_base_params,
-    env_specific_params,
-    options,
-    model_params,
-    seed,
-    n_eval_episodes,
-    num_cpus, 
-    project,
-    group,
-    total_timesteps,
-    n_evals,
-    state_columns,
-    action_columns,
-    states2plot=None,
-    actions2plot=None,
-    runname = None,
-    job_type="train",
-    save_model=True,
-    save_env=True
-    ):
+def runExperiment(env_id,
+                  env_base_params,
+                  env_specific_params,
+                  options,
+                  model_params,
+                  seed,
+                  n_eval_episodes,
+                  num_cpus, 
+                  project,
+                  group,
+                  total_timesteps,
+                  n_evals,
+                  results,
+                  runname = None,
+                  job_type="train",
+                  save_model=True,
+                  save_env=True
+                  ) -> None:
 
     run, config = wandb_init(
             model_params,
@@ -46,7 +43,7 @@ def runExperiment(
             job_type=job_type,
             save_code=True
             )
-    # print(cofig)
+
     monitor_filename = None
     vec_norm_kwargs = {"norm_obs": True, "norm_reward": True, "clip_obs": 50_000}
 
@@ -56,7 +53,7 @@ def runExperiment(
         env_specific_params,
         options,
         seed=seed,
-        num_cpus=num_cpus,
+        n_envs=num_cpus,
         monitor_filename=monitor_filename,
         vec_norm_kwargs=vec_norm_kwargs
         )
@@ -67,7 +64,7 @@ def runExperiment(
         env_specific_params,
         options,
         seed=seed,
-        num_cpus=1,
+        n_envs=min(args.n_eval_episodes, 10),
         monitor_filename=monitor_filename,
         vec_norm_kwargs=vec_norm_kwargs,
         eval_env=True,
@@ -98,10 +95,7 @@ def runExperiment(
         model_log_dir,
         eval_env,
         run=run,
-        action_columns=action_columns,
-        state_columns=state_columns,
-        states2plot=states2plot,
-        actions2plot=actions2plot,
+        results=results,
         save_env=save_env,
         verbose=1
         )
@@ -130,15 +124,18 @@ def runExperiment(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--env_id", type=str, default="GreenLightHeatCO2")
-    parser.add_argument("--project", type=str, default="testing")
-    parser.add_argument("--group", type=str, default="group1")
-    parser.add_argument("--config_name", type=str, default="four_controls")
-    parser.add_argument("--total_timesteps", type=int, default=500_000)
-    parser.add_argument("--n_eval_episodes", type=int, default=1)
-    parser.add_argument("--num_cpus", type=int, default=12)
-    parser.add_argument("--n_evals", type=int, default=10)
-    parser.add_argument("--seed", type=int, default=666)
+    parser.add_argument("--env_id", type=str, default="GreenLightHeatCO2", help="Environment ID")
+    parser.add_argument("--project", type=str, default="testing", help="Wandb project name")
+    parser.add_argument("--group", type=str, default="group1", help="Wandb group name")
+    parser.add_argument("--env_config_name", type=str, default="four_controls", help="Name of the environment config file")
+    parser.add_argument("--total_timesteps", type=int, default=500_000, help="Total number of timesteps to train algorithm for")
+    parser.add_argument("--n_eval_episodes", type=int, default=1, help="Number of episodes to evaluate the agent for")
+    parser.add_argument("--num_cpus", type=int, default=12, help="Number of CPUs to use during training")
+    parser.add_argument("--n_evals", type=int, default=10, help="Number times we evaluate algorithm during training")
+    parser.add_argument("--algorithm", type=str, default="ppo", help="RL algorithm to use")
+    parser.add_argument("--seed", type=int, default=666, help="Random seed for reproducibility")
+    parser.add_argument('--save_model', default=True, action=argparse.BooleanOptionalAction, help="Whether to save the model")
+    parser.add_argument("--save_env", default=True, action=argparse.BooleanOptionalAction, help="Whether to save the environment")
     args = parser.parse_args()
 
     # check cpus available
@@ -148,12 +145,10 @@ if __name__ == "__main__":
     env_config_path = f"configs/envs/"
     model_config_path = f"configs/algorithms/"
 
-    states2plot = ["Air Temperature","CO2 concentration", "Humidity", "Fruit harvest", "PAR", "Cumulative harvest", "Cumulative CO2", "Cumulative gas", "Cumulative profit", "Cumulative violations"]
-    actions2plot = ["uBoil", "uCO2", "uThScr", "uVent", "uLamp"]
+    env_base_params, env_specific_params, options, result_columns = load_env_params(args.env_id, env_config_path, args.env_config_name)
+    model_params = load_model_params(args.algorithm, model_config_path, args.env_config_name)
 
-    algorithm = "ppo"
-    env_base_params, env_specific_params, options, state_columns, action_columns = load_env_params(args.env_id, env_config_path, args.config_name)
-    model_params = load_model_params(algorithm, model_config_path, args.config_name)
+    results = Results(result_columns)
 
     job_type = f"seed-{args.seed}"
     runExperiment(args.env_id,
@@ -168,10 +163,7 @@ if __name__ == "__main__":
                     args.group,
                     args.total_timesteps,
                     args.n_evals,
-                    state_columns,
-                    action_columns,
-                    states2plot=states2plot,
-                    actions2plot=actions2plot,
+                    results=results,
                     runname=None,
                     job_type=job_type
                     )

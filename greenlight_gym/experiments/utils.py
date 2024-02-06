@@ -13,8 +13,10 @@ from torch.nn.modules.activation import ReLU, SiLU, Tanh, ELU
 from wandb.integration.sb3 import WandbCallback
 from stable_baselines3.common.vec_env import SubprocVecEnv, VecNormalize, VecMonitor, VecEnv
 
-from greenlight_gym.envs.greenlight import GreenLightEnv, GreenLightHeatCO2, GreenLightRuleBased, GreenLightStatesTest
+from greenlight_gym.common.results import Results
 from greenlight_gym.common.callbacks import TensorboardCallback, SaveVecNormalizeCallback, BaseCallback
+from greenlight_gym.envs.greenlight import GreenLightEnv, GreenLightHeatCO2, GreenLightRuleBased, GreenLightStatesTest
+from greenlight_gym.common.learning_rate import linear_schedule
 
 ACTIVATION_FN = {"ReLU": ReLU, "SiLU": SiLU, "Tanh":Tanh, "ELU": ELU}
 OPTIMIZER = {"ADAM": Adam}
@@ -33,6 +35,8 @@ def make_env(env_id, rank, seed, kwargs, kwargsSpecific, options, eval_env):
         env = envs[env_id](**kwargsSpecific, **kwargs, options=options)
         if eval_env:
             env.training = False
+            env.start_days = options["start_days"] 
+            env.growth_year = options["growth_years"][rank]
 
         # call reset with seed due to new seeding syntax of gymnasium environments
         env.reset(seed+rank)
@@ -54,6 +58,10 @@ def load_model_params(algorithm: str, path: str, env_name: str) -> Dict[str, Any
             OPTIMIZER[model_params["policy_kwargs"]["optimizer_class"]]
         model_params["policy_kwargs"]["log_std_init"] = \
             eval(model_params["policy_kwargs"]["log_std_init"])
+        
+    if model_params["learning_rate_scheduler"]:
+        model_params["learning_rate"] = linear_schedule(**model_params["learning_rate_scheduler"])
+        del model_params["learning_rate_scheduler"]
     return model_params
 
 def load_env_params(env_id: str, path: str, filename: str) -> Tuple[Dict, Dict, Dict, Dict, Dict]:
@@ -76,9 +84,8 @@ def load_env_params(env_id: str, path: str, filename: str) -> Tuple[Dict, Dict, 
     options = params["options"]
 
     # state and action column names used for plotting and saving data
-    state_columns = params["state_columns"]
-    action_columns = params["action_columns"]
-    return env_base_params, env_specific_params, options, state_columns, action_columns
+    results_columns = params["results_columns"]
+    return env_base_params, env_specific_params, options, results_columns
 
 def loadParameters(env_id: str, path: str, filename: str, algorithm: str = None):
     with open(join(path, filename), "r") as f:
@@ -160,6 +167,7 @@ def wandb_init(model_params: Dict[str, Any],
         "model_params": {**model_params},
         "envParams": {**envSpecificParams, **envParams}
     }
+
     config_exclude_keys = []
     run = wandb.init(
         project=project,
@@ -179,26 +187,24 @@ def make_vec_env(env_id: str,
                  envSpecificParams: Dict[str, Any],
                  options: Dict[str, Any],
                  seed: int,
-                 num_cpus: int,
+                 n_envs: int,
                  monitor_filename: str | None = None,
                  vec_norm_kwargs: Dict[str, Any] | None = None,
                  eval_env: bool = False) -> VecEnv:
     """
-    Creates a normalized environment.
+    Creates a vectorized environment, with n individual envs.
     """
     # make dir if not exists
     if monitor_filename is not None and not os.path.exists(os.path.dirname(monitor_filename)):
         os.makedirs(os.path.dirname(monitor_filename), exist_ok=True)
 
-    env = SubprocVecEnv([make_env(env_id, rank, seed, envParams, envSpecificParams, options, eval_env=eval_env) for rank in range(num_cpus)])
+    env = SubprocVecEnv([make_env(env_id, rank, seed, envParams, envSpecificParams, options, eval_env=eval_env) for rank in range(n_envs)])
     env = VecMonitor(env, filename=monitor_filename)
     env = VecNormalize(env, **vec_norm_kwargs)
     env.seed(seed=seed)
-
     if eval_env:
         env.training = False
         env.norm_reward = False
-    # env.seed(seed)
     return env
 
 def create_callbacks(n_eval_episodes: int,
@@ -208,10 +214,7 @@ def create_callbacks(n_eval_episodes: int,
                      model_log_dir: str,
                      eval_env: VecEnv,
                      run: wandb.run = None,
-                     action_columns: List[str] | None = None,
-                     state_columns:List[str] | None = None,
-                     states2plot:List[str] | None = None,
-                     actions2plot: List[str] | None = None,
+                     results: Optional[Results] = None,
                      save_env: bool = True,
                      verbose: int = 1,
                      ) -> List[BaseCallback]:
@@ -228,10 +231,7 @@ def create_callbacks(n_eval_episodes: int,
                                         deterministic=True,
                                         callback_on_new_best=save_vec_best,
                                         run=run,
-                                        action_columns=action_columns,
-                                        state_columns=state_columns,
-                                        states2plot=states2plot,
-                                        actions2plot=actions2plot,
+                                        results=results,
                                         verbose=verbose)
     wandbcallback = WandbCallback(verbose=verbose)
     return [eval_callback, wandbcallback]
