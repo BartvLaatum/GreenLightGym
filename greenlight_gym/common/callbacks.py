@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import gymnasium as gym
 
+# from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.callbacks import EvalCallback, BaseCallback
 from stable_baselines3.common.vec_env import VecEnv, sync_envs_normalization
 
@@ -47,7 +48,7 @@ class TensorboardCallback(EvalCallback):
         self.path_vec_env = path_vec_env
         self.name_vec_env = name_vec_env
         self.run = run
-        self.plot = True if run is not None else False
+        self.plot = True if run else False
         self.results = results
 
     def _on_step(self) -> bool:
@@ -72,7 +73,8 @@ class TensorboardCallback(EvalCallback):
 
             # Reset success rate buffer
             self._is_success_buffer = []
-            episode_rewards, episode_lengths, episode_actions, model_actions, episode_obs, time_vec, episode_profits, episode_violations = evaluate_policy(
+
+            episode_rewards, episode_lengths, episode_actions, episode_obs, time_vec, episode_profits, episode_violations = evaluate_policy(
                 self.model,
                 self.eval_env,
                 n_eval_episodes=self.n_eval_episodes,
@@ -81,11 +83,12 @@ class TensorboardCallback(EvalCallback):
                 return_episode_rewards=True,
                 warn=self.warn,
                 callback=self._log_success_callback,
+                save_info=True,
             )
 
             # we cutoff the last observations because that already belongs to the reset of the next episode
-            episode_obs = episode_obs[:, :-1, :]
-            time_vec = time_vec[:, :-1]
+            # episode_obs = episode_obs[:, :-1, :]
+            # time_vec = time_vec[:, :-1]
 
             if self.log_path is not None:
                 self.evaluations_timesteps.append(self.num_timesteps)
@@ -110,12 +113,13 @@ class TensorboardCallback(EvalCallback):
             sum_violations = np.sum(episode_violations, axis=(1,2))
             sum_profits = np.sum(episode_profits, axis=1)
 
-            mean_ep_length, std_ep_length = np.mean(episode_lengths), np.std(episode_lengths)
+            # mean_ep_length, std_ep_length = np.mean(episode_lengths), np.std(episode_lengths)
             self.last_mean_reward = mean_reward
 
             if self.verbose >= 1:
                 print(f"Eval num_timesteps={self.num_timesteps}, " f"episode_reward={mean_reward:.2f} +/- {std_reward:.2f}")
-                print(f"Episode length: {mean_ep_length:.2f} +/- {std_ep_length:.2f}")
+                # print(f"Episode length: {mean_ep_length:.2f} +/- {std_ep_length:.2f}")
+            
             # Add to current Logger
             self.logger.record("eval/mean_reward", float(mean_reward))
             self.logger.record("eval/mean_profit", float(np.mean(sum_profits)))
@@ -157,6 +161,7 @@ class TensorboardCallback(EvalCallback):
 
                 # plot results of a single episode (usually the first one)
                 if self.plot:
+
                     plot_episode = 0
                     table = wandb.Table(dataframe=self.results.df[self.results.df['episode'] == plot_episode])
 
@@ -174,7 +179,6 @@ class TensorboardCallback(EvalCallback):
                 continue_training = continue_training and self._on_event()
 
         return continue_training
-
 
 class SaveVecNormalizeCallback(BaseCallback):
     """
