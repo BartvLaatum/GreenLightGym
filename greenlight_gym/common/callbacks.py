@@ -50,6 +50,13 @@ class TensorboardCallback(EvalCallback):
         self.run = run
         self.plot = True if run else False
         self.results = results
+        self.save_results = True if results else False
+
+        if self.save_results:
+            self.results_path = f"../data/{self.run.project}/{self.run.group}"
+            # create save directory if not already present
+            os.makedirs(self.results_path, exist_ok=True)
+
 
     def _on_step(self) -> bool:
 
@@ -158,6 +165,11 @@ class TensorboardCallback(EvalCallback):
                     # concatenate the results of the current episode to the results of the previous episodes
                     data = np.concatenate((times, episode_obs[:,:,:model_obs.Nobs], episode_actions, episode_profits, episode_violations), axis=2)
                     self.results.update_result(data)
+
+                    # save results
+                    if self.save_results:
+                        # save results to csv given the run name
+                        self.results.save(os.path.join(self.results_path, f"{self.run.name}.csv"))
 
                 # plot results of a single episode (usually the first one)
                 if self.plot:

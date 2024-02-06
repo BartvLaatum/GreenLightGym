@@ -17,5 +17,5 @@ class Results:
             episode_data = np.concatenate((data[episode], np.full(shape=(data.shape[1], 1), fill_value=episode)), axis=1)
             self.df = self.df._append(pd.DataFrame(data=episode_data, columns=self.col_names), ignore_index=True)
 
-    def save_results(self, filename):
-        pass
+    def save(self, filename):
+        self.df.to_csv(filename, index=False)
