@@ -59,7 +59,7 @@ def load_model_params(algorithm: str, path: str, env_name: str) -> Dict[str, Any
         model_params["policy_kwargs"]["log_std_init"] = \
             eval(model_params["policy_kwargs"]["log_std_init"])
         
-    if model_params["learning_rate_scheduler"]:
+    if "learning_rate_scheduler" in model_params.keys():
         model_params["learning_rate"] = linear_schedule(**model_params["learning_rate_scheduler"])
         del model_params["learning_rate_scheduler"]
     return model_params
