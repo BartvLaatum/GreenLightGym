@@ -53,7 +53,7 @@ class TensorboardCallback(EvalCallback):
         self.save_results = True if results else False
 
         if self.save_results:
-            self.results_path = f"../data/{self.run.project}/{self.run.group}"
+            self.results_path = f"data/{self.run.project}/{self.run.group}"
             # create save directory if not already present
             os.makedirs(self.results_path, exist_ok=True)
 
