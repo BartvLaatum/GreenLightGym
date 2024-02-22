@@ -119,7 +119,7 @@ def evaluate_policy(
         current_lengths += 1
 
         current_episode_profits[:, timestep] = np.array([info["profit"] for info in infos])
-        current_episode_violations[:, timestep, :] = np.array([info["penalty"] for info in infos])
+        current_episode_violations[:, timestep, :] = np.array([info["violations"] for info in infos])
         current_episode_actions[:, timestep, :] = np.array([info["controls"] for info in infos])
         timestep += 1
 
@@ -131,16 +131,6 @@ def evaluate_policy(
                 info = infos[i]
                 episode_starts[i] = done
 
-                # save the time, observations, actions, profits, and violations
-                # if save_info:
-                # # compute which evaluation episode this is
-                #     i_eval_eps = episode_counts[i]*n_envs + i
-                #     time_vec[i_eval_eps, timestep] =  env.env_method("_get_time", indices=i)
-                #     episode_obs[i_eval_eps, timestep, :] = env.unnormalize_obs(observations[i])
-                #     episode_actions[i_eval_eps, timestep[i], :] += info["controls"]
-                #     episode_profits[i_eval_eps, timestep[i]] += info["profit"]
-                #     episode_violations[i_eval_eps, timestep[i]] += info["penalty"]
-                #     timestep[i] += 1
 
                 if callback is not None:
                     callback(locals(), globals())

@@ -117,20 +117,22 @@ class TensorboardCallback(EvalCallback):
                 )
             mean_reward, std_reward = np.mean(episode_rewards), np.std(episode_rewards)
 
-            sum_violations = np.sum(episode_violations, axis=(1,2))
+            sum_violations = np.sum(episode_violations, axis=1)
             sum_profits = np.sum(episode_profits, axis=1)
-
+            print(sum_violations.shape)
             # mean_ep_length, std_ep_length = np.mean(episode_lengths), np.std(episode_lengths)
             self.last_mean_reward = mean_reward
 
             if self.verbose >= 1:
                 print(f"Eval num_timesteps={self.num_timesteps}, " f"episode_reward={mean_reward:.2f} +/- {std_reward:.2f}")
                 # print(f"Episode length: {mean_ep_length:.2f} +/- {std_ep_length:.2f}")
-            
+
             # Add to current Logger
             self.logger.record("eval/mean_reward", float(mean_reward))
             self.logger.record("eval/mean_profit", float(np.mean(sum_profits)))
-            self.logger.record("eval/violations", np.mean(sum_violations))
+            self.logger.record("eval/temp_penalty", np.mean(sum_violations[:,0]))
+            self.logger.record("eval/co2_penalty", np.mean(sum_violations[:,1]))
+            self.logger.record("eval/rh_penalty", np.mean(sum_violations[:,2]))
 
             if len(self._is_success_buffer) > 0:
                 success_rate = np.mean(self._is_success_buffer)
