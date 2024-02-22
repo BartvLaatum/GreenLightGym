@@ -75,8 +75,8 @@ class ArcTanPenaltyReward(BaseReward):
         """
         Returns the sum of the inverse tangens for absolute penalty values.
         """ 
-        abs_pen = self._compute_penalty(GLModel.get_indoor_obs())
-        self.pen = 2/np.pi*np.arctan(-self.k*abs_pen)
+        self.abs_pen = self._compute_penalty(GLModel.get_indoor_obs())
+        self.pen = 2/np.pi*np.arctan(-self.k*self.abs_pen)
         return np.sum(self.pen)
 
 class CombinerReward(BaseReward):

@@ -300,7 +300,7 @@ class GreenLightHeatCO2(GreenLightEnv):
             "controls": self.GLModel.getControlsArray(),
             "Time": self.GLModel.time,
             "profit": self.rewards.rewards_list[0].profit,
-            "penalty": self.rewards.rewards_list[1].pen,
+            "violations": self.rewards.rewards_list[1].abs_pen,
             "timestep": self.GLModel.timestep
             }
 
