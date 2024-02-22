@@ -29,7 +29,7 @@ GreenLightHeatCO2:
     gas_price: 0.35         # €/m3
     tom_price: 1.6          # €/[FW] kg
     k: [1, 1.e-3, 0.1]      # penalty coefficients
-    obs_low:  [15, 300, 60]  # lower bound for the observation space
+    obs_low:  [15, 0, 60]  # lower bound for the observation space
     obs_high: [35, 1000, 85] # upper bound for the observation space
     control_signals: [uBoil, uCO2, uThScr, uVent] # list with all control inputs we aim to control/learn
     model_obs_vars: [air_temp, co2_conc, in_rh, fruit_weight, fruit_harvest, PAR, co2_resource, gas_resource] # number of variables we observe from the model

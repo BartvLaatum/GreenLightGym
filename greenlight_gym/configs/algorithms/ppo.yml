@@ -28,7 +28,6 @@
 #tuned
 5min_four_controls:
   policy: MlpPolicy
-  learning_rate: !!float 3.5e-4
   n_steps: 1440      # we update after n_steps calls of step() function. in the case of 10 envs --> 10 * n_steps
   batch_size: 64
   n_epochs: 7 
@@ -43,7 +42,7 @@
   sde_sample_freq: -1
   target_kl: null
 
-  policy_kwargs: {net_arch: {pi: [256, 256], vf: [1028, 1028]},
+  policy_kwargs: {net_arch: {pi: [256, 256], vf: [1024, 1024]},
                   optimizer_class: ADAM,
                   optimizer_kwargs: {amsgrad: True},
                   activation_fn: SiLU,
