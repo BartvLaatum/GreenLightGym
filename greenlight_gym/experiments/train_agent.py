@@ -147,7 +147,6 @@ if __name__ == "__main__":
 
     env_base_params, env_specific_params, options, result_columns = load_env_params(args.env_id, env_config_path, args.env_config_name)
     model_params = load_model_params(args.algorithm, model_config_path, args.env_config_name)
-    env_specific_params["k"] = [2, 1e-3, 0.5]
     results = Results(result_columns)
 
     job_type = f"seed-{args.seed}"
