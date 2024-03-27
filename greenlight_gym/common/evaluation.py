@@ -78,6 +78,7 @@ def evaluate_policy(
     episode_violations = []
     episode_actions = []
     episode_obs = []
+    episode_weather = []
     time_vec = []
 
     episode_counts = np.zeros(n_envs, dtype="int")
@@ -92,7 +93,6 @@ def evaluate_policy(
     timestep = 0
     N = env.get_attr("N", indices=0)[0]
     nu = env.get_attr("nu", indices=0)[0]
-
 
     current_episode_profits = np.zeros((n_envs, N))
     current_episode_violations = np.zeros((n_envs, N, 3))
@@ -113,9 +113,10 @@ def evaluate_policy(
         )
         current_time_vec[:, timestep] = env.env_method("_get_time")
         current_episode_obs[:, timestep, :] = env.unnormalize_obs(observations)
+        # current_episode_obs[:, timestep, :] = observations
 
         new_observations, rewards, dones, infos = env.step(actions)
-        current_rewards += rewards
+        current_rewards += env.unnormalize_reward(rewards)
         current_lengths += 1
 
         current_episode_profits[:, timestep] = np.array([info["profit"] for info in infos])

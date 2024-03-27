@@ -12,8 +12,14 @@ def linear_schedule(initial_value, final_value, final_progress):
     :return: A function that takes a progress (0 to 1) and returns the learning rate.
     """
     def func(progress):
+        """
+        Progress will decrease from 1 (beginning) to 0.
+
+        :param progress_remaining:
+        :return: current learning rate
+        """
         if progress > final_progress:
-            return initial_value + (1.0 - progress) * (final_value - initial_value) / final_progress
+            return initial_value + (1.0 - progress) * (final_value - initial_value) / (1.0-final_progress)
         else:
             return final_value
     

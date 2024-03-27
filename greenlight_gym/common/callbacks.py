@@ -74,7 +74,6 @@ class TensorboardCallback(EvalCallback):
                         "and warning above."
                     ) from e
 
-
             # reset the index of the evaluation environment
             self.eval_env.env_method("_reset_eval_idx")
 
@@ -119,7 +118,6 @@ class TensorboardCallback(EvalCallback):
 
             sum_violations = np.sum(episode_violations, axis=1)
             sum_profits = np.sum(episode_profits, axis=1)
-            print(sum_violations.shape)
             # mean_ep_length, std_ep_length = np.mean(episode_lengths), np.std(episode_lengths)
             self.last_mean_reward = mean_reward
 
@@ -157,7 +155,7 @@ class TensorboardCallback(EvalCallback):
                 # update the results class with the results of the current episode
                 if self.results is not None:
                     observer = self.eval_env.get_attr("observations", [0])[0]
-                    model_obs = observer.obs_list[observer.model_obs_idx]
+                    # model_obs = observer.obs_list[observer.model_obs_idx]
                     times = np.array([pd.to_datetime(days2date(time_vec[i, :], "01-01-0001")).tz_localize("Europe/Amsterdam") for i in range(time_vec.shape[0])])
 
                     # add dimension to time_vec and episode_profits so that they can be concatenated to other arrays
@@ -165,7 +163,7 @@ class TensorboardCallback(EvalCallback):
                     episode_profits = np.expand_dims(episode_profits, axis=-1)
 
                     # concatenate the results of the current episode to the results of the previous episodes
-                    data = np.concatenate((times, episode_obs[:,:,:model_obs.Nobs], episode_actions, episode_profits, episode_violations), axis=2)
+                    data = np.concatenate((times, episode_obs[:,:,:], episode_actions, episode_profits, episode_violations), axis=2)
                     self.results.update_result(data)
 
                     # save results
