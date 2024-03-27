@@ -12,7 +12,7 @@ GreenLightEnv:
     dmfm: 0.0627            # dry matter fresh matter ratio
     h: 1                    # stepsize for the RK4 solver
     season_length: 10       # number of growing days
-    pred_horizon: !!float 0. # prediction horizon in days (corresponds to 15 minutes into the future)
+    pred_horizon: !!float 0.0 # prediction horizon in days (corresponds to 15 minutes into the future)
     time_interval: 300      # [s] time interval at what rate do we observe and control the environment
     start_train_year: 2011  # start range of years in which we start the simulation
     end_train_year: 2020    # end range of years in which we end the simulation
@@ -26,13 +26,14 @@ GreenLightHeatCO2:
     cFruit: !!float 2.8e5   # [DW] mg/m2
     tCanSum: !!float 3e3    # Temperature sum for canopy development
     co2_price: 0.1          # €/kg
-    gas_price: 0.35         # €/m3
+    gas_price: 0.26         # €/m3
     tom_price: 1.6          # €/[FW] kg
-    k: [1, 4.e-4, 0.4]      # penalty coefficients
-    obs_low:  [15, 0, 60]  # lower bound for the observation space
-    obs_high: [35, 1000, 90] # upper bound for the observation space
+    k: [1.0, 4.e-3, 0.4]    # penalty coefficients
+    obs_low:  [10, 0, 60]   # lower bound for the observation space
+    obs_high: [35, 1000, 90]    # upper bound for the observation space
+    omega: 1.0                  # coefficient for multiplicative penalty
     control_signals: [uBoil, uCO2, uThScr, uVent] # list with all control inputs we aim to control/learn
-    model_obs_vars: [air_temp, co2_conc, in_rh, fruit_weight, fruit_harvest, PAR, co2_resource, gas_resource] # number of variables we observe from the model
+    model_obs_vars: [air_temp, co2_conc, in_rh, fruit_weight, fruit_harvest, PAR, co2_resource, gas_resource, hour_of_day_sin, hour_of_day_cos, day_of_year_sin, day_of_year_cos] # number of variables we observe from the model
     weather_obs_vars: [glob_rad, out_temp, out_rh, out_co2, wind_speed]       # number of weather variables we observe
 
 # Options for the the evaluation episodes
@@ -41,7 +42,9 @@ options:
     growth_years: [2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010]  # which years we start the evalation
 
 # results that are stored after an evaluation episode
-results_columns: [Time, Air Temperature, CO2 concentration, Humidity, 
-                    Fruit weight, Fruit harvest, PAR, CO2 resource, Gas resource,
-                    uBoil, uCO2, uThScr, uVent, uLamp, uIntLamp, uGroPipe, uBlScr,
-                    Profits, Temperature violation, CO2 violation, Humidity violation, episode]
+results_columns: [Time, Air Temperature, CO2 concentration, Humidity, Fruit weight,
+                    Fruit harvest, PAR, CO2 resource, Gas resource, Hour of day sin,
+                    Hour of day cos, Day of year sin, Day of year cos, Global radiation, Outdoor temperature, 
+                    Outdoor Humidity, Outdoor CO2, Wind speed, uBoil, uCO2,
+                    uThScr, uVent, uLamp, uIntLamp, uGroPipe,
+                    uBlScr, Profits, Temperature violation, CO2 violation, Humidity violation, episode]
