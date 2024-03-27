@@ -12,6 +12,7 @@ from difference_function cimport fRK4, fRK45
 from compute_controls cimport controlSignal
 from utils cimport satVp
 from libc.stdlib cimport malloc, free
+from libc.math cimport cos, pi, sin
 import cython
 
 import numpy as np
@@ -366,6 +367,37 @@ cdef class GreenLight:
         np_indoor_obs[2] = self.a.rhIn
         return np_indoor_obs
 
+    # @property
+    # def hour_of_day(self):
+    #     # returns the time of day [h]
+    #     return self.a.timeOfDay
+
+    cpdef double cyclic_cos(self, double t):
+        return 0.5 * (1+cos(2*pi * t))
+
+    cpdef double cyclic_sin(self, double t):
+        return 0.5 * (1+sin(2*pi * t))
+
+    @property
+    def hour_of_day_cos(self):
+        # returns the time of day [h]
+        return self.cyclic_cos(self.a.timeOfDay/24)
+    
+    @property
+    def hour_of_day_sin(self):
+        return self.cyclic_sin(self.a.timeOfDay/24)
+
+    @property
+    def day_of_year_cos(self):
+        # returns the day of the year [d]
+        return self.cyclic_cos(self.a.dayOfYear/365)
+
+    @property
+    def day_of_year_sin(self):
+        # returns the day of the year [d]
+        return self.cyclic_sin(self.a.dayOfYear/365)
+
+
     @property
     def air_temp(self):
         # Returns the indoor air temperature
@@ -385,7 +417,11 @@ cdef class GreenLight:
     def fruit_weight(self):
         # Returns the fruit dry matter weight [kg{CH20} m^{-2}]
         return self.x[25] * 1e-6
-    
+
+    def crop_cBuf(self):
+        # Returns the carbohydrates in the crop's carb. Buffer [kg{CH20} m^{-2}]
+        return self.x[22]*1e-6
+
     @property
     def fruit_harvest(self):
         # Returns the harvested fruit dry matter over past time step [kg{CH20} m^{-2} ts^{-1}]
@@ -420,7 +456,6 @@ cdef class GreenLight:
     def maxHeatCap(self):
         # Returns the maximum heat capacity (power) of the greenhouse [W m^-2]
         return self.p.pBoil / self.p.aFlr
-
 
     @property
     def maxco2rate(self):

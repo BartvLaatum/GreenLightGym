@@ -107,11 +107,10 @@ cdef inline double* ODE(AuxiliaryStates* a, Parameters* p, double* x, double* u,
         a.rLampBlScr+a.rIntLampBlScr)
 
     # % Average canopy temperature in last 24 hours
-    # ki[21] = (1/86400)*(x[4]-x[21])
-    ki[21] = (1.1574e-05)*(x[4]-x[21])
+    ki[21] = (1/86400)*(x[4]-x[21])
 
     ## Crop model [2]
-    
+
     # Carbohydrates in buffer [mg{CH2O} m^{-2} s^{-1}]
     ki[22] = a.mcAirBuf-a.mcBufFruit-a.mcBufLeaf-a.mcBufStem-a.mcBufAir
 
@@ -125,8 +124,7 @@ cdef inline double* ODE(AuxiliaryStates* a, Parameters* p, double* x, double* u,
     ki[25] = a.mcBufFruit-a.mcFruitAir-a.mcFruitHar
 
     # Crop development stage [�C day s^{-1}]
-    # ki[26] = (1/86400)*x[4]
-    ki[26] = (1.1574e-05)*x[4]
+    ki[26] = (1/86400)*x[4]
 
     # time in days since 00-00-0000
     ki[27] = 1/86400

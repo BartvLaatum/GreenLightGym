@@ -454,10 +454,8 @@ cdef inline void initParameters(Parameters* p, char noLamps, char ledLamps, char
     p.phiExtCo2 = 72000             # Capacity of external CO2 source [mg s^{-1}]
 
     ## Heat capacity of heating pipes [J K^{-1} m^{-2}]
-    # p.capPipe = 0.25*pi * p.lPipe*(( p.phiPipeE**2- p.phiPipeI**2)* p.rhoSteel*\
-    #       p.cPSteel+ p.phiPipeI**2* p.rhoWater* p.cPWater)
-    p.capPipe = 16497.8591
-
+    p.capPipe = 0.25*pi * p.lPipe*(( p.phiPipeE**2- p.phiPipeI**2)* p.rhoSteel*\
+          p.cPSteel+ p.phiPipeI**2* p.rhoWater* p.cPWater)
 
     ## Density of air [kg m^{-3}]
     p.rhoAir =  p.rhoAir0*exp(p.g* p.mAir* p.hElevation/(293.15* p.R))
@@ -480,13 +478,11 @@ cdef inline void initParameters(Parameters* p, char noLamps, char ledLamps, char
 
     # Surface of pipes for floor area [-]
     # Table 3 [1]
-    # p.aPipe = pi * p.lPipe * p.phiPipeE
-    p.aPipe = 0.30042
+    p.aPipe = pi * p.lPipe * p.phiPipeE
 
     # View factor from canopy to floor
     # Table 3 [1]
-    # p.fCanFlr = 1 - 0.49*pi * p.lPipe * p.phiPipeE
-    p.fCanFlr = 0.85279
+    p.fCanFlr = 1 - 0.49*pi * p.lPipe * p.phiPipeE
 
     # Absolute air pressure at given elevation [Pa]
     # See https://www.engineeringtoolbox.com/air-altitude-pressure-d_462.html
@@ -513,8 +509,7 @@ cdef inline void initParameters(Parameters* p, char noLamps, char ledLamps, char
     p.laiMax = 3
     p.sla = 2.66e-5
     p.rgr = 3e-6
-    # p.cLeafMax = p.laiMax/ p.sla
-    p.cLeafMax = 112781.9549
+    p.cLeafMax = p.laiMax/p.sla
 
     p.cFruitMax = 300_000
 
@@ -527,7 +522,7 @@ cdef inline void initParameters(Parameters* p, char noLamps, char ledLamps, char
     p.cLeafM = 3.47e-7
     p.cStemM = 1.47e-7
 
-    p.rgFruit = 0.328	
+    p.rgFruit = 0.328
     p.rgLeaf = 0.095
     p.rgStem = 0.074
 
@@ -543,7 +538,7 @@ cdef inline void initParameters(Parameters* p, char noLamps, char ledLamps, char
     p.tEndSum = 1035
 
     ## Control parameters
-    p.rhMax = 90
+    p.rhMax = 85
     p.dayThresh = 20
     p.tSpDay = 19.5
     p.tSpNight = 16.5
@@ -553,7 +548,7 @@ cdef inline void initParameters(Parameters* p, char noLamps, char ledLamps, char
     p.thScrSpDay = 5
     p.thScrSpNight = 10
     p.thScrPband = -1
-    p.co2SpNight = 500
+    p.co2SpNight = 0
     p.co2SpDay = 800
     p.co2Band = -100
     p.heatDeadZone = 5

@@ -8,7 +8,7 @@ from gymnasium.spaces import Box
 from greenlight_gym.envs.cython.greenlight_cy import GreenLight as GL
 from greenlight_gym.common.utils import loadWeatherData
 from greenlight_gym.envs.observations import ModelObservations, WeatherObservations, AggregatedObservations, StateObservations
-from greenlight_gym.envs.rewards import CombinerReward, HarvestHeatCO2Reward, ArcTanPenaltyReward
+from greenlight_gym.envs.rewards import CombinerReward, HarvestHeatCO2Reward, ArcTanPenaltyReward, MultiplicativeReward
 
 from datetime import date
 
@@ -255,12 +255,12 @@ class GreenLightHeatCO2(GreenLightEnv):
     Also penalises violating indoor climate boundaries.
     """
     def __init__(self,
-                cLeaf: float = 2.5e5,
-                cStem: float = 0.9e5,
-                cFruit: float = 2.8e5,
-                tCanSum: float  = 1035,
+                cLeaf: float = 0.9e5, # [DW] mg/m2
+                cStem: float = 2.5e5, # [DW] mg/m2
+                cFruit: float = 2.8e5, # [DW] mg/m2
+                tCanSum: float = 3e3,
                 co2_price: float = 0.1,
-                gas_price: float = 0.35,
+                gas_price: float = 0.26,
                 tom_price: float = 1.6,
                 k: List[float] = [1,1,1],
                 obs_low: List[float] = [0, 0, 0],
@@ -268,6 +268,7 @@ class GreenLightHeatCO2(GreenLightEnv):
                 control_signals: Optional[List[str]] = None,
                 model_obs_vars: Optional[List[str]] = None,
                 weather_obs_vars: Optional[List[str]] = None,
+                omega: float = 1.0,
                 **kwargs,
                 ) -> None:
 
@@ -288,7 +289,7 @@ class GreenLightHeatCO2(GreenLightEnv):
 
         # intialise observation and reward functions
         self._init_observations(model_obs_vars, weather_obs_vars, Np)
-        self._init_rewards(co2_price, gas_price, tom_price, k, obs_low, obs_high)
+        self._init_rewards(co2_price, gas_price, tom_price, k, obs_low, obs_high, omega)
 
         # initialise the observation and action spaces
         self._generate_observation_space()
@@ -301,7 +302,7 @@ class GreenLightHeatCO2(GreenLightEnv):
             "Time": self.GLModel.time,
             "profit": self.rewards.rewards_list[0].profit,
             "violations": self.rewards.rewards_list[1].abs_pen,
-            "timestep": self.GLModel.timestep
+            "timestep": self.GLModel.timestep,
             }
 
     def _get_obs(self) -> np.ndarray:
@@ -313,20 +314,37 @@ class GreenLightHeatCO2(GreenLightEnv):
                     tom_price: float,
                     k: List[float],
                     obs_low: List[float],
-                    obs_high: List[float]
+                    obs_high: List[float],
+                    omega: float = 0.3
                     ) -> None:
-        self.rewards = CombinerReward([HarvestHeatCO2Reward(co2_price,
-                                                            gas_price,
-                                                            tom_price,
-                                                            self.dmfm,
-                                                            self.time_interval,
-                                                            self.GLModel.maxco2rate,
-                                                            self.GLModel.maxHeatCap,
-                                                            self.GLModel.maxHarvest,
-                                                            self.GLModel.energyContentGas),
-                                        ArcTanPenaltyReward(k,
-                                                            obs_low, 
-                                                            obs_high)]
+        # self.rewards = CombinerReward([HarvestHeatCO2Reward(co2_price,
+        #                                                     gas_price,
+        #                                                     tom_price,
+        #                                                     self.dmfm,
+        #                                                     self.time_interval,
+        #                                                     self.GLModel.maxco2rate,
+        #                                                     self.GLModel.maxHeatCap,
+        #                                                     self.GLModel.maxHarvest,
+        #                                                     self.GLModel.energyContentGas),
+        #                                 ArcTanPenaltyReward(k,
+        #                                                     obs_low, 
+        #                                                     obs_high)]
+        # )
+
+        self.rewards = MultiplicativeReward([HarvestHeatCO2Reward(
+                                                                co2_price,
+                                                                gas_price,
+                                                                tom_price,
+                                                                self.dmfm,
+                                                                self.time_interval,
+                                                                self.GLModel.maxco2rate,
+                                                                self.GLModel.maxHeatCap,
+                                                                self.GLModel.maxHarvest,
+                                                                self.GLModel.energyContentGas),
+                                            ArcTanPenaltyReward(k,
+                                                                obs_low, 
+                                                                obs_high)],
+                                            omega=omega
         )
 
     def _reward(self) -> float:
@@ -359,6 +377,10 @@ class GreenLightRuleBased(GreenLightEnv):
                 cFruit: float = 2.8e5,
                 cStem: float = 2.5e5,
                 tCanSum: float  = 1035,
+                co2_price: float = 0.1,
+                gas_price: float = 0.35,
+                tom_price: float = 1.6,
+                k: List[float] = [1,1,1],
                 obs_low: List[float] = [0, 0, 0],
                 obs_high: List[float] = [np.inf, np.inf, np.inf],
                 control_signals: List[str] = [],
@@ -381,6 +403,7 @@ class GreenLightRuleBased(GreenLightEnv):
 
         # intialise observation and reward functions
         self._init_observations(model_obs_vars, weather_obs_vars, Np)
+        self._init_rewards(co2_price, gas_price, tom_price, k, obs_low, obs_high)
 
         # initialise the observation and action spaces
         self._generate_observation_space()
@@ -390,21 +413,46 @@ class GreenLightRuleBased(GreenLightEnv):
     def _get_obs(self) -> np.ndarray:
         return self.observations.compute_obs(self.GLModel, self.solver_steps, self.weatherData)
 
-    def _reward(self):
-        return 1
+    def _init_rewards(self,
+                    co2_price: float,
+                    gas_price: float,
+                    tom_price: float,
+                    k: List[float],
+                    obs_low: List[float],
+                    obs_high: List[float]
+                    ) -> None:
+        self.rewards = CombinerReward([HarvestHeatCO2Reward(co2_price,
+                                                            gas_price,
+                                                            tom_price,
+                                                            self.dmfm,
+                                                            self.time_interval,
+                                                            self.GLModel.maxco2rate,
+                                                            self.GLModel.maxHeatCap,
+                                                            self.GLModel.maxHarvest,
+                                                            self.GLModel.energyContentGas),
+                                        ArcTanPenaltyReward(k,
+                                                            obs_low, 
+                                                            obs_high)]
+        )
+
+    def _reward(self) -> float:
+        return self.rewards._compute_reward(self.GLModel)
 
     def _get_info(self):
         return {
             "controls": self.GLModel.getControlsArray(),
             "Time": self.GLModel.time,
+            "profit": self.rewards.rewards_list[0].profit,
+            "violations": self.rewards.rewards_list[1].abs_pen,
+            "timestep": self.GLModel.timestep,
             }
 
-    def _init_observations(self,
-                           model_obs_vars: List[str],
-                           weather_obs_vars: List[str],
-                           Np: int
-                           ) -> None:
-        self.observations = ModelObservations(model_obs_vars)
+    # def _init_observations(self,
+    #                        model_obs_vars: List[str],
+    #                        weather_obs_vars: List[str],
+    #                        Np: int
+    #                        ) -> None:
+    #     self.observations = ModelObservations(model_obs_vars)
 
     def reset(self, seed: Optional[int] = None) -> Tuple[np.ndarray, Dict[str, Any]]:
         super().reset(seed=seed)

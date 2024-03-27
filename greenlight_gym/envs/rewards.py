@@ -73,11 +73,28 @@ class ArcTanPenaltyReward(BaseReward):
 
     def _compute_reward(self, GLModel: greenlight_cy.GreenLight) -> SupportsFloat:
         """
-        Returns the sum of the inverse tangens for absolute penalty values.
+        Returns the mean of the inverse tangens for absolute penalty values.
         """ 
         self.abs_pen = self._compute_penalty(GLModel.get_indoor_obs())
         self.pen = 2/np.pi*np.arctan(-self.k*self.abs_pen)
-        return np.sum(self.pen)
+        return np.mean(self.pen)
+
+class LinearScalePenaly(BaseReward):
+    def __init__(self, k: List[float], obs_low: List[float], obs_high: List[float]) -> None:
+        self.k = np.array(k)
+        self.obs_low = np.array(obs_low)
+        self.obs_high = np.array(obs_high)
+
+    def _compute_penalty(self, obs: np.ndarray) -> float:
+        lowerbound = self.obs_low[:] - obs[:]
+        lowerbound[lowerbound < 0] = 0
+        upperbound = obs[:] - self.obs_high[:]
+        upperbound[upperbound < 0] = 0
+        return lowerbound + upperbound
+    
+    def _compute_reward(self, GLModel: greenlight_cy.GreenLight) -> SupportsFloat:
+        self.abs_pen = self._compute_penalty(GLModel.get_indoor_obs())
+
 
 class CombinerReward(BaseReward):
     def __init__(self, rewards_list: List[BaseReward]):
@@ -85,3 +102,13 @@ class CombinerReward(BaseReward):
 
     def _compute_reward(self, GLModel: greenlight_cy.GreenLight):
         return np.sum([reward._compute_reward(GLModel) for reward in self.rewards_list])
+
+class MultiplicativeReward(BaseReward):
+    def __init__(self, rewards_list: List[BaseReward], omega: float):
+        self.rewards_list = rewards_list
+        self.omega = omega
+
+    def _compute_reward(self, GLModel: greenlight_cy.GreenLight):
+        profit = self.rewards_list[0]._compute_reward(GLModel)
+        penalty = self.rewards_list[1]._compute_reward(GLModel)
+        return profit * (1.0 - self.omega*(-penalty))

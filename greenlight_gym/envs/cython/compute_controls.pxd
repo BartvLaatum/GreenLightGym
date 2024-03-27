@@ -112,7 +112,7 @@ cdef inline double* controlSignal(AuxiliaryStates* a, Parameters* p, double* x, 
 
     # Ventilation setpoint due to excess humidity [°C]
     # mechallowed = 1 if mechanical ventilation is allowed, 0 otherwise We have have it at zero
-    ventRh = proportionalControl(rhIn, p.rhMax+0 * p.mechDehumidPband, p.ventRhPband, 0, 1)
+    ventRh = proportionalControl(rhIn, p.rhMax + 0 * p.mechDehumidPband, p.ventRhPband, 0, 1)
 
     # Ventilation closure due to too cold temperatures 
     ventCold = proportionalControl(x[2], heatSetPoint-p.tVentOff, p.ventColdPband, 1, 0)
@@ -128,6 +128,7 @@ cdef inline double* controlSignal(AuxiliaryStates* a, Parameters* p, double* x, 
 
     # Opening of thermal screen due to high humidity [0-1, 0 is fully open]
     thScrRh = fmax(proportionalControl(rhIn, p.rhMax+p.thScrRh, p.thScrRhPband, 1, 0), 1-ventCold)
+
         # if 1-ventCold == 0 (it's too cold inside to ventilate)
         # don't force to open the screen (even if RH says it should be 0)
         # Better to reduce RH by increasing temperature
