@@ -1,1 +1,1 @@
-"# GreenLight Gym" 
+# GreenLight Gym
