@@ -35,7 +35,8 @@ def make_env(env_id, rank, seed, kwargs, kwargsSpecific, options, eval_env):
         env = envs[env_id](**kwargsSpecific, **kwargs, options=options)
         if eval_env:
             env.training = False
-            env.start_days = options["start_days"] 
+            env.start_days = options["start_days"]
+            # we fix the growth year for each individual evaluation environment
             env.growth_year = options["growth_years"][rank]
 
         # call reset with seed due to new seeding syntax of gymnasium environments

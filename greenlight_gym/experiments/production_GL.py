@@ -40,7 +40,5 @@ if __name__ == "__main__":
     fig, axes = createStatesFig(controls2plot)
     plotVariables(fig, axes, controls, controls2plot, label="Production", color="C00")
 
-
-    
     plt.show()
 

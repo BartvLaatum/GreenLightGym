@@ -13,8 +13,8 @@ from greenlight_gym.common.evaluation import evaluate_policy
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--project", type=str, default="TestVecLoadSave")
-    parser.add_argument("--runname", type=str, default="polar-dew-7")
+    parser.add_argument("--project", type=str, default="benchmark-ppo")
+    parser.add_argument("--runname", type=str, default="winter-capibara-99")
     parser.add_argument("--env_id", type=str, default="GreenLightBase")
     parser.add_argument("--HPfolder", type=str, default="GLBase")
     parser.add_argument("--HPfilename", type=str, default="ppo.yml")
@@ -32,7 +32,10 @@ if __name__ == "__main__":
     env = make_vec_env(args.env_id, envParams, envSpecificParams, options, seed=SEED, numCpus=1,\
                              monitor_filename=None, vec_norm_kwargs=vec_norm_kwargs, eval_env=True)
     env = VecNormalize.load(f"trainData/{args.project}/envs/{args.runname}/vecnormalize.pkl", env)
-    model = PPO.load(f"trainData/{args.project}/models/{args.runname}/best_model.zip", env=env)
+
+
+
+    model = PPO.load(f"train_data/{args.project}/models/{args.runname}/best_model.zip", env=env)
     env = model.get_env()
 
     obs = env.reset()
