@@ -95,8 +95,7 @@ class LinearScalePenaly(BaseReward):
     def _compute_reward(self, GLModel: greenlight_cy.GreenLight) -> SupportsFloat:
         self.abs_pen = self._compute_penalty(GLModel.get_indoor_obs())
 
-
-class CombinerReward(BaseReward):
+class AdditiveReward(BaseReward):
     def __init__(self, rewards_list: List[BaseReward]):
         self.rewards_list = rewards_list
 
