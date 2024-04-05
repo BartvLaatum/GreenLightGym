@@ -26,9 +26,13 @@ GreenLightStatesTest:
     model_obs_vars:  [co2Air, co2Top, tAir, tTop, tCan, tCovIn, tCovE, tThScr,
             tFlr, tPipe, tSo1, tSo2, tSo3, tSo4, tSo5, vpAir, vpTop, tLamp,
             tIntLamp, tGroPipe, tBlScr, tCan24, cBuf, cLeaf, cStem, cFruit, tCanSum, Time]
-    weather_obs_vars: [glob_rad, out_temp, out_rh, out_co2, wind_speed]
-
+    weather_obs_vars: []
 
 options:                    # Options for the the evaluation date 
-    startDay: 0             # day since 01-jan for starting the episode
-    growthYear: 2000        # year in which we start growing season
+    start_days: [0]             # day since 01-jan for starting the episode
+    growth_years: [2000]        # year in which we start growing season
+
+results_columns: [co2Air, co2Top, tAir, tTop, tCan, tCovIn, tCovE, tThScr,
+            tFlr, tPipe, tSo1, tSo2, tSo3, tSo4, tSo5, vpAir, vpTop, tLamp,
+            tIntLamp, tGroPipe, tBlScr, tCan24, cBuf, cLeaf, cStem, cFruit, tCanSum, Time, uBoil, uCO2,
+            uThScr, uVent, uLamp, uIntLamp, uGroPipe, uBlScr, episode]
