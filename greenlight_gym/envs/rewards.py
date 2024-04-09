@@ -54,7 +54,7 @@ class ArcTanPenaltyReward(BaseReward):
         self.obs_high = np.array(obs_high)
 
     def _compute_penalty(self, obs: np.ndarray) -> float:
-        """    
+        '''
         Function that computes the penalty for constraint violations.
 
         Penalty is the absolute difference between the observation and the bounds.
@@ -64,7 +64,7 @@ class ArcTanPenaltyReward(BaseReward):
             obs (np.ndarray): observation of the three indoor variables (temp, co2, rh)
         Returns:
             penalty (np.ndarray): absolute penalty for constraint violations
-        """        
+        '''        
         lowerbound = self.obs_low[:] - obs[:]
         lowerbound[lowerbound < 0] = 0
         upperbound = obs[:] - self.obs_high[:]
@@ -72,9 +72,9 @@ class ArcTanPenaltyReward(BaseReward):
         return lowerbound + upperbound
 
     def _compute_reward(self, GLModel: greenlight_cy.GreenLight) -> SupportsFloat:
-        """
+        '''
         Returns the mean of the inverse tangens for absolute penalty values.
-        """ 
+        ''' 
         self.abs_pen = self._compute_penalty(GLModel.get_indoor_obs())
         self.pen = 2/np.pi*np.arctan(-self.k*self.abs_pen)
         return np.mean(self.pen)
