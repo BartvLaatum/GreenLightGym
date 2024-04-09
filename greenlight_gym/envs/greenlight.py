@@ -442,7 +442,7 @@ class GreenLightRuleBased(GreenLightEnv):
             "controls": self.GLModel.getControlsArray(),
             "Time": self.GLModel.time,
             "profit": self.rewards.rewards_list[0].profit,
-            "violations": self.rewards.rewards_list[1].abs_pen,
+            "violations": self.rewards.rewards_list[1].pen,
             "timestep": self.GLModel.timestep,
             }
 
