@@ -88,4 +88,4 @@ if __name__ == "__main__":
         if not os.path.exists(results_path):
             os.makedirs(results_path)
         # save results to csv given the run name
-        results.save(os.path.join(results_path, f"{args.runname}-{args.n_eval_episodes}.csv"))
+        results.save(os.path.join(results_path, f"{args.runname}-{args.n_eval_episodes}-{args.best_or_last}.csv"))

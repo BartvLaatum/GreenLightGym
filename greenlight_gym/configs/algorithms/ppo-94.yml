@@ -127,3 +127,29 @@
           }
 
   learning_rate_scheduler: {initial_value: 5.e-4, final_value: 7.e-5, final_progress: 0.5}
+
+benchmark_mutliplicative_pen:
+  policy: MlpPolicy
+  n_steps: 1440      # we update after n_steps calls of step() function. in the case of 10 envs --> 10 * n_steps
+  batch_size: 64
+  n_epochs: 7
+  gamma: 0.94
+  gae_lambda: 0.995
+  clip_range: 0.5
+  normalize_advantage: True
+  ent_coef: 0.01
+  vf_coef: 0.5
+  max_grad_norm: 0.5
+  use_sde: False
+  sde_sample_freq: -1
+  target_kl: null
+
+  policy_kwargs: {net_arch: {pi: [512, 512, 512], vf: [1024, 1024, 1024]},
+                  optimizer_class: ADAM,
+                  optimizer_kwargs: {amsgrad: True},
+                  activation_fn: SiLU,
+                  log_std_init: np.log(1) # Results in policy standard deviation of 0.5 since exp(log(0.5)) = 0.5, where np.log(1) results in std of 1
+          }
+
+  learning_rate: 7.e-6
+  # learning_rate_scheduler: {initial_value: 5.e-4, final_value: 7.e-5, final_progress: 0.5}

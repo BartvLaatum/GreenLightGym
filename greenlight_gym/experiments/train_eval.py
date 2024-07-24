@@ -5,9 +5,8 @@ import gc
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 from stable_baselines3 import PPO
-from stable_baselines3.common.vec_env import VecNormalize, SubprocVecEnv, VecMonitor
 
-from greenlight_gym.experiments.utils import load_env_params, load_model_params, wandb_init, make_vec_env, create_callbacks, make_env
+from greenlight_gym.experiments.utils import load_env_params, load_model_params, wandb_init, make_vec_env, create_callbacks
 from greenlight_gym.common.results import Results
 
 def runExperiment(env_id,
@@ -102,35 +101,20 @@ def runExperiment(env_id,
 
     tensorboard_log = f"train_data/{project}/logs/{runname}"
 
-    if args.continue_training:
-
-        env = SubprocVecEnv([make_env(env_id, rank, env_seed, env_base_params, env_specific_params, options, eval_env=False) for rank in range(num_cpus)])
-        env = VecMonitor(env, filename=monitor_filename)
-
-        model_path = f"train_data/{args.continued_project}/models/{args.continued_runname}/best_model.zip"
-        env_path = f"train_data/{args.continued_project}/envs/{args.continued_runname}"
-
-        # if I am correct we don't have to do this for the eval env, since it its synced during the evaluation callback.
-        env = VecNormalize.load(os.path.join(env_path, "vecnormalize.pkl"), env)
-        model = PPO.load(model_path, env=env, tensorboard_log=tensorboard_log, **config["model_params"])
-        print(model.ent_coef)
-    else:
-        model = PPO(
-            env=env,
-            seed=model_seed,
-            verbose=0,
-            **config["model_params"],
-            tensorboard_log=tensorboard_log
-            )
+    model = PPO(
+        env=env,
+        seed=model_seed,
+        verbose=0,
+        **config["model_params"],
+        tensorboard_log=tensorboard_log
+        )
 
     # run.log
     model.learn(total_timesteps=config["total_timesteps"], 
-                callback=callbacks, reset_num_timesteps=False)
+                callback=callbacks)
 
     # also save the final model configuration
     model.save(os.path.join(model_log_dir, "last_model"))
-    env_save_path = os.path.join(env_log_dir, "last_vecnormalize.pkl")
-    model.get_vec_normalize_env().save(env_save_path)
 
     # properly shutdown all the variables
     # and do garbage collection
@@ -155,9 +139,6 @@ if __name__ == "__main__":
     parser.add_argument("--model_seed", type=int, default=666, help="Random seed for the RL-model for reproducibility")
     parser.add_argument('--save_model', default=True, action=argparse.BooleanOptionalAction, help="Whether to save the model")
     parser.add_argument("--save_env", default=True, action=argparse.BooleanOptionalAction, help="Whether to save the environment")
-    parser.add_argument("--continue_training", default=False, action=argparse.BooleanOptionalAction, help="Continue training from a saved model")
-    parser.add_argument("--continued_project", type=str, default=None, help="Project name of the saved model to continue training from")
-    parser.add_argument("--continued_runname", type=str, default=None, help="Runname of the saved model to continue training from")
     args = parser.parse_args()
 
     # check cpus available
@@ -168,6 +149,9 @@ if __name__ == "__main__":
     model_config_path = f"configs/algorithms/"
 
     env_base_params, env_specific_params, options, result_columns = load_env_params(args.env_id, env_config_path, args.env_config_name)
+    eval_train_params = {'start_train_year': 2001, 'end_train_year': 2010, 'train_days': [59, 90, 120, 151, 181, 212, 243]}
+    env_base_params.update(eval_train_params)
+
     model_params = load_model_params(args.algorithm, model_config_path, args.env_config_name)
     results = Results(result_columns)
 

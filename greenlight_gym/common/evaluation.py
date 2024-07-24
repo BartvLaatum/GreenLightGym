@@ -173,7 +173,6 @@ def evaluate_policy(
 
                     current_rewards[i] = 0
                     current_lengths[i] = 0
-                
 
         observations = new_observations
         if render:

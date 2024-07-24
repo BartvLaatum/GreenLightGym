@@ -1,5 +1,4 @@
-from typing import SupportsFloat, List
-
+from typing import SupportsFloat, List, Optional
 import numpy as np
 
 from greenlight_gym.envs.cython import greenlight_cy
@@ -79,26 +78,9 @@ class ArcTanPenaltyReward(BaseReward):
         self.pen = 2/np.pi*np.arctan(-self.k*self.abs_pen)
         return np.mean(self.pen)
 
-class LinearScalePenaly(BaseReward):
-    def __init__(self, k: List[float], obs_low: List[float], obs_high: List[float]) -> None:
-        self.k = np.array(k)
-        self.obs_low = np.array(obs_low)
-        self.obs_high = np.array(obs_high)
-
-    def _compute_penalty(self, obs: np.ndarray) -> float:
-        lowerbound = self.obs_low[:] - obs[:]
-        lowerbound[lowerbound < 0] = 0
-        upperbound = obs[:] - self.obs_high[:]
-        upperbound[upperbound < 0] = 0
-        return lowerbound + upperbound
-    
-    def _compute_reward(self, GLModel: greenlight_cy.GreenLight) -> SupportsFloat:
-        self.abs_pen = self._compute_penalty(GLModel.get_indoor_obs())
-
 class AdditiveReward(BaseReward):
-    def __init__(self, rewards_list: List[BaseReward]):
+    def __init__(self, rewards_list: List[BaseReward], omega: Optional[float] = None):
         self.rewards_list = rewards_list
-
     def _compute_reward(self, GLModel: greenlight_cy.GreenLight):
         return np.sum([reward._compute_reward(GLModel) for reward in self.rewards_list])
 
@@ -111,3 +93,20 @@ class MultiplicativeReward(BaseReward):
         profit = self.rewards_list[0]._compute_reward(GLModel)
         penalty = self.rewards_list[1]._compute_reward(GLModel)
         return profit * (1.0 - self.omega*(-penalty))
+
+### UNUSED REWARD FUNCTIONS ###
+# class LinearScalePenaly(BaseReward):
+#     def __init__(self, k: List[float], obs_low: List[float], obs_high: List[float]) -> None:
+#         self.k = np.array(k)
+#         self.obs_low = np.array(obs_low)
+#         self.obs_high = np.array(obs_high)
+
+#     def _compute_penalty(self, obs: np.ndarray) -> float:
+#         lowerbound = self.obs_low[:] - obs[:]
+#         lowerbound[lowerbound < 0] = 0
+#         upperbound = obs[:] - self.obs_high[:]
+#         upperbound[upperbound < 0] = 0
+#         return lowerbound + upperbound
+    
+#     def _compute_reward(self, GLModel: greenlight_cy.GreenLight) -> SupportsFloat:
+#         self.abs_pen = self._compute_penalty(GLModel.get_indoor_obs())

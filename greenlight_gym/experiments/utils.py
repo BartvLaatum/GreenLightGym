@@ -49,7 +49,6 @@ def load_model_params(algorithm: str, path: str, env_name: str) -> Dict[str, Any
 
     with open(join(path, algorithm + ".yml"), "r") as f:
         params = yaml.load(f, Loader=yaml.FullLoader)
-
     model_params = params[env_name]
 
     if "policy_kwargs" in model_params.keys():
@@ -149,10 +148,11 @@ def set_model_params(config):
 
 
 def wandb_init(model_params: Dict[str, Any],
-               envParams: Dict[str, Any],
-               envSpecificParams: Dict[str, Any],
+               env_params: Dict[str, Any],
+               env_specific_params: Dict[str, Any],
                timesteps: int,
-               SEED: int,
+               env_seed: int,
+               model_seed: int,
                project: str,
                group: str,
                runname: str,
@@ -164,9 +164,10 @@ def wandb_init(model_params: Dict[str, Any],
     config= {
         "policy": model_params["policy"],
         "total_timesteps": timesteps,
-        "seed": SEED,
+        "env_seed": env_seed,
+        'model_seed': model_seed,
         "model_params": {**model_params},
-        "envParams": {**envSpecificParams, **envParams}
+        "env_params": {**env_specific_params, **env_params}
     }
 
     config_exclude_keys = []

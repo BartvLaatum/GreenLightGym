@@ -1,0 +1,50 @@
+GreenLightEnv:
+    weather_data_dir: envs/data/ # path to the weather data file
+    location: Amsterdam     # location of the weatherdata
+    data_source: KNMI       # which data source we use
+    nx: 28                  # Number of states
+    nu: 8                   # number of control variables for GreenLight
+    nd: 10                  # weather variables
+    no_lamps: 0             # whether lamps are used
+    led_lamps: 1            # whether led lamps are used
+    hps_lamps: 0            # whether hps lamps are used
+    int_lamps: 0            # whether int lamps are used
+    dmfm: 0.0627            # dry matter fresh matter ratio
+    h: 1                    # stepsize for the RK4 solver
+    season_length: 10       # number of growing days
+    pred_horizon: !!float 0.0 # prediction horizon in days (corresponds to 15 minutes into the future)
+    time_interval: 300      # [s] time interval at what rate do we observe and control the environment
+    start_train_year: 2011  # start range of years in which we start the simulation
+    end_train_year: 2020    # end range of years in which we end the simulation
+    start_train_day: 59     # day of the year that marks start range of training
+    end_train_day: 274      # day of the year that marks end range of training
+    reward_function: AdditiveReward # penalty function to use
+    training: True
+
+GreenLightHeatCO2:
+    cLeaf: !!float 0.9e5    # [DW] mg/m2
+    cStem: !!float 2.5e5    # [DW] mg/m2
+    cFruit: !!float 2.8e5   # [DW] mg/m2
+    tCanSum: !!float 3e3    # Temperature sum for canopy development
+    co2_price: 0.1          # €/kg
+    gas_price: 0.26         # €/m3
+    tom_price: 1.6          # €/[FW] kg
+    k: [1.2, 8.e-3, 1.]      # penalty coefficients
+    obs_low:  [10, 0, 60]  # lower bound for the observation space
+    obs_high: [35, 1000, 90] # upper bound for the observation space
+    control_signals: [uBoil, uCO2, uThScr, uVent] # list with all control inputs we aim to control/learn
+    model_obs_vars: [air_temp, co2_conc, in_rh, fruit_weight, fruit_harvest, PAR, daily_avg_temp, co2_resource, gas_resource, hour_of_day_sin, hour_of_day_cos, day_of_year_sin, day_of_year_cos] # number of variables we observe from the model
+    weather_obs_vars: [glob_rad, out_temp, out_rh, out_co2, wind_speed]       # number of weather variables we observe
+
+# Options for the the evaluation episodes
+options: 
+    start_days: [59, 90, 120, 151, 181, 212, 243]                               # which days we start the evaluation
+    growth_years: [2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010]  # which years we start the evalation
+
+# results that are stored after an evaluation episode
+results_columns: [Time, Air Temperature, CO2 concentration, Humidity, Fruit weight,
+                    Fruit harvest, PAR, Daily mean crop temperature, CO2 resource, Gas resource, Hour of day sin,
+                    Hour of day cos, Day of year sin, Day of year cos, Global radiation, Outdoor temperature, 
+                    Outdoor Humidity, Outdoor CO2, Wind speed, uBoil, uCO2,
+                    uThScr, uVent, uLamp, uIntLamp, uGroPipe,
+                    uBlScr, Profits, Temperature violation, CO2 violation, Humidity violation, Final return, episode]

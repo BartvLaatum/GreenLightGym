@@ -116,6 +116,7 @@ class TensorboardCallback(EvalCallback):
                 )
             mean_reward, std_reward = np.mean(episode_rewards), np.std(episode_rewards)
 
+            episode_returns = np.expand_dims(np.tile(episode_rewards, (episode_obs.shape[1], 1)).T, axis=-1)
             sum_violations = np.sum(episode_violations, axis=1)
             sum_profits = np.sum(episode_profits, axis=1)
             # mean_ep_length, std_ep_length = np.mean(episode_lengths), np.std(episode_lengths)
@@ -163,7 +164,7 @@ class TensorboardCallback(EvalCallback):
                     episode_profits = np.expand_dims(episode_profits, axis=-1)
 
                     # concatenate the results of the current episode to the results of the previous episodes
-                    data = np.concatenate((times, episode_obs[:,:,:], episode_actions, episode_profits, episode_violations), axis=2)
+                    data = np.concatenate((times,  episode_obs[:,:,:], episode_actions, episode_profits, episode_violations, episode_returns), axis=2)
                     self.results.update_result(data)
 
                     # save results
