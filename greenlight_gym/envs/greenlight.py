@@ -12,6 +12,12 @@ from greenlight_gym.envs.rewards import AdditiveReward, HarvestHeatCO2Reward, Ar
 
 from datetime import date
 
+REWARDS = {'AdditiveReward': AdditiveReward, 
+           'MultiplicativeReward': MultiplicativeReward,
+           'HarvestHeatCO2Reward': HarvestHeatCO2Reward,
+           'ArcTanPenaltyReward': ArcTanPenaltyReward
+           }
+
 class GreenLightEnv(gym.Env):
     '''
     Python base class that functions as a wrapper between python and cython. 
@@ -35,12 +41,14 @@ class GreenLightEnv(gym.Env):
                 season_length: int,         # [days] length of the growing season
                 pred_horizon: int,          # [days] number of future weather predictions
                 time_interval: int,         # [s] time interval in between observations
-                options: Optional[Dict[str, Any]] = None, # options for the environment (e.g. specify starting date)
                 start_train_year: int = 2011,  # start year for training
                 end_train_year: int = 2020,    # end year for training
                 start_train_day: int = 59,    # end year for training
                 end_train_day: int = 244,    # end year for training
+                reward_function: str = 'None', # reward function to use
+                options: Optional[Dict[str, Any]] = None, # options for the environment
                 training: bool = True,      # whether we are training or testing
+                train_days: Optional[List[int]] = None, # days to train on
                 ) -> None:
         super(GreenLightEnv, self).__init__()
 
@@ -65,11 +73,15 @@ class GreenLightEnv(gym.Env):
         self.time_interval = time_interval
         self.N = int(season_length*self.c/time_interval)    # number of timesteps to take for python wrapper
         self.solver_steps = int(time_interval/self.h)       # number of steps the solver takes between time_interval
-        # self.options = options
-        self.start_train_year = start_train_year
-        self.end_train_year = end_train_year
-        self.start_train_day = start_train_day
-        self.end_train_day = end_train_day
+        self.reward_function = reward_function
+
+        self.train_years = list(range(start_train_year, end_train_year+1))
+
+        if train_days is None:
+            self.train_days = list(range(start_train_day, end_train_day+1))
+        else:
+            self.train_days = train_days
+
         self.training = training
         self.eval_idx = 0
 
@@ -208,8 +220,8 @@ class GreenLightEnv(gym.Env):
 
         # pick a random growth year and start day if we are training
         if self.training:
-            self.growth_year = self.np_random.choice(range(self.start_train_year, self.end_train_year+1))
-            self.start_day = self.np_random.choice(range(self.start_train_day, self.end_train_day))          # train 1st January to end of May
+            self.growth_year = self.np_random.choice(self.train_years)
+            self.start_day = self.np_random.choice(self.train_days)
         else:
             self.start_day = self.start_days[self.eval_idx]
             self.increase_eval_idx()
@@ -316,35 +328,48 @@ class GreenLightHeatCO2(GreenLightEnv):
                     obs_high: List[float],
                     omega: float = 0.3
                     ) -> None:
-        # self.rewards = AdditiveReward([HarvestHeatCO2Reward(co2_price,
-        #                                                     gas_price,
-        #                                                     tom_price,
-        #                                                     self.dmfm,
-        #                                                     self.time_interval,
-        #                                                     self.GLModel.maxco2rate,
-        #                                                     self.GLModel.maxHeatCap,
-        #                                                     self.GLModel.maxHarvest,
-        #                                                     self.GLModel.energyContentGas),
-        #                                 ArcTanPenaltyReward(k,
-        #                                                     obs_low, 
-        #                                                     obs_high)]
-        # )
+        harvest_reward = HarvestHeatCO2Reward(co2_price, 
+                                              gas_price,
+                                              tom_price,
+                                              self.dmfm,
+                                              self.time_interval,
+                                              self.GLModel.maxco2rate,
+                                              self.GLModel.maxHeatCap,
+                                              self.GLModel.maxHarvest,
+                                              self.GLModel.energyContentGas
+                                              )
+        penalty_reward = ArcTanPenaltyReward(k, obs_low, obs_high)
+        self.rewards = REWARDS[self.reward_function](rewards_list=[harvest_reward, penalty_reward], omega=omega)
 
-        self.rewards = MultiplicativeReward([HarvestHeatCO2Reward(
-                                                                co2_price,
-                                                                gas_price,
-                                                                tom_price,
-                                                                self.dmfm,
-                                                                self.time_interval,
-                                                                self.GLModel.maxco2rate,
-                                                                self.GLModel.maxHeatCap,
-                                                                self.GLModel.maxHarvest,
-                                                                self.GLModel.energyContentGas),
-                                            ArcTanPenaltyReward(k,
-                                                                obs_low, 
-                                                                obs_high)],
-                                            omega=omega
-        )
+        # # self.rewards = AdditiveReward([HarvestHeatCO2Reward(co2_price,
+        # #                                                     gas_price,
+        # #                                                     tom_price,
+        # #                                                     self.dmfm,
+        # #                                                     self.time_interval,
+        # #                                                     self.GLModel.maxco2rate,
+        # #                                                     self.GLModel.maxHeatCap,
+        # #                                                     self.GLModel.maxHarvest,
+        # #                                                     self.GLModel.energyContentGas),
+        # #                                 ArcTanPenaltyReward(k,
+        # #                                                     obs_low, 
+        # #                                                     obs_high)]
+        # # )
+
+        # self.rewards = MultiplicativeReward([HarvestHeatCO2Reward(
+        #                                                         co2_price,
+        #                                                         gas_price,
+        #                                                         tom_price,
+        #                                                         self.dmfm,
+        #                                                         self.time_interval,
+        #                                                         self.GLModel.maxco2rate,
+        #                                                         self.GLModel.maxHeatCap,
+        #                                                         self.GLModel.maxHarvest,
+        #                                                         self.GLModel.energyContentGas),
+        #                                     ArcTanPenaltyReward(k,
+        #                                                         obs_low, 
+        #                                                         obs_high)],
+        #                                     omega=omega
+        # )
 
     def _reward(self) -> float:
         return self.rewards._compute_reward(self.GLModel)
@@ -442,7 +467,7 @@ class GreenLightRuleBased(GreenLightEnv):
             "controls": self.GLModel.getControlsArray(),
             "Time": self.GLModel.time,
             "profit": self.rewards.rewards_list[0].profit,
-            "violations": self.rewards.rewards_list[1].pen,
+            "violations": self.rewards.rewards_list[1].abs_pen,
             "timestep": self.GLModel.timestep,
             }
 

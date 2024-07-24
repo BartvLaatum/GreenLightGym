@@ -257,20 +257,20 @@ cdef packed struct Parameters:
     double capGroPipe       # Heat capacity of grow pipes
 
     double thetaLampMax     # Maximum intensity of lamps
-    char heatCorrection   # correction for temperature setpoint when lamps are on
+    char heatCorrection     # correction for temperature setpoint when lamps are on
     double etaLampPar       # fraction of lamp input converted to PAR
     double etaLampNir       # fraction of lamp input converted to NIR
     double tauLampPar       # transmissivity of lamp layer to PAR
-    char rhoLampPar       # reflectivity of lamp layer to PAR
+    char rhoLampPar         # reflectivity of lamp layer to PAR
     double tauLampNir       # transmissivity of lamp layer to NIR
-    char rhoLampNir       # reflectivity of lamp later to NIR
+    char rhoLampNir         # reflectivity of lamp later to NIR
     double tauLampFir       # transmissivity of lamp later to FIR
     double aLamp            # lamp area
     double epsLampTop       # emissivity of top side of lamp
     double epsLampBottom    # emissivity of bottom side of lamp
-    short capLamp          # heat capacity of lamp
+    short capLamp           # heat capacity of lamp
     double cHecLampAir      # heat exchange coefficient of lamp
-    char etaLampCool      # fraction of lamp input removed by cooling
+    char etaLampCool        # fraction of lamp input removed by cooling
     double zetaLampPar      # J to umol conversion of PAR output of lamp
 
     char intLamps           # whether we use intercropping lamps

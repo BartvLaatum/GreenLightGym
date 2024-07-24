@@ -88,9 +88,18 @@ cdef class GreenLight:
         # compute auxiliary states once before start of simulation
         self.initWeather(weather)
         self.initStates(self.d[0], timeInDays)
+        self.init_controls()
         initAuxStates(self.a, self.x)
         self.timestep = 0
 
+    cdef void init_controls(self):
+        """
+        Function to initialize the control signals in the cython module of GreenLight.
+        We set all controls to zero
+        """
+        cdef unsigned char i
+        for i in range(self.nu):
+            self.u[i] = 0
 
     @cython.boundscheck(False) # turn off bounds-checking for entire function
     @cython.wraparound(False)  # turn off negative index wrapping for entire function
@@ -330,36 +339,6 @@ cdef class GreenLight:
     cpdef update_h(self, double h):
         self.h = h
 
-    # cpdef getObs(self):
-    #     """
-    #     Function that copies the observations from the cython module to a numpy array.
-    #     Such that we can acces the observations in the python environment.
-    #     """
-    #     cdef cnp.ndarray[cnp.double_t, ndim=1] np_obs = np.zeros(6, dtype=np.double)
-    #     np_obs[0] = self.x[2]                               # Air temperature in main compartment [deg C]
-    #     np_obs[1] = self.a.co2InPpm                         # CO2 concentration in main air compartment [ppm]
-    #     np_obs[2] = self.a.rhIn                             # Relative humidity in main air compartment [%]
-    #     np_obs[3] = self.x[25]*1e-6                         # Fruit dry matter weight [kg{CH20} m^{-2}]
-    #     np_obs[4] = self.a.mcFruitHarSum*1e-6               # Harvested fruit in dry matter weight [kg{CH20} m^{-2}]
-    #     np_obs[5] = self.a.rParGhSun + self.a.rParGhLamp    # PAR radiation above the canopy [W m^{-2}]
-    #     return np_obs
-
-    # cpdef getHarvestObs(self):
-    #     cdef cnp.ndarray[cnp.double_t, ndim=1] np_obs = np.zeros(10, dtype=np.double)
-    #     np_obs[0] = self.x[2]                               # Air temperature in main compartment [deg C]
-    #     np_obs[1] = self.a.co2InPpm                         # CO2 concentration in main air compartment [ppm]
-    #     np_obs[2] = self.a.rhIn                             # Relative humidity in main air compartment [%]
-    #     np_obs[3] = self.x[25] * 1e-6                       # Fruit dry matter weight [kg{CH20} m^{-2}]
-    #     np_obs[4] = self.a.mcFruitHarSum * 1e-6             # Harvested fruit in dry matter weight [kg{CH20} m^{-2}]
-    #     np_obs[5] = self.a.rParGhSun + self.a.rParGhLamp    # PAR radiation above the canopy [W m^{-2}]
-    #     # np_obs[6] = self.a.timeOfDay                      # Time of day [h]
-    #     # np_obs[7] = self.a.dayOfYear                      # day of the year [d]
-    #     np_obs[6] = self.a.mcExtAir                         # CO2 injection rate [mg m^-2 s^-1]
-    #     np_obs[7] = self.a.qLampIn                          # electrical power of lamps [W m^-2]
-    #     np_obs[8] = self.a.hBoilPipe                        # heat demand of greenhouse [W m^-2]
-    #     np_obs[9] = self.x[9]                               # pipe temperature [deg C]
-        # return np_obs
-
     cpdef get_indoor_obs(self):
         cdef cnp.ndarray[cnp.double_t, ndim=1] np_indoor_obs = np.zeros(3, dtype=np.double)
         np_indoor_obs[0] = self.x[2]
@@ -367,16 +346,36 @@ cdef class GreenLight:
         np_indoor_obs[2] = self.a.rhIn
         return np_indoor_obs
 
-    # @property
-    # def hour_of_day(self):
-    #     # returns the time of day [h]
-    #     return self.a.timeOfDay
-
     cpdef double cyclic_cos(self, double t):
         return 0.5 * (1+cos(2*pi * t))
 
     cpdef double cyclic_sin(self, double t):
         return 0.5 * (1+sin(2*pi * t))
+
+    @property
+    def uBoil(self):
+        # returns the time of day [h]
+        return self.u[0]
+
+    @property
+    def uCO2(self):
+        # returns the time of day [h]
+        return self.u[1]
+
+    @property
+    def uVent(self):
+        # returns the time of day [h]
+        return self.u[2]
+
+    @property
+    def uThScr(self):
+        # returns the time of day [h]
+        return self.u[3]
+
+    @property
+    def uLamp(self):
+        # returns the time of day [h]
+        return self.u[4]
 
     @property
     def hour_of_day_cos(self):
@@ -397,6 +396,10 @@ cdef class GreenLight:
         # returns the day of the year [d]
         return self.cyclic_sin(self.a.dayOfYear/365)
 
+    @property
+    def daily_avg_temp(self):
+        # returns the daily average temperature [deg C]
+        return self.x[21]
 
     @property
     def air_temp(self):

@@ -46,8 +46,6 @@ class PolicyClass(th.nn.Module):
         mean_actions = self.action_net(latent_pi)
         return mean_actions
 
-
-
 if __name__ == "__main__":
     controls = {0: "uBoil", 1: "uCo2"}
     parser = argparse.ArgumentParser()
@@ -74,7 +72,7 @@ if __name__ == "__main__":
     names = ["pious-wind-5"]
     labels = ["Scaled reward"]
     markers = ["o", "^", "v"]
-    models = [PPO.load(f"trainData/{args.project}/models/{args.runname}/best_model.zip", env=env) for runname in names]
+    models = [PPO.load(f"train_data/{args.project}/models/{args.runname}/best_model.zip", env=env) for runname in names]
     control_indices = env.get_attr("controlIdx", [0])[0]
     
     for i, model in enumerate(models[:]):
@@ -104,9 +102,6 @@ if __name__ == "__main__":
 
         shap_values = explainer.shap_values(state_log_norm) # Calculate shap values
 
-        print(shap_values[0])
-        print(len(shap_values))
-        print(shap_values[0].shape)
         len_x, nu = model_actions.shape
         for j in range(nu):
             cmap = 'coolwarm'

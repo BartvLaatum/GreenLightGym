@@ -77,7 +77,7 @@ cdef inline double* ODE(AuxiliaryStates* a, Parameters* p, double* x, double* u,
     ki[14] = (1/p.capSo5)*(a.hSo4So5-a.hSo5SoOut)
 
     ## Vapor balance
-    
+
     # Vapor pressure of greenhouse air [Pa s^{-1}] = [kg m^{-1} s^{-3}]
     ki[15] = (1/a.capVpAir) * (a.mvCanAir+a.mvPadAir+a.mvFogAir+a.mvBlowAir \
         -a.mvAirThScr-a.mvAirTop-a.mvAirOut-a.mvAirOutPad-a.mvAirMech-a.mvAirBlScr)

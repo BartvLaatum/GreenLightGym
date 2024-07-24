@@ -91,7 +91,7 @@ def interpolate_weather_data(dfs):
         df = df.set_index('time')
 
         # Resample the data to a five-minute frequency, creating NaNs for missing data points
-        resampled_df = df.resample('5T').mean()
+        resampled_df = df.resample('5min').mean()
 
         # Interpolate the NaN values in the resampled DataFrame
         interpolated_df = resampled_df.interpolate(method='linear')

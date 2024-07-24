@@ -8,7 +8,7 @@ class Results:
 
     def update_result(self, data):
         assert data.shape[-1] + 1 == len(self.col_names),\
-            f"The shape of the input array doesn't match the number of columns in the results dataframe."
+            f"The shape of the input array doesn't match the number of columns in the results dataframe. {data.shape[-1]+1} columns were expected vs {len(self.col_names)}."
         
         self.df= pd.DataFrame(columns=self.col_names)
 
