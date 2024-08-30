@@ -1,5 +1,5 @@
 __pycache__/
-.egg-info/
+greenlight_gym.egg-info/
 .ipynb_checkpoints/
 build/
 data/
