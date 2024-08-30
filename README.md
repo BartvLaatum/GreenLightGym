@@ -1,6 +1,6 @@
 # GreenLight-Gym: A Reinforcement Learning Environment for Greenhouse Crop Production Systems 🍅
 
-![GreenLight-Gym Architecture](sketches/GLGymArchitecture.png)
+![GreenLight-Gym Architecture|200](sketches/GLGymArchitecture.png)
 
 ## Summary
 
