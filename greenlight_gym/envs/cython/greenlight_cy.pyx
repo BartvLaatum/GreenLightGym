@@ -1,14 +1,14 @@
-"""
-Create a cython class that contains the GreenLight model data structure and functions.
+'''
+Create a Cython class that contains the GreenLight model data structure and functions.
 This class will be used to create a cython module of GreenLight that can be imported into python environment.
 
 The python environment will send setpoints as actions to the cython module.
 Next, cython will compute the control signals, and simulate the new state of the greenhouse.
 Finally, the new state/measurement/disturbances will be returned to the python environment.
-"""
+'''
 from auxiliary_states cimport AuxiliaryStates, initAuxStates
 from define_parameters cimport Parameters, initParameters
-from difference_function cimport fRK4, fRK45
+from difference_function cimport fRK4
 from compute_controls cimport controlSignal
 from utils cimport satVp
 from libc.stdlib cimport malloc, free
