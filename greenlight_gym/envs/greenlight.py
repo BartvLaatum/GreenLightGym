@@ -20,10 +20,36 @@ REWARDS = {'AdditiveReward': AdditiveReward,
 
 class GreenLightEnv(gym.Env):
     '''
-    Python base class that functions as a wrapper between python and cython. 
-    As input we get the weather data, number of variables for states, inputs and disturbances, and whether and which lamps we use.
-    Argument definitions are in the init function.
+    This class represents the Gymnasium Env wrapper for the GreenLight model.
+    It can be used by RL algorithms to train agents to control the greenhouse climate.
+    It is a subclass of the gym.Env class.
+    This Base class is used to define the environment settings and the interface for the GreenLight model.
+
+    Args:
+        weather_data_dir: path to the weather data
+        location: location of the recorded weather data
+        data_source: source of the weather data
+        h: [s] time step for the RK4 solver
+        nx: number of states
+        nu: number of control inputs
+        nd: number of disturbances
+        no_lamps: whether lamps are used
+        led_lamps: whether led lamps are used
+        hps_lamps: whether hps lamps are used
+        int_lamps: whether interlighting lamps are used
+        dmfm: dry matter fruit mass
+        season_length: [days] length of the growing season
+        pred_horizon: [days] number of future weather predictions
+        time_interval: [s] time interval in between observations
+        start_train_year: start year for training
+        end_train_year: end year for training
+        start_train_day: start day for training
+        end_train_day: end day for training
+        reward_function: reward function to use
+        training: whether we are training or testing
+        train_days: days to train on
     '''
+
     def __init__(
                 self,
                 weather_data_dir:str,       # path to weather data
@@ -37,7 +63,7 @@ class GreenLightEnv(gym.Env):
                 led_lamps: int,             # whether led lamps are used
                 hps_lamps: int,             # whether hps lamps are used
                 int_lamps: int,             # whether interlighting lamps are used
-                dmfm: float,                # [kg [FM] m^-2] dry matter fruit mass
+                dmfm: float,                # dry matter to fresh matter ratio for the fruit
                 season_length: int,         # [days] length of the growing season
                 pred_horizon: int,          # [days] number of future weather predictions
                 time_interval: int,         # [s] time interval in between observations
@@ -46,7 +72,6 @@ class GreenLightEnv(gym.Env):
                 start_train_day: int = 59,    # end year for training
                 end_train_day: int = 244,    # end year for training
                 reward_function: str = 'None', # reward function to use
-                options: Optional[Dict[str, Any]] = None, # options for the environment
                 training: bool = True,      # whether we are training or testing
                 train_days: Optional[List[int]] = None, # days to train on
                 ) -> None:
