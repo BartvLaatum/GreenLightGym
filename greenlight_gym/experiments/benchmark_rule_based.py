@@ -1,6 +1,5 @@
 import os
 import argparse
-from time import time
 
 import numpy as np
 import pandas as pd
@@ -58,8 +57,7 @@ if __name__ == "__main__":
     parser.add_argument("--save", action="store_true")
     # parser.add_argument("--results_path", type=str, default="data/{}/rule-based/")
     args = parser.parse_args()
-
-    env_config_path = "configs/envs"
+    env_config_path = "greenlight_gym/configs/envs"
     env_base_params, env_specific_params, options, results_columns = load_env_params(args.env_id, env_config_path, args.config_name)
 
     if args.train_or_test == "train":

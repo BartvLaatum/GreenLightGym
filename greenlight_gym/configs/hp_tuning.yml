@@ -27,7 +27,7 @@ parameters:
     distribution: log_uniform
     min: 0.999
     max: 0.9
-  gae_lambda: 
+  gae_lambda:
     distribution: uniform
     min: 0.9
     max: 0.99
@@ -62,13 +62,11 @@ parameters:
       max: 512
     optimizer_class:
        value: ADAM
-      optimizer_kwargs:
-        value: amsgrad: value: True
+    optimizer_kwargs:
+      value: amsgrad: value: True
     activation_fn: 
       distribution: categorical
         values: [Tanh, SiLU]
-
-
 
 
 GreenLightBase:

@@ -1,8 +1,7 @@
 import os
 import yaml
 from os.path import join
-from typing import Dict, Any, Callable, List, Optional, Union, Tuple
-import warnings
+from typing import Dict, Any, List, Optional, Tuple
 
 import wandb
 import numpy as np
@@ -32,7 +31,7 @@ def make_env(env_id, rank, seed, kwargs, kwargsSpecific, options, eval_env):
     :return: (Gym Environment) The gym environment
     """
     def _init():
-        env = envs[env_id](**kwargsSpecific, **kwargs, options=options)
+        env = envs[env_id](**kwargsSpecific, **kwargs)
         if eval_env:
             env.training = False
             env.start_days = options["start_days"]
