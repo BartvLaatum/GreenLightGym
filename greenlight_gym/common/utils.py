@@ -1,10 +1,8 @@
-from scipy.io import loadmat
-from scipy.interpolate import CubicSpline, PchipInterpolator
+from scipy.interpolate import PchipInterpolator
 import numpy as np
 import pandas as pd
 from copy import deepcopy
 from datetime import datetime, timedelta
-import matplotlib.pyplot as plt
 
 def loadMatlabData(stepSize,date, stateNames):
     matlabStates = pd.read_csv(f"data/matlab/{date}/{stepSize}StepSizeStates.csv", sep=",", header=None)
@@ -405,39 +403,5 @@ def compute_sky_temp(air_temp, cloud):
     return sky_temp
 
 
-if __name__ == "__main__":    
-    # stateNames = ["co2Air", "co2Top", "tAir", "tTop", "tCan", "tCovIn", "tCovE", "tThScr", \
-    #             "tFlr", "tPipe", "tSo1", "tSo2", "tSo3", "tSo4", "tSo5", "vpAir", "vpTop", "tLamp", \
-    #             "tIntLamp", "tGroPipe", "tBlScr", "tCan24", "cBuf", "cLeaf", "cStem", "cFruit", "tCanSum", "Time"]
-
-    params = {
-        "timeinterval": 300,
-        "startDay": 364,
-        "growthYear": 2011
-    }
-
-    # dates = {
-    #     0: "1Januari",
-    #     99: "9April"
-    # }
-
-    # matlabStates, matlabControls, matlabWeather = loadMatlabData(stepSize=str(params["timeinterval"]) + "s", date=dates[params["startDay"]], stateNames=stateNames)
-    # x = np.arange(0, matlabWeather.shape[0])*params["timeinterval"]/3600
-
-    weatherDataResampled, Np = loadWeatherData(f"environments/data/", location="Amsterdam", source="KNMI", growthYear=params["growthYear"], startDay=params["startDay"], nDays=2, predHorizon=0.01, h=3, nd=10)
-    xres = np.arange(0, weatherDataResampled.shape[0])*3/3600
-
-    # plot all weather variables in subplots 5,2
-    fig, axs = plt.subplots(5, 2)
-    axs = axs.flatten()
-    for i, ax in enumerate(axs):
-        # ax.step(x, matlabWeather.iloc[:, i])
-        # ax.set_title(matlabWeather.columns[i])
-        ax.step(xres, weatherDataResampled[:, i])
-
-    # plt.plot(x, matlabWeather.iloc[:,0], label="iGlob")
-    # plt.plot(x, matlabWeather.iloc[:,9], label="isDay")
-
-    # plt.plot(xres, weatherDataResampled[:,0], "--", label="iGlob resampled")
-    # plt.plot(xres, weatherDataResampled[:,9], "--", label="isDay resampled")
-    plt.show()
+if __name__ == "__main__":
+    pass
