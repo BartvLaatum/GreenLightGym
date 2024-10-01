@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# Change to the directory containing the Python script
-cd ./GreenLightGym/
-
 # Run the Python script
 for SEED in 666 667 668 669 670
 do
