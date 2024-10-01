@@ -8,6 +8,7 @@ unused/
 figures/
 .vscode/
 wandb/
+scripts/
 *.so
 *.c
 *.pyd
