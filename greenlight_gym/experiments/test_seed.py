@@ -8,7 +8,7 @@ from greenlight_gym.experiments.utils import loadParameters
 
 
 env_id = "GreenLightHeatCO2"
-hpPath = "hyperparameters/gl_heat_co2"
+hpPath = "greenlight_gym/hyperparameters/gl_heat_co2"
 HPfilename = "ppo_4_controls.yml"
 algorithm = "PPO"
 

@@ -71,13 +71,13 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # configuration file
-    env_config_path = "configs/envs"
+    env_config_path = "greenlight_gym/configs/envs"
     config_name = "matlab_controls"
 
     print(f"Running date: {args.date}, and step size: {args.step_size}")
 
-    mat_path = "data/model-comparison/matlab"
-    py_path = "data/model-comparison/python"
+    mat_path = "greenlight_gym/data/model-comparison/matlab"
+    py_path = "greenlight_gym/data/model-comparison/python"
 
     # load in environment parameters
     env_base_params, env_specific_params, options, results_columns = load_env_params(args.env_id, env_config_path, config_name)

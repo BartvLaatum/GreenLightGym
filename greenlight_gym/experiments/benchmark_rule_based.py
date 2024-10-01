@@ -63,7 +63,7 @@ if __name__ == "__main__":
     if args.train_or_test == "train":
         options['growth_years'] = list(range(2011, 2021))
 
-    results_path = f"data/benchmark/{args.train_or_test}/rule-based/"
+    results_path = f"greenlight_gym/data/benchmark/{args.train_or_test}/rule-based/"
 
     h = env_base_params["h"]
     results = Results(results_columns)

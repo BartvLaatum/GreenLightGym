@@ -46,7 +46,7 @@ def run_hp_experiment(
         eval_env=True,
         )
 
-    env_log_dir = f"train_data/{project}/envs/{run.name}/"
+    env_log_dir = f"greenlight_gym/train_data/{project}/envs/{run.name}/"
     eval_freq = total_timesteps//n_evals//n_envs
     # we don't save the best model here, we just want to evaluate the model
     best_model_save_path = None
@@ -77,7 +77,7 @@ def run_hp_experiment(
                                 WandbCallback(verbose=1)
                                 ]
 
-    tensorboard_log = f"train_data/{project}/logs/{run.name}"
+    tensorboard_log = f"greenlight_gym/train_data/{project}/logs/{run.name}"
 
     model = PPO(
         env=env,
@@ -149,9 +149,9 @@ if __name__ == "__main__":
 
     sweep_config['metric'] = metric
 
-    env_config_path = f"configs/envs/"
-    model_config_path = f"configs/algorithms/"
-    hp_path = f"configs/hp_tuning/"
+    env_config_path = f"greenlight_gym/configs/envs/"
+    model_config_path = f"greenlight_gym/configs/algorithms/"
+    hp_path = f"greenlight_gym/configs/hp_tuning/"
 
     SEED = 666
     algorithm = "PPO"

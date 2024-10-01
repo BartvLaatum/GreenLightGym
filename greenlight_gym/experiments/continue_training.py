@@ -10,8 +10,8 @@ if __name__ == '__main__':
     SEED = 666
     project= 'continue_training'
     runname = 'gallant-firefly-1'
-    path = f'train_data/{project}/models/'
-    config_path = 'configs/'
+    path = f'greenlight_gym/train_data/{project}/models/'
+    config_path = 'greenlight_gym/configs/'
     config_name = 'benchmark_mutliplicative_pen'
     group = 'test'
     job_type = f'seed-{SEED}'

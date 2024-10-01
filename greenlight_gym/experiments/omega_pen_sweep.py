@@ -25,8 +25,8 @@ if __name__ == "__main__":
     parser.add_argument("--SEED", type=int, default=666)
     args = parser.parse_args()
 
-    env_config_path = f"configs/envs/"
-    model_config_path = f"configs/algorithms/"
+    env_config_path = f"greenlight_gym/configs/envs/"
+    model_config_path = f"greenlight_gym/configs/algorithms/"
 
     env_base_params, env_specific_params, options, result_columns = load_env_params(args.env_id, env_config_path, args.env_config_name)
     model_params = load_model_params(args.algorithm, model_config_path, args.env_config_name)

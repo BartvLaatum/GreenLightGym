@@ -96,7 +96,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--date", type=str, default="20111001", help="Starting date of the simulation")
 
-    hpPath = "hyperparameters/modelDynamics/"
+    hpPath = "greenlight_gym/hyperparameters/modelDynamics/"
     filename = "interLamps.yml"
     env_id = "GreenLight"
     envParams, modelParams, options = loadParameters(env_id, hpPath, filename)

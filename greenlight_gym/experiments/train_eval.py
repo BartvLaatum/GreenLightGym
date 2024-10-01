@@ -79,7 +79,7 @@ def runExperiment(env_id,
         model_log_dir = None
 
     if save_env:
-        env_log_dir = f"train_data/{project}/envs/{runname}/"
+        env_log_dir = f"greenlight_gym/train_data/{project}/envs/{runname}/"
     else:
         env_log_dir =None
 
@@ -99,7 +99,7 @@ def runExperiment(env_id,
         verbose=1
         )
 
-    tensorboard_log = f"train_data/{project}/logs/{runname}"
+    tensorboard_log = f"greenlight_gym/train_data/{project}/logs/{runname}"
 
     model = PPO(
         env=env,
@@ -145,8 +145,8 @@ if __name__ == "__main__":
     assert args.num_cpus <= cpu_count(), \
         f"Number of CPUs requested ({args.num_cpus}) is greater than available ({cpu_count()})"
 
-    env_config_path = f"configs/envs/"
-    model_config_path = f"configs/algorithms/"
+    env_config_path = f"greenlight_gym/configs/envs/"
+    model_config_path = f"greenlight_gym/configs/algorithms/"
 
     env_base_params, env_specific_params, options, result_columns = load_env_params(args.env_id, env_config_path, args.env_config_name)
     eval_train_params = {'start_train_year': 2001, 'end_train_year': 2010, 'train_days': [59, 90, 120, 151, 181, 212, 243]}

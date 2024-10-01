@@ -24,7 +24,7 @@ if __name__ == "__main__":
     parser.add_argument("--seed", type=int, default=667)
     args = parser.parse_args()
 
-    hpPath = f"hyperparameters/{args.HPfolder}/"
+    hpPath = f"greenlight_gym/hyperparameters/{args.HPfolder}/"
     states2plot = ["Air Temperature","CO2 concentration", "Humidity", "Fruit harvest", "PAR", "Cumulative harvest"]
     actions2plot = ["uBoil", "uCO2", "uThScr", "uVent", "uLamp"]
 

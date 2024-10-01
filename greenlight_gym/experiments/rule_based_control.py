@@ -79,7 +79,7 @@ if __name__ == "__main__":
     parser.add_argument("--path", type=str, default="data/model-comparison/python-rule-based/")
     args = parser.parse_args()
 
-    env_config_path = "configs/envs"
+    env_config_path = "greenlight_gym/configs/envs"
 
     control_frequencies = [2, 4, 8, 16] + [i*30 for i in range(1, 121)]
     env_base_params, env_specific_params, options, results_columns = load_env_params(args.env_id, env_config_path, args.config_name)

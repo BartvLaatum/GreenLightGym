@@ -27,12 +27,11 @@ if __name__ == "__main__":
 
     # hyperparameters
     algorithm = "PPO"
-    hp_path = f"configs/envs/"
+    hp_path = f"greenlight_gym/configs/envs/"
     results_path = f"data/{args.project}/{args.validation_type}/{args.group}/"
     SEED = 666
     env_base_params, env_specific_params, options, results_columns = load_env_params(args.env_id, hp_path, args.config_filename)
 
-    # options['start_days'] = [59, 74, 90, 105, 120, 135, 151, 166, 181, 196, 212, 237, 243]
     if args.validation_type == "train":
         options['growth_years'] = list(range(2011, 2021))
 
@@ -53,8 +52,8 @@ if __name__ == "__main__":
     elif args.best_or_last == "last":
         vec_name = f"{args.best_or_last}_vecnormalize.pkl"
 
-    env = VecNormalize.load(f"train_data/{args.project}/envs/{args.runname}/{vec_name}", env)
-    model = PPO.load(f"train_data/{args.project}/models/{args.runname}/{model_name}", env=env)
+    env = VecNormalize.load(f"greenlight_gym/train_data/{args.project}/envs/{args.runname}/{vec_name}", env)
+    model = PPO.load(f"greenlight_gym/train_data/{args.project}/models/{args.runname}/{model_name}", env=env)
 
     env.env_method("_reset_eval_idx")
     episode_rewards, episode_std_rewards, episode_actions, episode_obs, time_vec, episode_profits, episode_violations = \

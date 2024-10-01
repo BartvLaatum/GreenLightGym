@@ -164,8 +164,8 @@ if __name__ == "__main__":
     assert args.num_cpus <= cpu_count(), \
         f"Number of CPUs requested ({args.num_cpus}) is greater than available ({cpu_count()})"
 
-    env_config_path = f"configs/envs/"
-    model_config_path = f"configs/algorithms/"
+    env_config_path = f"greenlight_gym/configs/envs/"
+    model_config_path = f"greenlight_gym/configs/algorithms/"
 
     env_base_params, env_specific_params, options, result_columns = load_env_params(args.env_id, env_config_path, args.env_config_name)
     model_params = load_model_params(args.algorithm, model_config_path, args.env_config_name)

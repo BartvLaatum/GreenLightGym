@@ -1,7 +1,7 @@
 GreenLightEnv:
-    weather_data_dir: "envs/data/" # path to the weather data file
-    location: "Seljaar"   # location of the weatherdata
-    data_source: "hires"     # which data source we use
+    weather_data_dir: greenlight_gym/envs/data/ # path to the weather data file
+    location: Seljaar   # location of the weatherdata
+    data_source: hires     # which data source we use
     nx: 28                  # Number of states
     nu: 8                   # number of control variables for GreenLight
     nd: 10                  # weather variables

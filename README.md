@@ -58,14 +58,14 @@ This allows you to make modifications to the greenlight_gym codebase without hav
 pyhton setup.py build_ext --inplace
 ```
 
-Which lets you rebuilt the GreenLight model without reinstalling the complete package again.
+Which lets you rebuilt the GreenLight model without reinstalling the complete package again. Everytime you make adjustments to the Cython code one must recompile the code using the command.
 
 ## Usage
 
 ## Run commands for training RL algorithms
 
 
-## Future updated
+## Future updates
 
-- Add control problem based on setpoints instead of climate actuators
+- Add environment based on setpoints instead of climate actuators
 
