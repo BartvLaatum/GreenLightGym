@@ -12,14 +12,14 @@ from greenlight_gym.envs.rewards import AdditiveReward, HarvestHeatCO2Reward, Ar
 
 from datetime import date
 
-REWARDS = {'AdditiveReward': AdditiveReward, 
-           'MultiplicativeReward': MultiplicativeReward,
-           'HarvestHeatCO2Reward': HarvestHeatCO2Reward,
-           'ArcTanPenaltyReward': ArcTanPenaltyReward
+REWARDS = {"AdditiveReward": AdditiveReward, 
+           "MultiplicativeReward": MultiplicativeReward,
+           "HarvestHeatCO2Reward": HarvestHeatCO2Reward,
+           "ArcTanPenaltyReward": ArcTanPenaltyReward
            }
 
 class GreenLightEnv(gym.Env):
-    '''
+    """
     This class represents the Gymnasium Env wrapper for the GreenLight model.
     It can be used by RL algorithms to train agents to control the greenhouse climate.
     It is a subclass of the gym.Env class.
@@ -48,7 +48,7 @@ class GreenLightEnv(gym.Env):
         reward_function: reward function to use
         training: whether we are training or testing
         train_days: days to train on
-    '''
+    """
 
     def __init__(
                 self,
@@ -71,7 +71,7 @@ class GreenLightEnv(gym.Env):
                 end_train_year: int = 2020,    # end year for training
                 start_train_day: int = 59,    # end year for training
                 end_train_day: int = 244,    # end year for training
-                reward_function: str = 'None', # reward function to use
+                reward_function: str = "None", # reward function to use
                 training: bool = True,      # whether we are training or testing
                 train_days: Optional[List[int]] = None, # days to train on
                 ) -> None:
@@ -135,17 +135,24 @@ class GreenLightEnv(gym.Env):
                           self.solver_steps,
                           )
 
-    def step(self, action: np.ndarray) -> Tuple[np.ndarray, float, bool, Dict[str, Any]]:
-        '''
-        Given an action we simulate the next state of the system.
-        The system is numerically simulated by the GreenLight model implemented in C.
-        We can choose to control the boiler valve, co2, thermal screen, roof vent, lamps, internal lamps, grow pipes and blackout screen.
-        '''
-
+    def step(self, action: np.ndarray) -> Tuple[np.ndarray, float, bool, bool, Dict[str, Any]]:
+        """
+        Step function that simulates a single timestep using actions given actions.
+        The next state is numerically approximated the GreenLight model implemented in Cython.
+        The action is scaled to the range of the control inputs.
+        Args:
+            action (np.ndarray): action that provides the control inputs for the GreenLight model.
+        Returns:
+            Tuple[np.ndarray, float, bool, Dict[str, Any]]: observation, reward, truncated, done, info
+        """
         # scale the action to the range of the control inputs, which is between [0, 1]
         action = self._scale(action, self.action_space.low, self.action_space.high)
+
+        # simulate single timestep using the GreenLight model and get the observation
         self.GLModel.step(action, self.control_idx)
         obs = self._get_obs()
+
+        # check if the simulation has reached a terminal state and get the reward
         if self._terminalState(obs):
             self.terminated = True
             reward = 0
@@ -164,7 +171,10 @@ class GreenLightEnv(gym.Env):
                 )
 
     def _get_info(self):
-        raise NotImplementedError
+        """
+        Placeholder function that returns additional information about the simulation step.
+        """
+        pass
 
     def _init_rewards(self,
                     co2_price: Optional[float] = None,
@@ -174,13 +184,31 @@ class GreenLightEnv(gym.Env):
                     obs_low: Optional[List[float]] = None,
                     obs_high: Optional[List[float]] = None
                     ) -> None:
-        raise NotImplementedError
+        """
+        Placeholder function that initialises the reward function.
+
+        Args:
+            co2_price (Optional[float], optional): CO2 price. Defaults to None.
+            gas_price (Optional[float], optional): Gas price. Defaults to None.
+            tom_price (Optional[float], optional): Tomato price kg/€. Defaults to None.
+            k (Optional[List[float]], optional): Penalty weights. Defaults to None.
+            obs_low (Optional[List[float]], optional): Lower bound of observation space. Defaults to None.
+            obs_high (Optional[List[float]], optional): Upper bound observation space. Defaults to None.
+        """
+        pass
 
     def _init_observations(self,
                            model_obs_vars: Optional[List[str]] = None,
                            weather_obs_vars: Optional[List[str]] = None,
                            Np: Optional[int] = None
                            ) -> None:
+        """Function that initialises the observation object using observation modules.
+
+        Args:
+            model_obs_vars (Optional[List[str]], optional): List with observations from the greenlight model. Defaults to None.
+            weather_obs_vars (Optional[List[str]], optional): List with observations from the weather data. Defaults to None.
+            Np (Optional[int], optional): Number of future weather data points to include in the observation space. Defaults to None.
+        """
         obs_list = []
         if model_obs_vars is not None:
             obs_list.append(ModelObservations(model_obs_vars))
@@ -190,6 +218,9 @@ class GreenLightEnv(gym.Env):
 
 
     def _generate_observation_space(self) -> None:
+        """
+        Creates the observations space for the environment.
+        """
         self.observation_space = Box(low=self.observations.low,
                                      high=self.observations.high,
                                      shape=(self.observations.Nobs,), 
@@ -197,14 +228,28 @@ class GreenLightEnv(gym.Env):
 
 
     def _get_obs(self):
-        raise NotImplementedError
+        """
+        Placeholder function that returns the observation.
+        """
+        pass
 
     def _terminalState(self, obs: np.ndarray) -> bool:
-        '''
+        """
         Function that checks whether the simulation has reached a terminal state.
-        Terminal obs are reached when the simulation has reached the end of the growing season.
-        Or when there are nan or inf in the state values.
-        '''
+        This is the case if we have reached the end of the set growing season.
+        Which is determined by the length of the season.
+        Also in terminal state for nan or inf in the state values.
+
+        Args:
+            obs (np.ndarray): observation
+
+        Returns:
+            bool: True if the simulation has reached a terminal state; False otherwise.
+        """
+        # Function that checks whether the simulation has reached a terminal state.
+        # Terminal obs are reached when the simulation has reached the end of the growing season.
+        # Or when there are nan or inf in the state values.
+        
         if self.GLModel.timestep >= self.N:
             return True
         # check for nan and inf in observation values
@@ -214,36 +259,57 @@ class GreenLightEnv(gym.Env):
         return False
 
     def _get_time(self) -> float:
+        """Returns the time in days since 01-01-0001 of the simulation.
+
+        Returns:
+            float: time in days since 01-01-0001.
+        """
         return self.GLModel.time
 
     def _get_time_in_days(self) -> float:
-        '''
+        """
         Get time in days since 01-01-0001 upto the starting day of the simulation.
-        '''
+        """
         d0 = date(1, 1, 1)
         d1 = date(self.growth_year, 1, 1)
         delta = d1 - d0
         return delta.days + self.start_day
 
-    def _scale(self, a, amin, amax):
-        '''
-        Min-max scaler [0,1]. Used for the action space.
-        '''
+    def _scale(self, action: np.ndarray, amin: np.ndarray, amax: np.ndarray) -> float:
+        """
+        Scale the action between [0,1].
+        Based on input action, and its min and max values.
+
+        Args:
+            action (_type_): action to scale
+            amin (_type_): minimal value of the action
+            amax (_type_): maximal value of the action
+
+        Returns:
+            _type_: scaled action [0,1]
+        """
         return (a-amin)/(amax-amin)
 
     def _reset_eval_idx(self):
+        """
+        Reset the evaluation index for picking the start day to 0.
+        """
         self.eval_idx = 0
 
     def increase_eval_idx(self):
+        """
+        Increase the evaluation index by 1.
+        """
         self.eval_idx += 1
 
     def reset(self, seed: Optional[int] = None) -> Tuple[np.ndarray, Dict[str, Any]]:
-        '''
-        Container function that resets the environment.
-        '''
+        """
+        Container function that resets the environment to its initial state.
+        """
         super().reset(seed=seed)
 
         # pick a random growth year and start day if we are training
+        # otherwise use one of the start days for evaluation
         if self.training:
             self.growth_year = self.np_random.choice(self.train_years)
             self.start_day = self.np_random.choice(self.train_days)
@@ -270,26 +336,41 @@ class GreenLightEnv(gym.Env):
 
         # reset the GreenLight model starting settings
         self.GLModel.reset(self.weatherData, timeInDays)
-
         self.terminated = False
         return self._get_obs(), {}
 
 class GreenLightHeatCO2(GreenLightEnv):
-    '''
+    """
     Child class of GreenLightEnv.
     Starts with a fully mature crop that is ready for harvest.
-    The start dates are early year, (January and Februari), which reflects the start of the harvest season.
 
     Controls the greenhouse climate through four actuators:
-    - carbon dioxide supply
-    - heating
-    - ventialation
-    - thermal screen
+    1) heating (uBoil)
+    2) carbon dioxide supply (uCo2)
+    3) ventialation (uVent)
+    4) thermal screen (uThScr)
 
     Uses a reward that reflects the revenue made from harvesting tomatoes, and the costs for
     heating the greenhouse and injecting CO2 given their resource price.
-    Also penalises violating indoor climate boundaries.
-    '''
+    Also penalises the reward function violating indoor climate boundaries.
+    
+    Args:
+        cLeaf (float): initial DW for leaves mg/m2
+        cStem (float): initial DW for stems mg/m2
+        cFruit (float): initial DW for fruit mg/m2
+        tCanSum (float): initial sum of canopy temperature (development stage)
+        co2_price (float): price of CO2
+        gas_price (float): price of gas
+        tom_price (float): price of tomatoes
+        k (List[float]): penalty weights
+        obs_low (List[float]): lower bounds of the observation space
+        obs_high (List[float]): upper bounds of the observation space
+        control_signals (Optional[List[str]]): list of control signals
+        model_obs_vars (Optional[List[str]]): list of model observation variables
+        weather_obs_vars (Optional[List[str]]): list of weather observation variables
+        omega (float): weight for the multiplicative reward function
+        **kwargs: additional keyword arguments for GreenLightEnv
+    """
     def __init__(self,
                 cLeaf: float = 0.9e5, # [DW] mg/m2
                 cStem: float = 2.5e5, # [DW] mg/m2
@@ -320,8 +401,9 @@ class GreenLightHeatCO2(GreenLightEnv):
         self.control_signals = control_signals
         self.model_obs_vars = model_obs_vars
         self.weather_obs_vars = weather_obs_vars
-
-        Np = int(self.pred_horizon*self.c/self.time_interval)   # the prediction horizon in timesteps for our weather predictions
+    
+         # the prediction horizon of weather variables for our observations 
+        Np = int(self.pred_horizon*self.c/self.time_interval)
 
         # intialise observation and reward functions
         self._init_observations(model_obs_vars, weather_obs_vars, Np)
@@ -329,10 +411,18 @@ class GreenLightHeatCO2(GreenLightEnv):
 
         # initialise the observation and action spaces
         self._generate_observation_space()
+
+        # action space is a Box with low and high values for each control signal
         self.action_space = Box(low=-1, high=1, shape=(len(control_signals),), dtype=np.float32)
         self.control_idx = np.array([self.control_indices[control_input] for control_input in control_signals], dtype=np.uint8)
 
     def _get_info(self):
+        """
+        Information to return after each timestep.
+
+        Returns:
+            _type_: information to return
+        """
         return {
             "controls": self.GLModel.getControlsArray(),
             "Time": self.GLModel.time,
@@ -342,6 +432,13 @@ class GreenLightHeatCO2(GreenLightEnv):
             }
 
     def _get_obs(self) -> np.ndarray:
+        """
+        Function that returns the observation.
+        Given the observation space modules initialised in _init_observations.
+
+        Returns:
+            np.ndarray: observation
+        """
         return self.observations.compute_obs(self.GLModel, self.solver_steps, self.weatherData)
 
     def _init_rewards(self,
@@ -366,37 +463,14 @@ class GreenLightHeatCO2(GreenLightEnv):
         penalty_reward = ArcTanPenaltyReward(k, obs_low, obs_high)
         self.rewards = REWARDS[self.reward_function](rewards_list=[harvest_reward, penalty_reward], omega=omega)
 
-        # # self.rewards = AdditiveReward([HarvestHeatCO2Reward(co2_price,
-        # #                                                     gas_price,
-        # #                                                     tom_price,
-        # #                                                     self.dmfm,
-        # #                                                     self.time_interval,
-        # #                                                     self.GLModel.maxco2rate,
-        # #                                                     self.GLModel.maxHeatCap,
-        # #                                                     self.GLModel.maxHarvest,
-        # #                                                     self.GLModel.energyContentGas),
-        # #                                 ArcTanPenaltyReward(k,
-        # #                                                     obs_low, 
-        # #                                                     obs_high)]
-        # # )
-
-        # self.rewards = MultiplicativeReward([HarvestHeatCO2Reward(
-        #                                                         co2_price,
-        #                                                         gas_price,
-        #                                                         tom_price,
-        #                                                         self.dmfm,
-        #                                                         self.time_interval,
-        #                                                         self.GLModel.maxco2rate,
-        #                                                         self.GLModel.maxHeatCap,
-        #                                                         self.GLModel.maxHarvest,
-        #                                                         self.GLModel.energyContentGas),
-        #                                     ArcTanPenaltyReward(k,
-        #                                                         obs_low, 
-        #                                                         obs_high)],
-        #                                     omega=omega
-        # )
 
     def _reward(self) -> float:
+        """
+        Get the reward from the reward module.
+
+        Returns:
+            float: reward
+        """
         return self.rewards._compute_reward(self.GLModel)
 
     def reset(self, seed: Optional[int] = None) -> Tuple[np.ndarray, Dict[str, Any]]:
@@ -406,10 +480,9 @@ class GreenLightHeatCO2(GreenLightEnv):
         return self._get_obs(), {}
 
 class GreenLightRuleBased(GreenLightEnv):
-    '''
+    """
     Child class of GreenLightEnv.
     Starts with a fully mature crop that is ready for harvest.
-    The start dates are early year, (January and Februari), which reflects the start of the harvest season.
 
     Controls the greenhouse climate through four actuators:
     - carbon dioxide supply
@@ -420,7 +493,7 @@ class GreenLightRuleBased(GreenLightEnv):
     Uses a reward that reflects the revenue made from harvesting tomatoes, and the costs for
     heating the greenhouse and injecting CO2 given their resource price.
     Also penalises violating indoor climate boundaries.
-    '''
+    """
     def __init__(self,
                 cLeaf: float = 0.9e5,
                 cFruit: float = 2.8e5,
@@ -496,20 +569,13 @@ class GreenLightRuleBased(GreenLightEnv):
             "timestep": self.GLModel.timestep,
             }
 
-    # def _init_observations(self,
-    #                        model_obs_vars: List[str],
-    #                        weather_obs_vars: List[str],
-    #                        Np: int
-    #                        ) -> None:
-    #     self.observations = ModelObservations(model_obs_vars)
-
     def reset(self, seed: Optional[int] = None) -> Tuple[np.ndarray, Dict[str, Any]]:
         super().reset(seed=seed)
         self.GLModel.setCropState(self.cLeaf, self.cStem, self.cFruit, self.tCanSum)
         return self._get_obs(), {}
 
 class GreenLightStatesTest(GreenLightEnv):
-    '''
+    """
     Child class of GreenLightEnv.
     Starts with a fully mature crop that is ready for harvest.
     The start dates are early year, (January and Februari), which reflects the start of the harvest season.
@@ -523,7 +589,7 @@ class GreenLightStatesTest(GreenLightEnv):
     Uses a reward that reflects the revenue made from harvesting tomatoes, and the costs for
     heating the greenhouse and injecting CO2 given their resource price.
     Also penalises violating indoor climate boundaries.
-    '''
+    """
     def __init__(self,
                 cLeaf: float = 2.5e5,
                 cStem: float = 0.9e5,
@@ -578,9 +644,9 @@ class GreenLightStatesTest(GreenLightEnv):
     def reset(self, 
             seed: Optional[int] = None)\
             -> Tuple[np.ndarray, Dict[str, Any]]:
-        '''
+        """
         Container function that resets the environment.
-        '''
+        """
         self.start_day = self.start_days[self.eval_idx]
         self.increase_eval_idx()
 
