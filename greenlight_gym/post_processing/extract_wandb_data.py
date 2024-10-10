@@ -40,9 +40,6 @@ if __name__ == "__main__":
         #  We remove special values that start with _.
         config_list.append({k: v for k, v in run.config.items() if not k.startswith("_")})
 
-    # print(name_list)
-    # print(train_rew_mean)
-
     step = np.array(step[1:]).flatten()
     train_rew_mean = np.array(train_rew_mean[1:]).flatten()
     name_list = np.array(name_list[1:]).flatten()
@@ -54,3 +51,5 @@ if __name__ == "__main__":
 
     train_df = train_df.dropna()
     train_df.to_csv(f"data/{args.project}/train/{args.group}/rollout.csv", index=False)
+
+extract_wandb_data()
