@@ -1,3 +1,11 @@
+"""
+This script contains the function to train an agent on the GreenLight environment.
+It logs the training results to Weights and Biases (wandb) and saves the best model based on the evaluation results.
+You can run this script from the command line with the following command:
+    $ python -m greenlight.experiments.train_agent
+There are multiple command line arguments you can use to customize the training process.
+"""
+
 import os
 import argparse
 from multiprocessing import cpu_count
@@ -29,6 +37,32 @@ def runExperiment(env_id,
                   save_model=True,
                   save_env=True
                   ) -> None:
+    """
+    Function that creates the training and evaluation environments, and the RL-model.
+    It then trains the model on the environment and logs the results to wandb.
+    Every eval_freq timesteps the model is evaluated on the evaluation environment.
+    The best model based on the evaluation results is saved. Including env normalisation metrics.
+
+    Args:
+        env_id (str): environment id
+        env_base_params (Dict): arguments for the base environment (GreenLightEnv)
+        env_specific_params (Dict): arguments for the specific environment (GreenLightHeatEnv)
+        options (Dict): additional options for the environment
+        model_params (Dict): Hyperparameters for the RL model
+        env_seed (int): random seed for the environment
+        model_seed (int): random seed for the RL model
+        n_eval_episodes (int): number of episodes to evaluate the agent for
+        num_cpus (int): number of parrallel environments to use
+        project (str): wandb project to log the training stats
+        group (str): wandb group the run belongs to
+        total_timesteps (int): number of timesteps to train the model for
+        n_evals (int): number of evaluations to perform during training
+        results (Results): module to store the results of the evaluation environment
+        runname (str, optional): how to run the name, otherwise wandb makes one. Defaults to None.
+        job_type (str, optional): job_type for wandb. Defaults to "train".
+        save_model (bool, optional): whether to save the RL model. Defaults to True.
+        save_env (bool, optional): whether to save the environment. Defaults to True.
+    """
 
     run, config = wandb_init(
             model_params,
