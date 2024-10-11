@@ -87,11 +87,18 @@ There are several bash scripts that facilitate training RL agents in a similar f
 . scripts/penalty_coeffs.sh
 ```
 
-3) Running the benchmark simulation study for for both the multiplicate and the additive reward function:
+3) Running the benchmark simulation study for two RL agents using a multiplicate and an additive reward function:
 
 ```shell
 . scripts/benchmark.sh
 ```
+
+4) Run the rule-based controller on the benchmark simulation using the following run command from the command line:
+
+```shell
+python -m greenlight_gym.experiments.benchmark_rule_based ----env_id <GLEnv> --n_years <numberofyeartoeval> --train_or_test <trainortestset> --config_name <nameoftheenvconfig-file> --save 
+```
+
 
 ## Post processing data from Weights and Biases
 
@@ -107,16 +114,36 @@ You can visualise some of the results with the notebooks from the `visualisation
 
 1) `rollout_reward.ipynb` shows some statisitics on the training curves of the `convergence.sh` study.
 
-2) 
+2) `controller_analysis.ipynb` gives you a detailed analysis of controller performance and behaviour. Make sure to load in the right controller evaluation data, requires to have run `benchmark.sh` and the benchmark the rule-based controller.
 
 3) `penalty_coeffs.ipynb` visualises the senstivity analysis of the penalty coefficients.
 
 ## Future updates
 
-- Add environments based on setpoints instead of climate actuators
+- Add environments based on setpoints instead of climate actuators.
 
-- Implement model-based control methods like Model Predictive Control (MPC)
+- Implement model-based control methods like Model Predictive Control (MPC).
 
 - Add different (off-policy) RL-models like SAC, DDPG, etc.
 
 - Include recurrent policies. 
+___
+
+## Citing GreenLight-Gym
+
+If you find GreenLight-Gym and/or its accompanying article usefull, please cite it in your publications
+
+```
+@misc{vanlaatum2024greenlightgymreinforcementlearningbenchmark,
+      title={GreenLight-Gym: A Reinforcement Learning Benchmark Environment for Greenhouse Crop Production Control}, 
+      author={Bart van Laatum and Eldert J. van Henten and Sjoerd Boersma},
+      year={2024},
+      eprint={2410.05336},
+      archivePrefix={arXiv},
+      primaryClass={eess.SY},
+      url={https://arxiv.org/abs/2410.05336}, 
+}
+```
+
+
+
