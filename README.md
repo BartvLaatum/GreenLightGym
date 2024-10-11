@@ -64,7 +64,7 @@ This allows you to make modifications to the greenlight_gym codebase without hav
 4. Since this the GreenLight model is built using Cython, one must recompile the Cython code. This can be achieved by:
 
 ```shell
-python setup.py build_ext --inplace
+python setup.py build_cython_only --inplace
 ```
 
 Which lets you rebuilt the GreenLight model without reinstalling the complete package again. Everytime you make adjustments to the Cython code one must recompile the code using the command.
@@ -103,7 +103,6 @@ There are several bash scripts that facilitate training RL agents in a similar f
 ```shell
 python -m greenlight_gym.experiments.benchmark_rule_based ----env_id <GLEnv> --n_years <numberofyeartoeval> --train_or_test <trainortestset> --config_name <nameoftheenvconfig-file> --save 
 ```
-
 
 ## Post processing data from Weights and Biases
 
