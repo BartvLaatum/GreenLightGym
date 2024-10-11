@@ -56,13 +56,8 @@ setup(
     ),
     include_dirs=[np.get_include()],
     cmdclass={
-        'build_ext': build_ext,          # Use the custom build_ext class
-        'build_cython_only': BuildCythonOnlyCommand,  # Command to build only Cython extensions
-    },
-    options={
-        'build_ext': {
-            'build_lib': 'greenlight_gym/envs/cython'  # Specify the output directory
-        }
+        'build_ext': build_ext,                         # Use the custom build_ext class
+        'build_cython_only': BuildCythonOnlyCommand,    # Command to build only Cython extensions
     },
     install_requires=read_requirements(),  # Basic dependencies
 )
