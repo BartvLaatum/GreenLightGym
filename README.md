@@ -5,6 +5,11 @@
 **This repository is a reimplementation of the high-tech greenhouse model [GreenLight](https://github.com/davkat1/GreenLight) in high-performance [Cython](https://cython.readthedocs.io/en/stable/index.html) code, wrapped by the Gymnasium environment. The environment is desinged to train reinforcement learning models for greenhouse crop production systems.**
 
 Thes code in this repo was used for the following [preprint](https://arxiv.org/abs/2410.05336) that has been subimitted to the Computers and Electronics in Agriculture journal.
+
+
+✏ author:  Bart van Laatum
+
+📧 e-mail: bart.vanlaatum@wur.nl
 ___
 
 ![GreenLight-Gym Architecture|200](sketches/GLGymArchitecture.png)
