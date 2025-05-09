@@ -1,10 +1,14 @@
 # GreenLight-Gym: A Reinforcement Learning Environment for Greenhouse Crop Production Systems 🍅
 
+# UPDATE 09-05-2025
+
+**We released a new version named [GreenLight-Gym](https://github.com/BartvLaatum/GreenLight-Gym2). This new repository is accompanied with an accepted paper for The 8th IFAC Conference on Sensing, Control and Automation Technologies for Agriculture. Find the new preprint [here]((https://arxiv.org/abs/2410.05336)).**
+
 ## Summary
 
 **This repository is a reimplementation of the high-tech greenhouse model [GreenLight](https://github.com/davkat1/GreenLight) in high-performance [Cython](https://cython.readthedocs.io/en/stable/index.html) code, wrapped by the Gymnasium environment. The environment is desinged to train reinforcement learning models for greenhouse crop production systems.**
 
-Thes code in this repo was used for the following [preprint](https://arxiv.org/abs/2410.05336) that has been subimitted to the Computers and Electronics in Agriculture journal.
+<!-- Thes code in this repo was used for the following [preprint](https://arxiv.org/abs/2410.05336) that has been subimitted to the Computers and Electronics in Agriculture journal. -->
 
 
 ✏ author:  Bart van Laatum
@@ -133,21 +137,6 @@ You can visualise some of the results with the notebooks from the `visualisation
 - Include recurrent policies. 
 ___
 
-## Citing GreenLight-Gym
+## Citation
 
-If you find GreenLight-Gym and/or its accompanying article usefull, please cite it in your publications
-
-```
-@misc{vanlaatum2024greenlightgymreinforcementlearningbenchmark,
-      title={GreenLight-Gym: A Reinforcement Learning Benchmark Environment for Greenhouse Crop Production Control}, 
-      author={Bart van Laatum and Eldert J. van Henten and Sjoerd Boersma},
-      year={2024},
-      eprint={2410.05336},
-      archivePrefix={arXiv},
-      primaryClass={eess.SY},
-      url={https://arxiv.org/abs/2410.05336}, 
-}
-```
-
-
-
+If you find GreenLight-Gym and/or its accompanying article useful, please cite [GreenLight-Gym2](https://github.com/BartvLaatum/GreenLight-Gym2).
