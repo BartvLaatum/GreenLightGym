@@ -2,7 +2,7 @@
 
 # UPDATE 09-05-2025
 
-**We released a new version named [GreenLight-Gym](https://github.com/BartvLaatum/GreenLight-Gym2). This new repository is accompanied with an accepted paper for The 8th IFAC Conference on Sensing, Control and Automation Technologies for Agriculture. Find the new preprint [here]((https://arxiv.org/abs/2410.05336)).**
+**We released a new version named [GreenLight-Gym2](https://github.com/BartvLaatum/GreenLight-Gym2). This new repository is accompanied with an accepted paper for The 8th IFAC Conference on Sensing, Control and Automation Technologies for Agriculture. Find the new preprint [here]((https://arxiv.org/abs/2410.05336)).**
 
 ## Summary
 
